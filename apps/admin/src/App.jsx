@@ -9,6 +9,7 @@ import Configuration from './pages/Configuration'
 import Contacts from './pages/Contacts'
 import ObjetsARisque from './pages/ObjetsARisque'
 import Ressources from './pages/Ressources'
+import SitesQG from './pages/SitesQG'
 
 export default function App() {
   return (
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="annuaire" element={<Contacts />} />
             <Route path="risques" element={<ObjetsARisque />} />
             <Route path="ressources" element={<Ressources />} />
+            <Route path="sites-qg" element={<SitesQG />} />
           </Route>
         </Routes>
       </AuthProvider>
