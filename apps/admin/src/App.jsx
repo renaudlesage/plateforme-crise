@@ -8,6 +8,7 @@ import TableauDeBord from './pages/TableauDeBord'
 import Configuration from './pages/Configuration'
 import Contacts from './pages/Contacts'
 import ObjetsARisque from './pages/ObjetsARisque'
+import Ressources from './pages/Ressources'
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="configuration" element={<Configuration />} />
             <Route path="annuaire" element={<Contacts />} />
             <Route path="risques" element={<ObjetsARisque />} />
+            <Route path="ressources" element={<Ressources />} />
           </Route>
         </Routes>
       </AuthProvider>
