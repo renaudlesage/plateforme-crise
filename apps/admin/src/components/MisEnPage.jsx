@@ -49,6 +49,9 @@ export default function MisEnPage() {
           <Link to="/risques" className="py-2 text-slate-600 hover:text-slate-900">
             Objets à risque
           </Link>
+          <Link to="/ressources" className="py-2 text-slate-600 hover:text-slate-900">
+            Ressources
+          </Link>
         </nav>
       </header>
 
