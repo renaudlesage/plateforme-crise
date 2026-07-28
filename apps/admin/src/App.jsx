@@ -14,6 +14,7 @@ import CentresAccueil from './pages/CentresAccueil'
 import CanauxRadio from './pages/CanauxRadio'
 import PlansReference from './pages/PlansReference'
 import InstancesCoordination from './pages/InstancesCoordination'
+import ChecklistTemplates from './pages/ChecklistTemplates'
 
 export default function App() {
   return (
@@ -49,6 +50,7 @@ export default function App() {
             <Route path="canaux-radio" element={<CanauxRadio />} />
             <Route path="plans-reference" element={<PlansReference />} />
             <Route path="instances-coordination" element={<InstancesCoordination />} />
+            <Route path="checklists" element={<ChecklistTemplates />} />
           </Route>
         </Routes>
       </AuthProvider>
