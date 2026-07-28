@@ -55,6 +55,9 @@ export default function MisEnPage() {
           <Link to="/sites-qg" className="py-2 text-slate-600 hover:text-slate-900">
             Sites QG
           </Link>
+          <Link to="/centres-accueil" className="py-2 text-slate-600 hover:text-slate-900">
+            Centres d'accueil
+          </Link>
         </nav>
       </header>
 
