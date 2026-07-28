@@ -58,6 +58,9 @@ export default function MisEnPage() {
           <Link to="/centres-accueil" className="py-2 text-slate-600 hover:text-slate-900">
             Centres d'accueil
           </Link>
+          <Link to="/canaux-radio" className="py-2 text-slate-600 hover:text-slate-900">
+            Canaux radio
+          </Link>
         </nav>
       </header>
 
