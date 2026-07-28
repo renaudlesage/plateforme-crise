@@ -12,6 +12,7 @@ import Ressources from './pages/Ressources'
 import SitesQG from './pages/SitesQG'
 import CentresAccueil from './pages/CentresAccueil'
 import CanauxRadio from './pages/CanauxRadio'
+import PlansReference from './pages/PlansReference'
 
 export default function App() {
   return (
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="sites-qg" element={<SitesQG />} />
             <Route path="centres-accueil" element={<CentresAccueil />} />
             <Route path="canaux-radio" element={<CanauxRadio />} />
+            <Route path="plans-reference" element={<PlansReference />} />
           </Route>
         </Routes>
       </AuthProvider>
