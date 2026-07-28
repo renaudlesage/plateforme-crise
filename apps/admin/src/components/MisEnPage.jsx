@@ -70,6 +70,9 @@ export default function MisEnPage() {
           <Link to="/checklists" className="py-2 text-slate-600 hover:text-slate-900">
             Checklists
           </Link>
+          <Link to="/exercices" className="py-2 text-slate-600 hover:text-slate-900">
+            Exercices
+          </Link>
         </nav>
       </header>
 
