@@ -1,12 +1,22 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Connexion() {
-  const { connexion } = useAuth()
+  const { connexion, session, chargementSession } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [motDePasse, setMotDePasse] = useState('')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
+
+  // Si une session existe déjà (retour sur /connexion alors que connecté,
+  // ou juste après un login réussi), on quitte cette page.
+  useEffect(() => {
+    if (!chargementSession && session) {
+      navigate('/', { replace: true })
+    }
+  }, [session, chargementSession, navigate])
 
   async function gererSoumission(e) {
     e.preventDefault()
@@ -21,6 +31,8 @@ export default function Connexion() {
           : error.message
       )
     }
+    // Pas besoin de naviguer ici : le useEffect ci-dessus le fait dès que
+    // la session devient disponible.
   }
 
   return (
