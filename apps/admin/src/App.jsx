@@ -10,6 +10,7 @@ import Contacts from './pages/Contacts'
 import ObjetsARisque from './pages/ObjetsARisque'
 import Ressources from './pages/Ressources'
 import SitesQG from './pages/SitesQG'
+import CentresAccueil from './pages/CentresAccueil'
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="risques" element={<ObjetsARisque />} />
             <Route path="ressources" element={<Ressources />} />
             <Route path="sites-qg" element={<SitesQG />} />
+            <Route path="centres-accueil" element={<CentresAccueil />} />
           </Route>
         </Routes>
       </AuthProvider>
