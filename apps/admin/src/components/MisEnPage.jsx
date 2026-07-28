@@ -67,6 +67,9 @@ export default function MisEnPage() {
           <Link to="/instances-coordination" className="py-2 text-slate-600 hover:text-slate-900">
             Instances
           </Link>
+          <Link to="/checklists" className="py-2 text-slate-600 hover:text-slate-900">
+            Checklists
+          </Link>
         </nav>
       </header>
 
