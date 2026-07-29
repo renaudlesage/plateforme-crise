@@ -39,7 +39,7 @@ export default function ChecklistTemplates() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="text-lg font-semibold text-slate-900">Checklists types</h1>
+        <h1 className="font-display text-xl font-semibold text-slate-900">Checklists types</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter une action</BoutonPrincipal>
         )}
@@ -89,7 +89,7 @@ export default function ChecklistTemplates() {
           {groupes.map((groupe) => (
             <div key={groupe.declencheur}>
               <h2 className="text-sm font-semibold text-slate-700 mb-2">{groupe.declencheur}</h2>
-              <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden">
+              <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                 {groupe.items.map((item) =>
                   ligneEnEdition === item.id ? (
                     <li key={item.id} className="bg-slate-50 p-3">
