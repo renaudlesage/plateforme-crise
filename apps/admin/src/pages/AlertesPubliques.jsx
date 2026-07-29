@@ -29,7 +29,7 @@ export default function AlertesPubliques() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="text-lg font-semibold text-slate-900">Alertes publiques</h1>
+        <h1 className="font-display text-xl font-semibold text-slate-900">Alertes publiques</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Publier une alerte</BoutonPrincipal>
         )}
@@ -74,7 +74,7 @@ export default function AlertesPubliques() {
                 />
               </li>
             ) : (
-              <li key={a.id} className="bg-white border border-slate-200 rounded-lg p-4">
+              <li key={a.id} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-900">
