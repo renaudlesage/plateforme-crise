@@ -9,6 +9,16 @@ const STATUTS = [
   { valeur: 'refuse', libelle: 'Refusé', classe: 'bg-slate-100 text-slate-500' },
 ]
 
+const COMPETENCES_CONNUES = [
+  'Premiers secours',
+  'Logistique / transport',
+  'Hébergement / accueil',
+  'Communication',
+  'Informatique / réseaux',
+  'Bricolage / travaux',
+  'Cuisine / restauration',
+]
+
 export default function BenevolesEntraide() {
   const { contexteId } = useAuth()
   const { lignes: benevoles, chargement, erreur, modifier } = useTableContexte(
@@ -18,13 +28,14 @@ export default function BenevolesEntraide() {
   )
 
   const [filtreStatut, setFiltreStatut] = useState('en_attente')
+  const [filtreCompetence, setFiltreCompetence] = useState('')
 
   const benevolesTries = [...benevoles].sort(
     (a, b) => new Date(b.date_inscription) - new Date(a.date_inscription)
   )
-  const benevolesFiltres = filtreStatut
-    ? benevolesTries.filter((b) => b.statut === filtreStatut)
-    : benevolesTries
+  const benevolesFiltres = benevolesTries
+    .filter((b) => (filtreStatut ? b.statut === filtreStatut : true))
+    .filter((b) => (filtreCompetence ? (b.competences ?? []).includes(filtreCompetence) : true))
 
   async function changerStatut(id, statut) {
     await modifier(id, { statut })
@@ -52,6 +63,20 @@ export default function BenevolesEntraide() {
             {s.libelle} ({benevolesTries.filter((b) => b.statut === s.valeur).length})
           </button>
         ))}
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-xs font-medium text-slate-600 mb-1">Filtrer par compétence</label>
+        <select
+          value={filtreCompetence}
+          onChange={(e) => setFiltreCompetence(e.target.value)}
+          className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white"
+        >
+          <option value="">Toutes compétences</option>
+          {COMPETENCES_CONNUES.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
       </div>
 
       {chargement ? (
