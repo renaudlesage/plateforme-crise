@@ -26,7 +26,7 @@ export default function Ressources() {
           onClick={() => setOnglet('ressources')}
           className={`px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
             onglet === 'ressources'
-              ? 'border-slate-900 text-slate-900 font-medium'
+              ? 'border-institution-600 text-institution-700 font-medium'
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
@@ -36,7 +36,7 @@ export default function Ressources() {
           onClick={() => setOnglet('benevoles')}
           className={`px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
             onglet === 'benevoles'
-              ? 'border-slate-900 text-slate-900 font-medium'
+              ? 'border-institution-600 text-institution-700 font-medium'
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
@@ -78,7 +78,7 @@ function ListeRessources() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="text-lg font-semibold text-slate-900">Ressources</h1>
+        <h1 className="font-display text-xl font-semibold text-slate-900">Ressources</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter une ressource</BoutonPrincipal>
         )}
@@ -130,7 +130,7 @@ function ListeRessources() {
           Aucune ressource ne correspond.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden">
+        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
           {ressourcesFiltrees.map((r) =>
             ligneEnEdition === r.id ? (
               <li key={r.id} className="bg-slate-50 p-3">
