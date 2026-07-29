@@ -36,16 +36,22 @@ export default function Connexion() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-nuit-900">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-xl font-semibold text-slate-900">
+          <div className="flex justify-center mb-3">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+          </div>
+          <h1 className="font-display text-2xl font-semibold text-white tracking-tight">
             Plateforme de gestion de crise
           </h1>
-          <p className="mt-1 text-sm text-slate-500">Espace Admin</p>
+          <p className="mt-1.5 text-sm text-slate-400">Espace Admin</p>
         </div>
 
-        <form onSubmit={gererSoumission} className="space-y-4 bg-white p-6 rounded-lg border border-slate-200">
+        <form onSubmit={gererSoumission} className="space-y-4 bg-stone-50 p-7 rounded-lg shadow-xl">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
               Email
@@ -57,7 +63,7 @@ export default function Connexion() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-institution-600 focus:ring-1 focus:ring-institution-600"
             />
           </div>
 
@@ -72,7 +78,7 @@ export default function Connexion() {
               autoComplete="current-password"
               value={motDePasse}
               onChange={(e) => setMotDePasse(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-institution-600 focus:ring-1 focus:ring-institution-600"
             />
           </div>
 
@@ -85,13 +91,13 @@ export default function Connexion() {
           <button
             type="submit"
             disabled={enCours}
-            className="w-full rounded-md bg-slate-900 text-white text-sm font-medium py-2 hover:bg-slate-800 disabled:opacity-50 transition-colors"
+            className="w-full rounded-md bg-institution-600 text-white text-sm font-medium py-2.5 hover:bg-institution-700 disabled:opacity-50 transition-colors shadow-sm"
           >
             {enCours ? 'Connexion…' : 'Se connecter'}
           </button>
         </form>
 
-        <p className="mt-4 text-xs text-center text-slate-400">
+        <p className="mt-4 text-xs text-center text-slate-500">
           Accès réservé — comptes créés manuellement par l'administrateur.
         </p>
       </div>
