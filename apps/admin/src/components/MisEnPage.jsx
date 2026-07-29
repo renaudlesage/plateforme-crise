@@ -50,23 +50,27 @@ export default function MisEnPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b border-slate-200 bg-white">
+    <div className="min-h-screen flex flex-col bg-stone-50">
+      <header className="bg-nuit-900 border-b border-nuit-700">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="font-semibold text-slate-900">Admin</span>
-            <span className="text-slate-300">/</span>
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="font-display font-semibold text-white tracking-tight">Admin</span>
+            <span className="text-nuit-700">/</span>
             <button
               onClick={changerDeContexte}
-              className="text-sm text-slate-600 hover:text-slate-900 underline decoration-dotted"
+              className="text-sm text-slate-300 hover:text-white underline decoration-dotted decoration-slate-500"
             >
               {contexteActuel?.contextes?.nom ?? 'Aucun contexte'}
             </button>
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-500 hidden sm:inline">{utilisateur?.email}</span>
-            <button onClick={deconnexion} className="text-sm text-slate-600 hover:text-slate-900">
+            <span className="text-sm text-slate-400 hidden sm:inline font-mono">{utilisateur?.email}</span>
+            <button onClick={deconnexion} className="text-sm text-slate-300 hover:text-white transition-colors">
               Se déconnecter
             </button>
           </div>
@@ -74,12 +78,12 @@ export default function MisEnPage() {
       </header>
 
       <div className="flex-1 max-w-6xl w-full mx-auto flex">
-        <aside className="w-56 flex-shrink-0 border-r border-slate-200 bg-white py-5 pr-2 hidden sm:block">
+        <aside className="w-56 flex-shrink-0 bg-nuit-900 py-5 pr-2 hidden sm:block">
           <nav className="space-y-5">
             {SECTIONS.map((section, i) => (
               <div key={i}>
                 {section.titre && (
-                  <p className="px-3 text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">
+                  <p className="px-3 text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
                     {section.titre}
                   </p>
                 )}
@@ -90,10 +94,10 @@ export default function MisEnPage() {
                       <Link
                         key={lien.to}
                         to={lien.to}
-                        className={`block px-3 py-1.5 rounded-md text-sm transition-colors ${
+                        className={`block px-3 py-1.5 text-sm transition-colors border-l-2 ${
                           actif
-                            ? 'bg-slate-900 text-white font-medium'
-                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                            ? 'border-institution-600 bg-nuit-800 text-white font-medium'
+                            : 'border-transparent text-slate-400 hover:bg-nuit-800 hover:text-slate-100'
                         }`}
                       >
                         {lien.libelle}
@@ -106,7 +110,7 @@ export default function MisEnPage() {
           </nav>
         </aside>
 
-        <main className="flex-1 px-4 sm:px-6 py-6 min-w-0">
+        <main className="flex-1 px-4 sm:px-8 py-8 min-w-0 bg-stone-50">
           <Outlet />
         </main>
       </div>
