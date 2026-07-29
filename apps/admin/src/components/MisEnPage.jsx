@@ -1,9 +1,48 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+
+const SECTIONS = [
+  {
+    titre: null,
+    liens: [{ to: '/', libelle: 'Tableau de bord' }],
+  },
+  {
+    titre: 'Configuration',
+    liens: [{ to: '/configuration', libelle: 'Rôles, niveaux, disciplines' }],
+  },
+  {
+    titre: 'Référentiels',
+    liens: [
+      { to: '/annuaire', libelle: 'Annuaire' },
+      { to: '/risques', libelle: 'Objets à risque' },
+      { to: '/ressources', libelle: 'Ressources' },
+      { to: '/sites-qg', libelle: 'Sites QG' },
+      { to: '/centres-accueil', libelle: "Centres d'accueil" },
+      { to: '/canaux-radio', libelle: 'Canaux radio' },
+      { to: '/plans-reference', libelle: 'Plans de référence' },
+    ],
+  },
+  {
+    titre: 'Gouvernance',
+    liens: [
+      { to: '/instances-coordination', libelle: 'Instances' },
+      { to: '/checklists', libelle: 'Checklists' },
+      { to: '/exercices', libelle: 'Exercices' },
+    ],
+  },
+  {
+    titre: 'Communication',
+    liens: [
+      { to: '/alertes-publiques', libelle: 'Alertes publiques' },
+      { to: '/canaux-diffusion', libelle: 'Canaux de diffusion' },
+    ],
+  },
+]
 
 export default function MisEnPage() {
   const { utilisateur, contexteActuel, deconnexion, selectionnerContexte } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   function changerDeContexte() {
     selectionnerContexte(null)
@@ -27,64 +66,50 @@ export default function MisEnPage() {
 
           <div className="flex items-center gap-4">
             <span className="text-sm text-slate-500 hidden sm:inline">{utilisateur?.email}</span>
-            <button
-              onClick={deconnexion}
-              className="text-sm text-slate-600 hover:text-slate-900"
-            >
+            <button onClick={deconnexion} className="text-sm text-slate-600 hover:text-slate-900">
               Se déconnecter
             </button>
           </div>
         </div>
-
-        <nav className="max-w-6xl mx-auto px-4 flex gap-4 text-sm border-t border-slate-100">
-          <Link to="/" className="py-2 text-slate-600 hover:text-slate-900">
-            Tableau de bord
-          </Link>
-          <Link to="/configuration" className="py-2 text-slate-600 hover:text-slate-900">
-            Configuration
-          </Link>
-          <Link to="/annuaire" className="py-2 text-slate-600 hover:text-slate-900">
-            Annuaire
-          </Link>
-          <Link to="/risques" className="py-2 text-slate-600 hover:text-slate-900">
-            Objets à risque
-          </Link>
-          <Link to="/ressources" className="py-2 text-slate-600 hover:text-slate-900">
-            Ressources
-          </Link>
-          <Link to="/sites-qg" className="py-2 text-slate-600 hover:text-slate-900">
-            Sites QG
-          </Link>
-          <Link to="/centres-accueil" className="py-2 text-slate-600 hover:text-slate-900">
-            Centres d'accueil
-          </Link>
-          <Link to="/canaux-radio" className="py-2 text-slate-600 hover:text-slate-900">
-            Canaux radio
-          </Link>
-          <Link to="/plans-reference" className="py-2 text-slate-600 hover:text-slate-900">
-            Plans de référence
-          </Link>
-          <Link to="/instances-coordination" className="py-2 text-slate-600 hover:text-slate-900">
-            Instances
-          </Link>
-          <Link to="/checklists" className="py-2 text-slate-600 hover:text-slate-900">
-            Checklists
-          </Link>
-          <Link to="/exercices" className="py-2 text-slate-600 hover:text-slate-900">
-            Exercices
-          </Link>
-          <Link to="/alertes-publiques" className="py-2 text-slate-600 hover:text-slate-900">
-            Alertes publiques
-          </Link>
-          <Link to="/canaux-diffusion" className="py-2 text-slate-600 hover:text-slate-900">
-            Canaux de diffusion
-          </Link>
-        </nav>
       </header>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6">
-        <Outlet />
-      </main>
+      <div className="flex-1 max-w-6xl w-full mx-auto flex">
+        <aside className="w-56 flex-shrink-0 border-r border-slate-200 bg-white py-5 pr-2 hidden sm:block">
+          <nav className="space-y-5">
+            {SECTIONS.map((section, i) => (
+              <div key={i}>
+                {section.titre && (
+                  <p className="px-3 text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">
+                    {section.titre}
+                  </p>
+                )}
+                <div className="space-y-0.5">
+                  {section.liens.map((lien) => {
+                    const actif = location.pathname === lien.to
+                    return (
+                      <Link
+                        key={lien.to}
+                        to={lien.to}
+                        className={`block px-3 py-1.5 rounded-md text-sm transition-colors ${
+                          actif
+                            ? 'bg-slate-900 text-white font-medium'
+                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        }`}
+                      >
+                        {lien.libelle}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </nav>
+        </aside>
+
+        <main className="flex-1 px-4 sm:px-6 py-6 min-w-0">
+          <Outlet />
+        </main>
+      </div>
     </div>
   )
 }
