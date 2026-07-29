@@ -76,6 +76,9 @@ export default function MisEnPage() {
           <Link to="/alertes-publiques" className="py-2 text-slate-600 hover:text-slate-900">
             Alertes publiques
           </Link>
+          <Link to="/canaux-diffusion" className="py-2 text-slate-600 hover:text-slate-900">
+            Canaux de diffusion
+          </Link>
         </nav>
       </header>
 
