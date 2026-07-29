@@ -33,7 +33,7 @@ export default function InstancesCoordination() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="text-lg font-semibold text-slate-900">Instances de coordination</h1>
+        <h1 className="font-display text-xl font-semibold text-slate-900">Instances de coordination</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter une instance</BoutonPrincipal>
         )}
@@ -81,7 +81,7 @@ export default function InstancesCoordination() {
                 />
               </li>
             ) : (
-              <li key={i.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+              <li key={i.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                 <div className="flex items-start justify-between px-4 py-3">
                   <div>
                     <p className="text-sm font-medium text-slate-900">
