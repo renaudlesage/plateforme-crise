@@ -8,6 +8,8 @@
   ],
   "scripts": {
     "dev:admin": "npm run dev --workspace=apps/admin",
-    "build:admin": "npm run build --workspace=apps/admin"
+    "dev:qg": "npm run dev --workspace=apps/qg",
+    "build:admin": "npm run build --workspace=apps/admin",
+    "build:qg": "npm run build --workspace=apps/qg"
   }
 }
