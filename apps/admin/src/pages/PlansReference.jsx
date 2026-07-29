@@ -29,7 +29,7 @@ export default function PlansReference() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="text-lg font-semibold text-slate-900">Plans de référence</h1>
+        <h1 className="font-display text-xl font-semibold text-slate-900">Plans de référence</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter un plan</BoutonPrincipal>
         )}
@@ -72,7 +72,7 @@ export default function PlansReference() {
           Aucun plan de référence enregistré.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden">
+        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
           {plansFiltres.map((p) =>
             ligneEnEdition === p.id ? (
               <li key={p.id} className="bg-slate-50 p-3">
