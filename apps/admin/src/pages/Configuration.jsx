@@ -15,7 +15,7 @@ export default function Configuration() {
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-slate-900 mb-1">Configuration</h1>
+      <h1 className="font-display text-xl font-semibold text-slate-900 mb-1">Configuration</h1>
       <p className="text-sm text-slate-500 mb-4">
         La base sur laquelle reposent les référentiels, checklists et instances de coordination.
       </p>
@@ -27,7 +27,7 @@ export default function Configuration() {
             onClick={() => setOngletActif(o.id)}
             className={`px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
               ongletActif === o.id
-                ? 'border-slate-900 text-slate-900 font-medium'
+                ? 'border-institution-600 text-institution-700 font-medium'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
