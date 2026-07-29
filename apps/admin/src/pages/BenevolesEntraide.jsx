@@ -43,7 +43,7 @@ export default function BenevolesEntraide() {
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-slate-900 mb-1">Réseau d'entraide citoyenne</h1>
+      <h1 className="font-display text-xl font-semibold text-slate-900 mb-1">Réseau d'entraide citoyenne</h1>
       <p className="text-sm text-slate-500 mb-4">
         Candidatures reçues via l'app Citoyen. Les coordonnées ne sont visibles que par les
         membres de ce contexte.
@@ -88,7 +88,7 @@ export default function BenevolesEntraide() {
       ) : (
         <ul className="space-y-2">
           {benevolesFiltres.map((b) => (
-            <li key={b.id} className="bg-white border border-slate-200 rounded-lg p-4">
+            <li key={b.id} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-900">
