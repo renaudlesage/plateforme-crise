@@ -378,6 +378,8 @@ function SectionChecklist({ incidentId, contexteId }) {
     </div>
   )
 }
+
+function SectionLivreDeBord({ incidentId }) {
   const [entrees, setEntrees] = useState([])
   const [chargement, setChargement] = useState(true)
   const [message, setMessage] = useState('')
