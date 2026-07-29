@@ -9,7 +9,9 @@
   "scripts": {
     "dev:admin": "npm run dev --workspace=apps/admin",
     "dev:qg": "npm run dev --workspace=apps/qg",
+    "dev:terrain": "npm run dev --workspace=apps/terrain",
     "build:admin": "npm run build --workspace=apps/admin",
-    "build:qg": "npm run build --workspace=apps/qg"
+    "build:qg": "npm run build --workspace=apps/qg",
+    "build:terrain": "npm run build --workspace=apps/terrain"
   }
 }
