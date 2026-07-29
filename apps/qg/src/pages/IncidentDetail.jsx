@@ -52,6 +52,10 @@ export default function IncidentDetail() {
         )}
       </div>
 
+      <div className="mb-6">
+        <SectionChecklist incidentId={id} contexteId={contexteId} />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <SectionSitReps incidentId={id} contexteId={contexteId} />
         <SectionLivreDeBord incidentId={id} contexteId={contexteId} />
@@ -231,7 +235,149 @@ function FormulaireSitRep({ incidentId, niveaux, prochainNumero, onValider, onAn
   )
 }
 
-function SectionLivreDeBord({ incidentId }) {
+function SectionChecklist({ incidentId, contexteId }) {
+  const [templates, setTemplates] = useState([])
+  const [executions, setExecutions] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [erreur, setErreur] = useState(null)
+  const [filtreRole, setFiltreRole] = useState('')
+  const { lignes: roles } = useTableContexte('roles', contexteId, { tri: 'libelle' })
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const [tplRes, execRes] = await Promise.all([
+      supabase
+        .from('checklist_templates')
+        .select('*, roles(id, libelle), niveaux_escalade(id, libelle)')
+        .eq('contexte_id', contexteId)
+        .order('ordre'),
+      supabase
+        .from('checklist_executions')
+        .select('*')
+        .eq('incident_id', incidentId),
+    ])
+    if (tplRes.error) setErreur(tplRes.error.message)
+    else setTemplates(tplRes.data ?? [])
+    if (execRes.error) setErreur(execRes.error.message)
+    else setExecutions(execRes.data ?? [])
+    setChargement(false)
+  }, [contexteId, incidentId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function basculerExecution(template) {
+    const existante = executions.find((e) => e.template_id === template.id)
+    if (existante) {
+      const { error } = await supabase
+        .from('checklist_executions')
+        .update({
+          execute: !existante.execute,
+          horodatage_execution: !existante.execute ? new Date().toISOString() : null,
+        })
+        .eq('id', existante.id)
+      if (error) setErreur(error.message)
+    } else {
+      const { error } = await supabase.from('checklist_executions').insert({
+        incident_id: incidentId,
+        template_id: template.id,
+        execute: true,
+        horodatage_execution: new Date().toISOString(),
+      })
+      if (error) setErreur(error.message)
+    }
+    await rafraichir()
+  }
+
+  const templatesFiltres = filtreRole ? templates.filter((t) => t.role_id === filtreRole) : templates
+
+  // Regroupement par déclencheur
+  const groupes = []
+  for (const t of templatesFiltres) {
+    let g = groupes.find((x) => x.declencheur === t.declencheur)
+    if (!g) {
+      g = { declencheur: t.declencheur, items: [] }
+      groupes.push(g)
+    }
+    g.items.push(t)
+  }
+
+  const executionParTemplate = Object.fromEntries(executions.map((e) => [e.template_id, e]))
+  const total = templatesFiltres.length
+  const faits = templatesFiltres.filter((t) => executionParTemplate[t.id]?.execute).length
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="font-medium text-slate-900">Checklist</h2>
+        {total > 0 && (
+          <span className="text-xs text-slate-500">{faits} / {total} actions faites</span>
+        )}
+      </div>
+
+      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+
+      <div className="mb-3">
+        <select
+          value={filtreRole}
+          onChange={(e) => setFiltreRole(e.target.value)}
+          className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white"
+        >
+          <option value="">Tous les rôles</option>
+          {roles.map((r) => (
+            <option key={r.id} value={r.id}>{r.libelle}</option>
+          ))}
+        </select>
+      </div>
+
+      {chargement ? (
+        <p className="text-sm text-slate-400">Chargement…</p>
+      ) : groupes.length === 0 ? (
+        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-4 text-center">
+          Aucune checklist type définie pour ce contexte (à créer dans l'app Admin).
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {groupes.map((g) => (
+            <div key={g.declencheur}>
+              <h3 className="text-xs font-semibold text-slate-500 mb-1.5">{g.declencheur}</h3>
+              <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden bg-white">
+                {g.items.map((t) => {
+                  const exec = executionParTemplate[t.id]
+                  const fait = exec?.execute ?? false
+                  return (
+                    <li key={t.id} className="flex items-center justify-between px-4 py-2">
+                      <label className="flex items-center gap-3 flex-1 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={fait}
+                          onChange={() => basculerExecution(t)}
+                          className="w-4 h-4"
+                        />
+                        <span className={`text-sm ${fait ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
+                          {t.libelle}
+                        </span>
+                        {t.roles?.libelle && (
+                          <span className="text-xs text-slate-400 flex-shrink-0">({t.roles.libelle})</span>
+                        )}
+                      </label>
+                      {fait && exec.horodatage_execution && (
+                        <span className="text-xs text-slate-400 flex-shrink-0 ml-2">
+                          {new Date(exec.horodatage_execution).toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
   const [entrees, setEntrees] = useState([])
   const [chargement, setChargement] = useState(true)
   const [message, setMessage] = useState('')
