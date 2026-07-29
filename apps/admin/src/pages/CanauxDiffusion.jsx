@@ -27,7 +27,7 @@ export default function CanauxDiffusion() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="text-lg font-semibold text-slate-900">Canaux de diffusion</h1>
+        <h1 className="font-display text-xl font-semibold text-slate-900">Canaux de diffusion</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter un canal</BoutonPrincipal>
         )}
@@ -57,7 +57,7 @@ export default function CanauxDiffusion() {
           Aucun canal configuré.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden">
+        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
           {canaux.map((c) =>
             ligneEnEdition === c.id ? (
               <li key={c.id} className="bg-slate-50 p-3">
