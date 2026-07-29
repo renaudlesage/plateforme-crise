@@ -20,7 +20,7 @@ export default function SitesQG() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="text-lg font-semibold text-slate-900">Sites QG</h1>
+        <h1 className="font-display text-xl font-semibold text-slate-900">Sites QG</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter un site</BoutonPrincipal>
         )}
@@ -66,7 +66,7 @@ export default function SitesQG() {
                 />
               </li>
             ) : (
-              <li key={s.id} className="flex items-start justify-between px-4 py-3 bg-white border border-slate-200 rounded-lg">
+              <li key={s.id} className="flex items-start justify-between px-4 py-3 bg-white border border-slate-200 rounded-lg shadow-sm">
                 <div className="flex gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-slate-900 text-white text-xs flex items-center justify-center mt-0.5">
                     {s.priorite}
