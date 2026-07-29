@@ -18,7 +18,6 @@ import ChecklistTemplates from './pages/ChecklistTemplates'
 import Exercices from './pages/Exercices'
 import AlertesPubliques from './pages/AlertesPubliques'
 import CanauxDiffusion from './pages/CanauxDiffusion'
-import BenevolesEntraide from './pages/BenevolesEntraide'
 
 export default function App() {
   return (
@@ -58,7 +57,6 @@ export default function App() {
             <Route path="exercices" element={<Exercices />} />
             <Route path="alertes-publiques" element={<AlertesPubliques />} />
             <Route path="canaux-diffusion" element={<CanauxDiffusion />} />
-            <Route path="benevoles" element={<BenevolesEntraide />} />
           </Route>
         </Routes>
       </AuthProvider>
