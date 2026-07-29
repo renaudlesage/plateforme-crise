@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const STORAGE_KEY_CONTEXTE = 'citoyen_contexte_id_selectionne'
@@ -70,9 +71,14 @@ export default function Accueil() {
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
         <span className="text-sm font-medium text-slate-900">{contexteActuel?.nom ?? '…'}</span>
-        <button onClick={changerDeCommune} className="text-xs text-slate-500">
-          Changer de commune
-        </button>
+        <div className="flex items-center gap-3">
+          <Link to="/benevole" className="text-xs text-slate-600 underline">
+            Devenir bénévole
+          </Link>
+          <button onClick={changerDeCommune} className="text-xs text-slate-500">
+            Changer de commune
+          </button>
+        </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-4">
