@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
+import { supabase } from '../lib/supabase'
 
 const NIVEAUX = [
   { valeur: 'info', libelle: 'Information', classe: 'bg-slate-100 text-slate-600' },
@@ -102,9 +103,52 @@ export default function AlertesPubliques() {
                     </BoutonDiscret>
                   </div>
                 </div>
+                <BoutonDiffusion alerteId={a.id} />
               </li>
             )
           )}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function BoutonDiffusion({ alerteId }) {
+  const [enCours, setEnCours] = useState(false)
+  const [resultats, setResultats] = useState(null)
+  const [erreur, setErreur] = useState(null)
+
+  async function diffuser() {
+    setEnCours(true)
+    setErreur(null)
+    setResultats(null)
+    const { data, error } = await supabase.functions.invoke('diffuser-alerte', {
+      body: { alerte_id: alerteId },
+    })
+    setEnCours(false)
+    if (error) {
+      setErreur(error.message)
+    } else if (data?.error) {
+      setErreur(data.error)
+    } else {
+      setResultats(data)
+    }
+  }
+
+  return (
+    <div className="mt-2 pt-2 border-t border-slate-100">
+      <BoutonDiscret onClick={diffuser} disabled={enCours}>
+        {enCours ? 'Diffusion en cours…' : 'Diffuser vers les canaux'}
+      </BoutonDiscret>
+      {erreur && <p className="text-xs text-red-600 mt-1">{erreur}</p>}
+      {resultats?.message && <p className="text-xs text-slate-400 mt-1">{resultats.message}</p>}
+      {resultats?.resultats?.length > 0 && (
+        <ul className="text-xs mt-1 space-y-0.5">
+          {resultats.resultats.map((r, i) => (
+            <li key={i} className={r.statut === 'envoye' ? 'text-emerald-600' : 'text-red-600'}>
+              {r.canal} — {r.statut === 'envoye' ? 'envoyé' : `échec (${r.erreur})`}
+            </li>
+          ))}
         </ul>
       )}
     </div>
