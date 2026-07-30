@@ -31,6 +31,13 @@ const SECTIONS = [
     ],
   },
   {
+    titre: 'Anticipation',
+    liens: [
+      { to: '/fonctions-critiques', libelle: 'Fonctions critiques' },
+      { to: '/seuils-action', libelle: "Seuils d'action" },
+    ],
+  },
+  {
     titre: 'Communication',
     liens: [
       { to: '/alertes-publiques', libelle: 'Alertes publiques' },
