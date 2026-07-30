@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
 import { supabase } from '../lib/supabase'
+import { PACK_DEMARRAGE_RISQUES } from '../data/packDemarrageRisques'
 
 const CATEGORIES = [
   { valeur: 'naturel', libelle: 'Naturel' },
@@ -29,6 +30,21 @@ export default function ObjetsARisque() {
   const [enAjout, setEnAjout] = useState(false)
   const [ligneEnEdition, setLigneEnEdition] = useState(null)
   const [filtreCategorie, setFiltreCategorie] = useState('')
+  const [importEnCours, setImportEnCours] = useState(false)
+  const [erreurImport, setErreurImport] = useState(null)
+
+  const packDejaImporte = objets.some((o) => o.code?.startsWith('STARTER-'))
+
+  async function importerPackDemarrage() {
+    if (!confirm(`Importer les ${PACK_DEMARRAGE_RISQUES.length} fiches du pack de démarrage (12 génériques + 6 nucléaire) ?`)) return
+    setImportEnCours(true)
+    setErreurImport(null)
+    const lignes = PACK_DEMARRAGE_RISQUES.map((r) => ({ ...r, contexte_id: contexteId }))
+    const { error } = await supabase.from('objets_a_risque').insert(lignes)
+    setImportEnCours(false)
+    if (error) setErreurImport(error.message)
+    else window.location.reload()
+  }
 
   const objetsFiltres = filtreCategorie
     ? objets.filter((o) => o.categorie === filtreCategorie)
@@ -38,14 +54,22 @@ export default function ObjetsARisque() {
     <div>
       <div className="flex items-center justify-between mb-1">
         <h1 className="font-display text-xl font-semibold text-slate-900">Objets à risque</h1>
-        {!enAjout && (
-          <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter un objet</BoutonPrincipal>
-        )}
+        <div className="flex gap-2">
+          {!packDejaImporte && (
+            <BoutonDiscret onClick={importerPackDemarrage} disabled={importEnCours}>
+              {importEnCours ? 'Import…' : 'Importer le pack de démarrage (18 fiches)'}
+            </BoutonDiscret>
+          )}
+          {!enAjout && (
+            <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter un objet</BoutonPrincipal>
+          )}
+        </div>
       </div>
       <p className="text-sm text-slate-500 mb-4">
         Inventaire des risques identifiés — l'évaluation détaillée et le plan d'action se
         feront depuis la fiche de chaque objet (à venir).
       </p>
+      {erreurImport && <p className="text-sm text-red-600 mb-2">{erreurImport}</p>}
 
       {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
 
