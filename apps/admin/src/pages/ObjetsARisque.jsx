@@ -25,6 +25,7 @@ export default function ObjetsARisque() {
     creer,
     modifier,
     supprimer,
+    rafraichir,
   } = useTableContexte('objets_a_risque', contexteId, { tri: 'identification' })
 
   const [enAjout, setEnAjout] = useState(false)
@@ -43,7 +44,7 @@ export default function ObjetsARisque() {
     const { error } = await supabase.from('objets_a_risque').insert(lignes)
     setImportEnCours(false)
     if (error) setErreurImport(error.message)
-    else window.location.reload()
+    else await rafraichir()
   }
 
   const objetsFiltres = filtreCategorie
