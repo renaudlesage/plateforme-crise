@@ -15,7 +15,7 @@ export default function PlansReference() {
     modifier,
     supprimer,
   } = useTableContexte('plans_reference', contexteId, {
-    colonnes: '*, objets_a_risque(id, identification)',
+    colonnes: '*, objets_a_risque!plans_reference_objet_risque_id_fkey(id, identification)',
     tri: 'nom',
   })
   const { lignes: objetsRisque } = useTableContexte('objets_a_risque', contexteId, { tri: 'identification' })
