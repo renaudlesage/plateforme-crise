@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
+import { supabase } from '../lib/supabase'
 
 const CATEGORIES = [
   { valeur: 'naturel', libelle: 'Naturel' },
@@ -101,6 +102,11 @@ export default function ObjetsARisque() {
                   <p className="text-sm font-medium text-slate-900">
                     {o.identification}
                     {o.code && <span className="ml-2 text-xs font-mono text-slate-400">{o.code}</span>}
+                    {o.declencheur && (
+                      <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-institution-50 text-institution-700">
+                        cascade renseignée
+                      </span>
+                    )}
                   </p>
                   <p className="text-xs text-slate-500">
                     {LIBELLE_CATEGORIE[o.categorie] ?? o.categorie}
@@ -157,6 +163,15 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
   const [piuRecu, setPiuRecu] = useState(valeursInitiales.piu_recu ?? false)
   const [prioriteDeclarant, setPrioriteDeclarant] = useState(valeursInitiales.priorite_declarant ?? '')
   const [prioriteCellule, setPrioriteCellule] = useState(valeursInitiales.priorite_cellule_securite ?? '')
+  const [afficherCascade, setAfficherCascade] = useState(false)
+  const [declencheur, setDeclencheur] = useState(valeursInitiales.declencheur ?? '')
+  const [effetsDirects, setEffetsDirects] = useState(valeursInitiales.effets_directs ?? '')
+  const [effetsCascade, setEffetsCascade] = useState(valeursInitiales.effets_cascade ?? '')
+  const [signauxFaibles, setSignauxFaibles] = useState(valeursInitiales.signaux_faibles ?? '')
+  const [mesuresPreventives, setMesuresPreventives] = useState(valeursInitiales.mesures_preventives ?? '')
+  const [mesuresCompensatoires, setMesuresCompensatoires] = useState(valeursInitiales.mesures_compensatoires ?? '')
+  const [decisionsAPreparer, setDecisionsAPreparer] = useState(valeursInitiales.decisions_a_preparer ?? '')
+  const [messagesPublics, setMessagesPublics] = useState(valeursInitiales.messages_publics_predefinis ?? '')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -178,6 +193,14 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
       piu_recu: piuRecu,
       priorite_declarant: prioriteDeclarant === '' ? null : Number(prioriteDeclarant),
       priorite_cellule_securite: prioriteCellule === '' ? null : Number(prioriteCellule),
+      declencheur: declencheur.trim() || null,
+      effets_directs: effetsDirects.trim() || null,
+      effets_cascade: effetsCascade.trim() || null,
+      signaux_faibles: signauxFaibles.trim() || null,
+      mesures_preventives: mesuresPreventives.trim() || null,
+      mesures_compensatoires: mesuresCompensatoires.trim() || null,
+      decisions_a_preparer: decisionsAPreparer.trim() || null,
+      messages_publics_predefinis: messagesPublics.trim() || null,
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -268,6 +291,57 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
         </div>
       </div>
 
+      <div className="pt-2 border-t border-slate-200">
+        <button
+          type="button"
+          onClick={() => setAfficherCascade((v) => !v)}
+          className="text-sm text-institution-700 font-medium hover:underline"
+        >
+          {afficherCascade ? '▾' : '▸'} Analyse cascade {afficherCascade ? '(masquer)' : '(déplier)'}
+        </button>
+      </div>
+
+      {afficherCascade && (
+        <div className="space-y-3 bg-institution-50/40 border border-institution-100 rounded-lg p-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Déclencheur</label>
+            <input value={declencheur} onChange={(e) => setDeclencheur(e.target.value)} placeholder="ex. Crue > seuil X à la station Y" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Effets directs</label>
+            <textarea value={effetsDirects} onChange={(e) => setEffetsDirects(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Effets de cascade potentiels</label>
+            <textarea value={effetsCascade} onChange={(e) => setEffetsCascade(e.target.value)} rows={2} placeholder="ex. coupure électrique -> pompes hors service -> aggravation inondation" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Signaux faibles à surveiller</label>
+            <textarea value={signauxFaibles} onChange={(e) => setSignauxFaibles(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Mesures préventives</label>
+              <textarea value={mesuresPreventives} onChange={(e) => setMesuresPreventives(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Mesures compensatoires</label>
+              <textarea value={mesuresCompensatoires} onChange={(e) => setMesuresCompensatoires(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Décisions à préparer</label>
+            <textarea value={decisionsAPreparer} onChange={(e) => setDecisionsAPreparer(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Messages publics pré-rédigés</label>
+            <textarea value={messagesPublics} onChange={(e) => setMessagesPublics(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          </div>
+
+          {valeursInitiales.id && <GestionFonctionsCritiques objetId={valeursInitiales.id} />}
+        </div>
+      )}
+
       {erreur && <p className="text-sm text-red-600">{erreur}</p>}
 
       <div className="flex gap-2">
@@ -277,5 +351,84 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
       </div>
     </form>
+  )
+}
+
+function GestionFonctionsCritiques({ objetId }) {
+  const { contexteId } = useAuth()
+  const { lignes: toutesFonctions } = useTableContexte('fonctions_critiques', contexteId, { tri: 'nom' })
+  const [liees, setLiees] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [selection, setSelection] = useState('')
+  const [erreur, setErreur] = useState(null)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('objets_a_risque_fonctions_critiques')
+      .select('fonction_critique_id, fonctions_critiques(id, nom, statut_actuel)')
+      .eq('objet_id', objetId)
+    if (error) setErreur(error.message)
+    else setLiees(data ?? [])
+    setChargement(false)
+  }, [objetId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function ajouter() {
+    if (!selection) return
+    const { error } = await supabase
+      .from('objets_a_risque_fonctions_critiques')
+      .insert({ objet_id: objetId, fonction_critique_id: selection })
+    if (error) setErreur(error.message)
+    else {
+      setSelection('')
+      await rafraichir()
+    }
+  }
+
+  async function retirer(fonctionId) {
+    await supabase
+      .from('objets_a_risque_fonctions_critiques')
+      .delete()
+      .eq('objet_id', objetId)
+      .eq('fonction_critique_id', fonctionId)
+    await rafraichir()
+  }
+
+  const disponibles = toutesFonctions.filter((f) => !liees.some((l) => l.fonction_critique_id === f.id))
+
+  return (
+    <div className="pt-2 border-t border-institution-100">
+      <p className="text-xs font-medium text-slate-600 mb-2">Fonctions critiques impactées</p>
+      {erreur && <p className="text-xs text-red-600 mb-1">{erreur}</p>}
+      {chargement ? (
+        <p className="text-xs text-slate-400">Chargement…</p>
+      ) : (
+        <>
+          {liees.length > 0 && (
+            <ul className="space-y-1 mb-2">
+              {liees.map((l) => (
+                <li key={l.fonction_critique_id} className="flex items-center justify-between text-xs bg-white rounded px-2.5 py-1.5 border border-slate-200">
+                  <span>{l.fonctions_critiques?.nom} <span className="text-slate-400">({l.fonctions_critiques?.statut_actuel})</span></span>
+                  <button type="button" onClick={() => retirer(l.fonction_critique_id)} className="text-slate-400 hover:text-red-600">✕</button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="flex gap-2">
+            <select value={selection} onChange={(e) => setSelection(e.target.value)} className="flex-1 rounded-md border border-slate-300 px-2 py-1 text-xs bg-white">
+              <option value="">Ajouter une fonction critique…</option>
+              {disponibles.map((f) => (
+                <option key={f.id} value={f.id}>{f.nom}</option>
+              ))}
+            </select>
+            <BoutonDiscret type="button" onClick={ajouter} disabled={!selection}>Ajouter</BoutonDiscret>
+          </div>
+        </>
+      )}
+    </div>
   )
 }
