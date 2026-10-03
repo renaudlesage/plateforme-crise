@@ -17,6 +17,16 @@ const CATEGORIES = [
   'reservoir_souple',
 ]
 
+const DIMENSIONS_CAPACITE = [
+  { valeur: 'doctrine', libelle: 'Doctrine' },
+  { valeur: 'organisation', libelle: 'Organisation' },
+  { valeur: 'entrainement', libelle: 'Entraînement' },
+  { valeur: 'materiel', libelle: 'Matériel' },
+  { valeur: 'leadership', libelle: 'Leadership' },
+  { valeur: 'personnel', libelle: 'Personnel' },
+  { valeur: 'interoperabilite', libelle: 'Interopérabilité' },
+]
+
 export default function Ressources() {
   const [onglet, setOnglet] = useState('ressources')
 
@@ -150,7 +160,14 @@ function ListeRessources() {
                       {r.type_public_prive}
                     </span>
                   </p>
-                  <p className="text-xs text-sourdine">{r.categorie.replace(/_/g, ' ')}</p>
+                  <p className="text-xs text-sourdine">
+                    {r.categorie.replace(/_/g, ' ')}
+                    {r.dimension_capacite && (
+                      <span className="jeton ml-2">
+                        {DIMENSIONS_CAPACITE.find((d) => d.valeur === r.dimension_capacite)?.libelle ?? r.dimension_capacite}
+                      </span>
+                    )}
+                  </p>
                   {r.attributs && Object.keys(r.attributs).length > 0 && (
                     <p className="text-xs text-sourdine mt-0.5 flex flex-wrap gap-x-3">
                       {Object.entries(r.attributs).map(([cle, valeur]) => (
@@ -195,6 +212,7 @@ function ListeRessources() {
 
 function FormulaireRessource({ contacts, conventions = [], valeursInitiales = {}, onValider, onAnnuler }) {
   const [categorie, setCategorie] = useState(valeursInitiales.categorie ?? CATEGORIES[0])
+  const [dimensionCapacite, setDimensionCapacite] = useState(valeursInitiales.dimension_capacite ?? '')
   const [typePublicPrive, setTypePublicPrive] = useState(valeursInitiales.type_public_prive ?? 'public')
   const [nom, setNom] = useState(valeursInitiales.nom ?? '')
   const [contactId, setContactId] = useState(valeursInitiales.contact_id ?? '')
@@ -235,6 +253,7 @@ function FormulaireRessource({ contacts, conventions = [], valeursInitiales = {}
       contact_id: contactId || null,
       convention_id: conventionId || null,
       attributs: attributsObjet,
+      dimension_capacite: dimensionCapacite || null,
       disponible_hors_contexte: disponibleHorsContexte,
       rayon_partage_km: rayonPartageKm === '' ? null : Number(rayonPartageKm),
       conditions_partage: conditionsPartage.trim() || null,
@@ -289,6 +308,18 @@ function FormulaireRessource({ contacts, conventions = [], valeursInitiales = {}
             ))}
           </select>
         </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">
+          Dimension de capacité <span className="text-sourdine">(cadre DOTMLPI-E — commission Schmitz)</span>
+        </label>
+        <select value={dimensionCapacite} onChange={(e) => setDimensionCapacite(e.target.value)} className="w-full sm:w-64">
+          <option value="">—</option>
+          {DIMENSIONS_CAPACITE.map((d) => (
+            <option key={d.valeur} value={d.valeur}>{d.libelle}</option>
+          ))}
+        </select>
       </div>
 
       <div>

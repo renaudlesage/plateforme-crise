@@ -43,6 +43,11 @@ export default function IncidentDetail() {
     chargerIncident()
   }
 
+  async function changerComplexiteType(valeur) {
+    await supabase.from('incidents').update({ complexite_type: valeur || null }).eq('id', id)
+    chargerIncident()
+  }
+
   if (chargementIncident) return <p className="text-sm text-sourdine">Chargement…</p>
   if (!incident) return <p className="text-sm text-chaud">Incident introuvable.</p>
 
@@ -85,6 +90,18 @@ export default function IncidentDetail() {
               ))}
             </select>
           </div>
+          <div className="flex items-center gap-2 mt-1.5">
+            <label className="text-xs text-sourdine" title="Commission Schmitz : A = problème unique, B = cascade multisectorielle">Complexité :</label>
+            <select
+              value={incident.complexite_type ?? ''}
+              onChange={(e) => changerComplexiteType(e.target.value)}
+              className=""
+            >
+              <option value="">—</option>
+              <option value="A">Type A — problème unique</option>
+              <option value="B">Type B — cascade multisectorielle</option>
+            </select>
+          </div>
         </div>
         {incident.statut !== 'cloture' && (
           <BoutonDiscret onClick={cloturer}>Clôturer l'incident</BoutonDiscret>
@@ -106,6 +123,12 @@ export default function IncidentDetail() {
       {PHASES_MODULES[incident.phase_cycle_vie]?.requisitions !== false && (
         <div className="mb-6">
           <SectionRequisitions incidentId={id} contexteId={contexteId} />
+        </div>
+      )}
+
+      {PHASES_MODULES[incident.phase_cycle_vie]?.retablissement !== false && (
+        <div className="mb-6">
+          <SectionSuiviRetablissement incidentId={id} contexteId={contexteId} />
         </div>
       )}
 
@@ -174,14 +197,28 @@ export default function IncidentDetail() {
 // en aval (levée/post-crise, où le travail devient REX plutôt
 // qu'opérationnel).
 const PHASES_MODULES = {
-  veille: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false },
-  vigilance: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false },
-  pre_alerte: { suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false },
+  veille: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false },
+  vigilance: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false },
+  pre_alerte: { suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false },
   alerte: { phase_transitoire: false, rex: false },
   phase_active: {},
   levee: { activation_30min: false, checklist: false, rex: false, seuils_action: false },
   post_crise: { activation_30min: false, escalade: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, seuils_action: false, requisitions: false },
 }
+
+const ETAPES_RETABLISSEMENT = [
+  { valeur: 'retablissement_post_crise', libelle: 'Rétablissement post-crise (services essentiels)' },
+  { valeur: 'rehabilitation', libelle: 'Réhabilitation (biens endommagés réparés)' },
+  { valeur: 'reconstruction', libelle: 'Reconstruction (biens détruits remplacés)' },
+  { valeur: 'developpement_resilience', libelle: 'Développement / résilience (Build Back Better)' },
+]
+
+const STATUTS_RETABLISSEMENT = [
+  { valeur: 'en_cours', libelle: 'En cours' },
+  { valeur: 'termine', libelle: 'Terminé' },
+  { valeur: 'suspendu', libelle: 'Suspendu' },
+  { valeur: 'abandonne', libelle: 'Abandonné' },
+]
 
 const STATUTS_DECLENCHEMENT_SEUIL = [
   { valeur: 'en_attente', libelle: 'En attente de décision' },
@@ -1081,6 +1118,233 @@ function FormulaireRequisition({ contacts, valeursInitiales = {}, onValider, onA
       <div>
         <label className="block text-xs font-medium text-sourdine mb-1">Lien vers le document du décret (URL)</label>
         <input value={documentDecretUrl} onChange={(e) => setDocumentDecretUrl(e.target.value)} placeholder="https://…" className="w-full" />
+      </div>
+
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
+
+      <div className="flex gap-2">
+        <BoutonPrincipal type="submit" disabled={enCours}>
+          {enCours ? 'Enregistrement…' : 'Enregistrer'}
+        </BoutonPrincipal>
+        <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
+      </div>
+    </form>
+  )
+}
+
+function SectionSuiviRetablissement({ incidentId, contexteId }) {
+  const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
+  const [etapes, setEtapes] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [erreur, setErreur] = useState(null)
+  const [enAjout, setEnAjout] = useState(false)
+  const [ligneEnEdition, setLigneEnEdition] = useState(null)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('suivi_retablissement')
+      .select('*, contacts(id, nom, prenom)')
+      .eq('incident_id', incidentId)
+      .order('date_debut', { ascending: true })
+    if (error) setErreur(error.message)
+    else setEtapes(data ?? [])
+    setChargement(false)
+  }, [incidentId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function creer(valeurs) {
+    const { error } = await supabase.from('suivi_retablissement').insert({ ...valeurs, incident_id: incidentId })
+    if (error) return { error }
+    await rafraichir()
+    return { error: null }
+  }
+
+  async function modifier(idEtape, valeurs) {
+    const { error } = await supabase.from('suivi_retablissement').update(valeurs).eq('id', idEtape)
+    if (error) return { error }
+    await rafraichir()
+    return { error: null }
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="font-medium text-encre">Suivi du rétablissement</h2>
+        {!enAjout && <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter une étape</BoutonPrincipal>}
+      </div>
+      <p className="text-xs text-sourdine mb-3">
+        L'"escargot du rétablissement" (commission Schmitz) : des étapes qui se chevauchent sur un
+        horizon pluriannuel — pas une seule phase post-crise. Reste suivi ici après la levée.
+      </p>
+
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
+
+      {enAjout && (
+        <div className="border border-trait rounded p-3 mb-3 bg-fond">
+          <FormulaireEtapeRetablissement
+            contacts={contacts}
+            onAnnuler={() => setEnAjout(false)}
+            onValider={async (valeurs) => {
+              const { error } = await creer(valeurs)
+              if (!error) setEnAjout(false)
+              return { error }
+            }}
+          />
+        </div>
+      )}
+
+      {chargement ? (
+        <p className="text-sm text-sourdine">Chargement…</p>
+      ) : etapes.length === 0 && !enAjout ? (
+        <p className="vide border border-dashed border-trait text-center p-4">Aucune étape de rétablissement suivie pour cet incident.</p>
+      ) : (
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden bg-surface">
+          {etapes.map((e) =>
+            ligneEnEdition === e.id ? (
+              <li key={e.id} className="p-3 bg-fond">
+                <FormulaireEtapeRetablissement
+                  contacts={contacts}
+                  valeursInitiales={e}
+                  onAnnuler={() => setLigneEnEdition(null)}
+                  onValider={async (valeurs) => {
+                    const { error } = await modifier(e.id, valeurs)
+                    if (!error) setLigneEnEdition(null)
+                    return { error }
+                  }}
+                />
+              </li>
+            ) : (
+              <li key={e.id} className="px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-encre">
+                      {ETAPES_RETABLISSEMENT.find((t) => t.valeur === e.etape)?.libelle ?? e.etape}
+                      <span
+                        className={`jeton ml-2 ${
+                          e.statut === 'termine' ? 'text-chaud' : e.statut === 'abandonne' ? 'text-sourdine' : 'text-info'
+                        }`}
+                      >
+                        {STATUTS_RETABLISSEMENT.find((s) => s.valeur === e.statut)?.libelle ?? e.statut}
+                      </span>
+                    </p>
+                    {e.description && <p className="text-xs text-sourdine mt-0.5">{e.description}</p>}
+                    <p className="text-xs text-sourdine mt-1">
+                      {e.date_debut && <>début {e.date_debut}</>}
+                      {e.date_fin_prevue && <> · prévu {e.date_fin_prevue}</>}
+                      {e.date_fin_reelle && <> · terminé {e.date_fin_reelle}</>}
+                      {e.contacts && <> · responsable {e.contacts.prenom} {e.contacts.nom}</>}
+                    </p>
+                    {(e.budget_estime != null || e.budget_depense != null) && (
+                      <p className="text-xs text-sourdine mt-0.5">
+                        budget : {e.budget_depense ?? 0} € dépensé / {e.budget_estime ?? '?'} € estimé
+                      </p>
+                    )}
+                  </div>
+                  <BoutonDiscret onClick={() => setLigneEnEdition(e.id)}>Modifier</BoutonDiscret>
+                </div>
+              </li>
+            )
+          )}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function FormulaireEtapeRetablissement({ contacts, valeursInitiales = {}, onValider, onAnnuler }) {
+  const [etape, setEtape] = useState(valeursInitiales.etape ?? 'retablissement_post_crise')
+  const [description, setDescription] = useState(valeursInitiales.description ?? '')
+  const [responsableContactId, setResponsableContactId] = useState(valeursInitiales.responsable_contact_id ?? '')
+  const [dateDebut, setDateDebut] = useState(valeursInitiales.date_debut ?? '')
+  const [dateFinPrevue, setDateFinPrevue] = useState(valeursInitiales.date_fin_prevue ?? '')
+  const [dateFinReelle, setDateFinReelle] = useState(valeursInitiales.date_fin_reelle ?? '')
+  const [statut, setStatut] = useState(valeursInitiales.statut ?? 'en_cours')
+  const [budgetEstime, setBudgetEstime] = useState(valeursInitiales.budget_estime ?? '')
+  const [budgetDepense, setBudgetDepense] = useState(valeursInitiales.budget_depense ?? '')
+  const [erreur, setErreur] = useState(null)
+  const [enCours, setEnCours] = useState(false)
+
+  async function soumettre(e) {
+    e.preventDefault()
+    setEnCours(true)
+    const { error } = await onValider({
+      etape,
+      description: description.trim() || null,
+      responsable_contact_id: responsableContactId || null,
+      date_debut: dateDebut || null,
+      date_fin_prevue: dateFinPrevue || null,
+      date_fin_reelle: dateFinReelle || null,
+      statut,
+      budget_estime: budgetEstime === '' ? null : Number(budgetEstime),
+      budget_depense: budgetDepense === '' ? null : Number(budgetDepense),
+    })
+    setEnCours(false)
+    if (error) setErreur(error.message)
+  }
+
+  return (
+    <form onSubmit={soumettre} className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Étape</label>
+          <select value={etape} onChange={(e) => setEtape(e.target.value)} className="w-full">
+            {ETAPES_RETABLISSEMENT.map((t) => (
+              <option key={t.valeur} value={t.valeur}>{t.libelle}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Statut</label>
+          <select value={statut} onChange={(e) => setStatut(e.target.value)} className="w-full">
+            {STATUTS_RETABLISSEMENT.map((s) => (
+              <option key={s.valeur} value={s.valeur}>{s.libelle}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Description</label>
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="w-full" />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Début</label>
+          <input type="date" value={dateDebut} onChange={(e) => setDateDebut(e.target.value)} className="w-full" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Fin prévue</label>
+          <input type="date" value={dateFinPrevue} onChange={(e) => setDateFinPrevue(e.target.value)} className="w-full" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Fin réelle</label>
+          <input type="date" value={dateFinReelle} onChange={(e) => setDateFinReelle(e.target.value)} className="w-full" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Responsable</label>
+          <select value={responsableContactId} onChange={(e) => setResponsableContactId(e.target.value)} className="w-full">
+            <option value="">—</option>
+            {contacts.map((c) => (
+              <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Budget estimé (€)</label>
+          <input type="number" min="0" step="0.01" value={budgetEstime} onChange={(e) => setBudgetEstime(e.target.value)} className="w-full" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Budget dépensé (€)</label>
+          <input type="number" min="0" step="0.01" value={budgetDepense} onChange={(e) => setBudgetDepense(e.target.value)} className="w-full" />
+        </div>
       </div>
 
       {erreur && <p className="text-sm text-chaud">{erreur}</p>}

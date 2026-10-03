@@ -99,6 +99,11 @@ export default function Incidents() {
                     <span className="jeton ml-2 text-info">
                       {PHASES_CYCLE_VIE.find((p) => p.valeur === i.phase_cycle_vie)?.libelle ?? i.phase_cycle_vie}
                     </span>
+                    {i.complexite_type && (
+                      <span className="jeton ml-2" title="Commission Schmitz : A = problème unique, B = cascade multisectorielle">
+                        Type {i.complexite_type}
+                      </span>
+                    )}
                   </p>
                   <p className="text-xs text-sourdine">
                     {i.type_evenement && <>{i.type_evenement} · </>}
@@ -123,6 +128,7 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
   const [niveauId, setNiveauId] = useState('')
   const [degreCriticite, setDegreCriticite] = useState('')
   const [phaseCycleVie, setPhaseCycleVie] = useState('alerte')
+  const [complexiteType, setComplexiteType] = useState('')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -136,6 +142,7 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
       niveau_actuel_id: niveauId || null,
       degre_criticite: degreCriticite === '' ? null : Number(degreCriticite),
       phase_cycle_vie: phaseCycleVie,
+      complexite_type: complexiteType || null,
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -191,6 +198,19 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
             ))}
           </select>
         </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Complexité (commission Schmitz)</label>
+        <p className="text-xs text-sourdine mb-1">
+          A = problème unique identifiable, réponse planifiable. B = problèmes en cascade,
+          déstabilisation sociétale, impact multisectoriel. Axe indépendant du type d'événement.
+        </p>
+        <select value={complexiteType} onChange={(e) => setComplexiteType(e.target.value)} className="w-full sm:w-64">
+          <option value="">—</option>
+          <option value="A">Type A — problème unique</option>
+          <option value="B">Type B — cascade multisectorielle</option>
+        </select>
       </div>
 
       {erreur && <p className="text-sm text-chaud">{erreur}</p>}
