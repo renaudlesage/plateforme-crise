@@ -3,6 +3,29 @@ import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
 
+const TYPES_EXERCICE = [
+  { valeur: 'visite_guidee', libelle: 'Visite guidée' },
+  { valeur: 'etude_cas', libelle: 'Étude de cas' },
+  { valeur: 'alerte', libelle: 'Exercice d’alerte' },
+  { valeur: 'farex', libelle: 'FarEx (fonctionnel partiel)' },
+  { valeur: 'ttx', libelle: 'TTX (table-top)' },
+  { valeur: 'cpx', libelle: 'CPX (poste de commandement)' },
+  { valeur: 'ftx', libelle: 'FTX (grandeur réelle)' },
+]
+
+const LIBELLE_TYPE_EXERCICE = Object.fromEntries(TYPES_EXERCICE.map((t) => [t.valeur, t.libelle]))
+
+function lignesVersJson(texte) {
+  const lignes = texte.split('\n').map((l) => l.trim()).filter(Boolean)
+  return lignes.length ? lignes : []
+}
+
+function jsonVersLignes(valeur) {
+  if (!valeur) return ''
+  if (Array.isArray(valeur)) return valeur.join('\n')
+  return ''
+}
+
 export default function Exercices() {
   const { contexteId } = useAuth()
   const {
@@ -67,7 +90,7 @@ export default function Exercices() {
               <li key={ex.id} className="flex items-start justify-between px-4 py-3 bg-white">
                 <div>
                   <p className="text-sm font-medium text-slate-900">
-                    {ex.type_exercice}
+                    {LIBELLE_TYPE_EXERCICE[ex.type_exercice] ?? ex.type_exercice}
                     {ex.valide_par_niveau_superieur && (
                       <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700">
                         validé niveau supérieur
@@ -80,6 +103,7 @@ export default function Exercices() {
                   </p>
                   {ex.objectifs && <p className="text-xs text-slate-400 mt-1">objectifs : {ex.objectifs}</p>}
                   {ex.evaluation && <p className="text-xs text-slate-400 mt-0.5">évaluation : {ex.evaluation}</p>}
+                  {ex.rapport_final && <p className="text-xs text-slate-400 mt-0.5">rapport final renseigné</p>}
                 </div>
                 <div className="flex gap-2 flex-shrink-0 ml-3">
                   <BoutonDiscret onClick={() => setLigneEnEdition(ex.id)}>Modifier</BoutonDiscret>
@@ -101,11 +125,15 @@ export default function Exercices() {
 }
 
 function FormulaireExercice({ valeursInitiales = {}, onValider, onAnnuler }) {
-  const [typeExercice, setTypeExercice] = useState(valeursInitiales.type_exercice ?? '')
+  const [typeExercice, setTypeExercice] = useState(valeursInitiales.type_exercice ?? TYPES_EXERCICE[0].valeur)
   const [datePlanifiee, setDatePlanifiee] = useState(valeursInitiales.date_planifiee ?? '')
   const [dateRealisee, setDateRealisee] = useState(valeursInitiales.date_realisee ?? '')
   const [objectifs, setObjectifs] = useState(valeursInitiales.objectifs ?? '')
+  const [objectifsStructures, setObjectifsStructures] = useState(jsonVersLignes(valeursInitiales.objectifs_jsonb))
+  const [mel, setMel] = useState(jsonVersLignes(valeursInitiales.mel))
+  const [consignesSecurite, setConsignesSecurite] = useState(valeursInitiales.consignes_securite ?? '')
   const [evaluation, setEvaluation] = useState(valeursInitiales.evaluation ?? '')
+  const [rapportFinal, setRapportFinal] = useState(valeursInitiales.rapport_final ?? '')
   const [valide, setValide] = useState(valeursInitiales.valide_par_niveau_superieur ?? false)
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
@@ -114,11 +142,15 @@ function FormulaireExercice({ valeursInitiales = {}, onValider, onAnnuler }) {
     e.preventDefault()
     setEnCours(true)
     const { error } = await onValider({
-      type_exercice: typeExercice.trim(),
+      type_exercice: typeExercice,
       date_planifiee: datePlanifiee || null,
       date_realisee: dateRealisee || null,
       objectifs: objectifs.trim() || null,
+      objectifs_jsonb: lignesVersJson(objectifsStructures),
+      mel: lignesVersJson(mel),
+      consignes_securite: consignesSecurite.trim() || null,
       evaluation: evaluation.trim() || null,
+      rapport_final: rapportFinal.trim() || null,
       valide_par_niveau_superieur: valide,
     })
     setEnCours(false)
@@ -129,13 +161,15 @@ function FormulaireExercice({ valeursInitiales = {}, onValider, onAnnuler }) {
     <form onSubmit={soumettre} className="border border-slate-200 rounded-lg p-4 mb-4 bg-slate-50 space-y-3">
       <div>
         <label className="block text-xs font-medium text-slate-600 mb-1">Type d'exercice</label>
-        <input
-          required
+        <select
           value={typeExercice}
           onChange={(e) => setTypeExercice(e.target.value)}
-          placeholder="ex. Exercice cadre inondation"
-          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
-        />
+          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white"
+        >
+          {TYPES_EXERCICE.map((t) => (
+            <option key={t.valeur} value={t.valeur}>{t.libelle}</option>
+          ))}
+        </select>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -150,13 +184,34 @@ function FormulaireExercice({ valeursInitiales = {}, onValider, onAnnuler }) {
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Objectifs</label>
+        <label className="block text-xs font-medium text-slate-600 mb-1">Objectifs (résumé libre)</label>
         <textarea value={objectifs} onChange={(e) => setObjectifs(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Évaluation</label>
+        <label className="block text-xs font-medium text-slate-600 mb-1">Objectifs structurés (un par ligne)</label>
+        <textarea value={objectifsStructures} onChange={(e) => setObjectifsStructures(e.target.value)} rows={3} placeholder={'ex.\nTester l’activation du Comité de Coordination\nValider le délai de notification des disciplines'} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1">MEL — Main Events List (un événement par ligne)</label>
+        <textarea value={mel} onChange={(e) => setMel(e.target.value)} rows={3} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1">Consignes de sécurité</label>
+        <textarea value={consignesSecurite} onChange={(e) => setConsignesSecurite(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1">Évaluation (synthèse)</label>
         <textarea value={evaluation} onChange={(e) => setEvaluation(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1">Rapport final</label>
+        <p className="text-xs text-slate-400 mb-1">Jugement sur le dispositif uniquement — jamais nominatif sur une personne.</p>
+        <textarea value={rapportFinal} onChange={(e) => setRapportFinal(e.target.value)} rows={3} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
       </div>
 
       <label className="flex items-center gap-2 text-sm text-slate-700">

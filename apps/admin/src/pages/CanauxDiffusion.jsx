@@ -7,6 +7,12 @@ const TYPES = [
   { valeur: 'webhook', libelle: 'Webhook (site communal, CMS...)' },
   { valeur: 'rss', libelle: 'Flux RSS' },
   { valeur: 'facebook', libelle: 'Facebook' },
+  { valeur: 'sms', libelle: 'SMS' },
+  { valeur: 'email', libelle: 'E-mail' },
+  { valeur: 'radio_partenaire', libelle: 'Radio partenaire' },
+  { valeur: 'media_tv', libelle: 'Média TV' },
+  { valeur: 'croix_rouge', libelle: 'Croix-Rouge' },
+  { valeur: 'scouts', libelle: 'Scouts' },
   { valeur: 'autre', libelle: 'Autre' },
 ]
 

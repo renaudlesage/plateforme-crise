@@ -19,6 +19,15 @@ const COMPETENCES_CONNUES = [
   'Cuisine / restauration',
 ]
 
+const LIBELLE_MISSION = {
+  appui_administratif: 'Appui administratif',
+  communication: 'Communication',
+  evacuation: 'Évacuation',
+  logistique: 'Logistique',
+  accueil: 'Accueil',
+  prise_en_charge: 'Prise en charge',
+}
+
 export default function BenevolesEntraide() {
   const { contexteId } = useAuth()
   const { lignes: benevoles, chargement, erreur, modifier } = useTableContexte(
@@ -109,6 +118,11 @@ export default function BenevolesEntraide() {
                   )}
                   {b.disponibilite && (
                     <p className="text-xs text-slate-500 mt-0.5">Disponibilité : {b.disponibilite}</p>
+                  )}
+                  {b.missions_possibles?.length > 0 && (
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Missions possibles : {b.missions_possibles.map((m) => LIBELLE_MISSION[m] ?? m).join(', ')}
+                    </p>
                   )}
                   <p className="text-xs text-slate-400 mt-1">
                     inscrit le {new Date(b.date_inscription).toLocaleDateString('fr-BE')}

@@ -18,6 +18,7 @@ export default function SeuilsAction() {
   })
   const { lignes: objetsRisque } = useTableContexte('objets_a_risque', contexteId, { tri: 'identification' })
   const { lignes: roles } = useTableContexte('roles', contexteId, { tri: 'libelle' })
+  const { lignes: ressources } = useTableContexte('ressources', contexteId, { tri: 'nom' })
 
   const [enAjout, setEnAjout] = useState(false)
   const [ligneEnEdition, setLigneEnEdition] = useState(null)
@@ -43,6 +44,7 @@ export default function SeuilsAction() {
         <FormulaireSeuil
           objetsRisque={objetsRisque}
           roles={roles}
+          ressources={ressources}
           prioriteParDefaut={seuils.length + 1}
           onAnnuler={() => setEnAjout(false)}
           onValider={async (valeurs) => {
@@ -67,6 +69,7 @@ export default function SeuilsAction() {
                 <FormulaireSeuil
                   objetsRisque={objetsRisque}
                   roles={roles}
+                  ressources={ressources}
                   valeursInitiales={s}
                   onAnnuler={() => setLigneEnEdition(null)}
                   onValider={async (valeurs) => {
@@ -94,6 +97,11 @@ export default function SeuilsAction() {
                       {s.roles?.libelle && <>responsable : {s.roles.libelle}</>}
                       {s.objets_a_risque?.identification && <> · objet : {s.objets_a_risque.identification}</>}
                     </p>
+                    {s.action_degradee && (
+                      <p className="text-xs text-amber-700 mt-0.5">
+                        <strong>si ressource indisponible :</strong> {s.action_degradee}
+                      </p>
+                    )}
                   </div>
                   <div className="flex gap-2 flex-shrink-0 ml-3">
                     <BoutonDiscret onClick={() => setLigneEnEdition(s.id)}>Modifier</BoutonDiscret>
@@ -115,7 +123,7 @@ export default function SeuilsAction() {
   )
 }
 
-function FormulaireSeuil({ objetsRisque, roles, valeursInitiales = {}, prioriteParDefaut = 1, onValider, onAnnuler }) {
+function FormulaireSeuil({ objetsRisque, roles, ressources = [], valeursInitiales = {}, prioriteParDefaut = 1, onValider, onAnnuler }) {
   const [libelle, setLibelle] = useState(valeursInitiales.libelle ?? '')
   const [seuilDescription, setSeuilDescription] = useState(valeursInitiales.seuil_description ?? '')
   const [action, setAction] = useState(valeursInitiales.action ?? '')
@@ -123,6 +131,8 @@ function FormulaireSeuil({ objetsRisque, roles, valeursInitiales = {}, prioriteP
   const [objetRisqueId, setObjetRisqueId] = useState(valeursInitiales.objet_risque_id ?? '')
   const [ordre, setOrdre] = useState(valeursInitiales.ordre ?? prioriteParDefaut)
   const [actif, setActif] = useState(valeursInitiales.actif ?? true)
+  const [ressourceSubstitutionId, setRessourceSubstitutionId] = useState(valeursInitiales.ressource_substitution_id ?? '')
+  const [actionDegradee, setActionDegradee] = useState(valeursInitiales.action_degradee ?? '')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -137,6 +147,8 @@ function FormulaireSeuil({ objetsRisque, roles, valeursInitiales = {}, prioriteP
       objet_risque_id: objetRisqueId || null,
       ordre: Number(ordre),
       actif,
+      ressource_substitution_id: ressourceSubstitutionId || null,
+      action_degradee: actionDegradee.trim() || null,
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -207,6 +219,25 @@ function FormulaireSeuil({ objetsRisque, roles, valeursInitiales = {}, prioriteP
         <input type="checkbox" checked={actif} onChange={(e) => setActif(e.target.checked)} />
         Actif
       </label>
+
+      <div className="space-y-2 bg-amber-50/40 border border-amber-100 rounded-lg p-3">
+        <p className="text-xs font-medium text-slate-600">Repli en cascade si la ressource principale est indisponible</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Ressource de substitution</label>
+            <select value={ressourceSubstitutionId} onChange={(e) => setRessourceSubstitutionId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+              <option value="">—</option>
+              {ressources.map((r) => (
+                <option key={r.id} value={r.id}>{r.nom}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Action dégradée</label>
+            <input value={actionDegradee} onChange={(e) => setActionDegradee(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          </div>
+        </div>
+      </div>
 
       {erreur && <p className="text-sm text-red-600">{erreur}</p>}
 

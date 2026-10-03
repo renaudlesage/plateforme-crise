@@ -97,6 +97,11 @@ export default function CentresAccueil() {
                   {c.specificites && (
                     <p className="text-xs text-slate-400 mt-0.5 italic">{c.specificites}</p>
                   )}
+                  {c.dons_acceptes && (
+                    <p className="text-xs text-emerald-700 mt-0.5">
+                      dons acceptés{c.seuil_ouverture_dons ? ` — ouvert si : ${c.seuil_ouverture_dons}` : ''}
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2 flex-shrink-0 ml-3">
                   <BoutonDiscret onClick={() => setLigneEnEdition(c.id)}>Modifier</BoutonDiscret>
@@ -132,6 +137,9 @@ function FormulaireCentre({ contacts, valeursInitiales = {}, onValider, onAnnule
   const [eclairage, setEclairage] = useState(valeursInitiales.eclairage_exterieur ?? false)
   const [specificites, setSpecificites] = useState(valeursInitiales.specificites ?? '')
   const [contactId, setContactId] = useState(valeursInitiales.contact_id ?? '')
+  const [donsAcceptes, setDonsAcceptes] = useState(valeursInitiales.dons_acceptes ?? false)
+  const [seuilOuvertureDons, setSeuilOuvertureDons] = useState(valeursInitiales.seuil_ouverture_dons ?? '')
+  const [seuilFermetureDons, setSeuilFermetureDons] = useState(valeursInitiales.seuil_fermeture_dons ?? '')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -153,6 +161,9 @@ function FormulaireCentre({ contacts, valeursInitiales = {}, onValider, onAnnule
       eclairage_exterieur: eclairage,
       specificites: specificites.trim() || null,
       contact_id: contactId || null,
+      dons_acceptes: donsAcceptes,
+      seuil_ouverture_dons: seuilOuvertureDons.trim() || null,
+      seuil_fermeture_dons: seuilFermetureDons.trim() || null,
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -252,6 +263,25 @@ function FormulaireCentre({ contacts, valeursInitiales = {}, onValider, onAnnule
           rows={2}
           className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
         />
+      </div>
+
+      <div className="space-y-2 bg-emerald-50/40 border border-emerald-100 rounded-lg p-3">
+        <label className="flex items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" checked={donsAcceptes} onChange={(e) => setDonsAcceptes(e.target.checked)} />
+          Flux de dons accepté sur ce centre
+        </label>
+        {donsAcceptes && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Seuil d'ouverture des dons</label>
+              <input value={seuilOuvertureDons} onChange={(e) => setSeuilOuvertureDons(e.target.value)} placeholder="ex. dès 20 sinistrés accueillis" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Seuil de fermeture/saturation</label>
+              <input value={seuilFermetureDons} onChange={(e) => setSeuilFermetureDons(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+            </div>
+          </div>
+        )}
       </div>
 
       {erreur && <p className="text-sm text-red-600">{erreur}</p>}

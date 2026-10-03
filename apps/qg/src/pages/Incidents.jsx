@@ -81,6 +81,11 @@ export default function Incidents() {
                     >
                       {LIBELLE_STATUT[i.statut] ?? i.statut}
                     </span>
+                    {i.degre_criticite != null && (
+                      <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-slate-900 text-white">
+                        degré {i.degre_criticite}
+                      </span>
+                    )}
                   </p>
                   <p className="text-xs text-slate-500">
                     {i.type_evenement && <>{i.type_evenement} · </>}
@@ -103,6 +108,7 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
   const [nom, setNom] = useState('')
   const [typeEvenement, setTypeEvenement] = useState('')
   const [niveauId, setNiveauId] = useState('')
+  const [degreCriticite, setDegreCriticite] = useState('')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -114,6 +120,7 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
       type_evenement: typeEvenement.trim() || null,
       statut: 'en_cours',
       niveau_actuel_id: niveauId || null,
+      degre_criticite: degreCriticite === '' ? null : Number(degreCriticite),
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -146,6 +153,18 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
             ))}
           </select>
         </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1">Degré de criticité (1-4, PRGC)</label>
+        <p className="text-xs text-slate-400 mb-1">Axe indépendant du niveau d'escalade — à ajuster au fil de l'incident.</p>
+        <select value={degreCriticite} onChange={(e) => setDegreCriticite(e.target.value)} className="w-full sm:w-48 rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <option value="">—</option>
+          <option value="1">1 — faible</option>
+          <option value="2">2 — modéré</option>
+          <option value="3">3 — sérieux</option>
+          <option value="4">4 — majeur</option>
+        </select>
       </div>
 
       {erreur && <p className="text-sm text-red-600">{erreur}</p>}

@@ -77,7 +77,7 @@ function IncidentActif({ contexteId, roleId }) {
     setChargement(true)
     const { data } = await supabase
       .from('incidents')
-      .select('id, nom, type_evenement, statut')
+      .select('id, nom, type_evenement, statut, degre_criticite')
       .eq('contexte_id', contexteId)
       .eq('statut', 'en_cours')
       .order('date_debut', { ascending: false })
@@ -104,7 +104,14 @@ function IncidentActif({ contexteId, roleId }) {
   return (
     <div className="space-y-6">
       <div className="bg-red-50 border border-red-100 rounded-lg px-4 py-3">
-        <p className="text-sm font-medium text-red-800">{incident.nom}</p>
+        <p className="text-sm font-medium text-red-800">
+          {incident.nom}
+          {incident.degre_criticite != null && (
+            <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-red-900 text-white">
+              degré {incident.degre_criticite}
+            </span>
+          )}
+        </p>
         {incident.type_evenement && <p className="text-xs text-red-600">{incident.type_evenement}</p>}
       </div>
 

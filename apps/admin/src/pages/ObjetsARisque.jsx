@@ -16,6 +16,12 @@ const CATEGORIES = [
 
 const LIBELLE_CATEGORIE = Object.fromEntries(CATEGORIES.map((c) => [c.valeur, c.libelle]))
 
+const NIVEAUX_CONFIDENTIALITE = [
+  { valeur: 'public', libelle: 'Public' },
+  { valeur: 'restreint', libelle: 'Restreint' },
+  { valeur: 'confidentiel', libelle: 'Confidentiel' },
+]
+
 export default function ObjetsARisque() {
   const { contexteId } = useAuth()
   const {
@@ -152,6 +158,10 @@ export default function ObjetsARisque() {
                     {o.priorite_cellule_securite != null && (
                       <span>priorité cellule sécurité : {o.priorite_cellule_securite}</span>
                     )}
+                    {o.ppd_requis && <span className="text-amber-600">PPD requis</span>}
+                    {o.niveau_confidentialite && o.niveau_confidentialite !== 'restreint' && (
+                      <span>confidentialité : {o.niveau_confidentialite}</span>
+                    )}
                   </p>
                 </div>
                 <div className="flex gap-2 flex-shrink-0 ml-3">
@@ -188,6 +198,10 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
   const [piuRecu, setPiuRecu] = useState(valeursInitiales.piu_recu ?? false)
   const [prioriteDeclarant, setPrioriteDeclarant] = useState(valeursInitiales.priorite_declarant ?? '')
   const [prioriteCellule, setPrioriteCellule] = useState(valeursInitiales.priorite_cellule_securite ?? '')
+  const [niveauConfidentialite, setNiveauConfidentialite] = useState(valeursInitiales.niveau_confidentialite ?? 'restreint')
+  const [ppdRequis, setPpdRequis] = useState(valeursInitiales.ppd_requis ?? false)
+  const [ppdConditions, setPpdConditions] = useState(valeursInitiales.ppd_conditions ?? '')
+  const [ppdDistanceSecurite, setPpdDistanceSecurite] = useState(valeursInitiales.ppd_distance_securite_m ?? '')
   const [afficherCascade, setAfficherCascade] = useState(false)
   const [declencheur, setDeclencheur] = useState(valeursInitiales.declencheur ?? '')
   const [effetsDirects, setEffetsDirects] = useState(valeursInitiales.effets_directs ?? '')
@@ -218,6 +232,10 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
       piu_recu: piuRecu,
       priorite_declarant: prioriteDeclarant === '' ? null : Number(prioriteDeclarant),
       priorite_cellule_securite: prioriteCellule === '' ? null : Number(prioriteCellule),
+      niveau_confidentialite: niveauConfidentialite,
+      ppd_requis: ppdRequis,
+      ppd_conditions: ppdConditions.trim() || null,
+      ppd_distance_securite_m: ppdDistanceSecurite === '' ? null : Number(ppdDistanceSecurite),
       declencheur: declencheur.trim() || null,
       effets_directs: effetsDirects.trim() || null,
       effets_cascade: effetsCascade.trim() || null,
@@ -305,7 +323,7 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
         Plan interne d'urgence (PIU) reçu de l'exploitant
       </label>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1">Priorité déclarant (1-20)</label>
           <input type="number" min="1" max="20" value={prioriteDeclarant} onChange={(e) => setPrioriteDeclarant(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
@@ -314,6 +332,33 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
           <label className="block text-xs font-medium text-slate-600 mb-1">Priorité cellule sécurité (1-20)</label>
           <input type="number" min="1" max="20" value={prioriteCellule} onChange={(e) => setPrioriteCellule(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
         </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">Niveau de confidentialité</label>
+          <select value={niveauConfidentialite} onChange={(e) => setNiveauConfidentialite(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+            {NIVEAUX_CONFIDENTIALITE.map((n) => (
+              <option key={n.valeur} value={n.valeur}>{n.libelle}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="space-y-2 bg-amber-50/40 border border-amber-100 rounded-lg p-3">
+        <label className="flex items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" checked={ppdRequis} onChange={(e) => setPpdRequis(e.target.checked)} />
+          Plan particulier d'urgence et d'intervention (PPUI) requis
+        </label>
+        {ppdRequis && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Conditions de déclenchement du PPUI</label>
+              <textarea value={ppdConditions} onChange={(e) => setPpdConditions(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Distance de sécurité (m)</label>
+              <input type="number" value={ppdDistanceSecurite} onChange={(e) => setPpdDistanceSecurite(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="pt-2 border-t border-slate-200">

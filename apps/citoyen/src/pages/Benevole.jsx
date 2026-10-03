@@ -14,6 +14,15 @@ const COMPETENCES_DISPONIBLES = [
   'Cuisine / restauration',
 ]
 
+const MISSIONS_DISPONIBLES = [
+  { valeur: 'appui_administratif', libelle: 'Appui administratif' },
+  { valeur: 'communication', libelle: 'Communication / information' },
+  { valeur: 'evacuation', libelle: 'Aide à l’évacuation' },
+  { valeur: 'logistique', libelle: 'Logistique' },
+  { valeur: 'accueil', libelle: 'Accueil de sinistrés' },
+  { valeur: 'prise_en_charge', libelle: 'Prise en charge de personnes vulnérables' },
+]
+
 export default function Benevole() {
   const contexteId = localStorage.getItem(STORAGE_KEY_CONTEXTE) || ''
   const [contexteNom, setContexteNom] = useState('')
@@ -38,6 +47,7 @@ export default function Benevole() {
   const [adresse, setAdresse] = useState('')
   const [competences, setCompetences] = useState([])
   const [competencesAutre, setCompetencesAutre] = useState('')
+  const [missionsPossibles, setMissionsPossibles] = useState([])
   const [disponibilite, setDisponibilite] = useState('')
   const [consentement, setConsentement] = useState(false)
   const [enCours, setEnCours] = useState(false)
@@ -46,6 +56,10 @@ export default function Benevole() {
 
   function basculerCompetence(c) {
     setCompetences((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]))
+  }
+
+  function basculerMission(m) {
+    setMissionsPossibles((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]))
   }
 
   async function soumettre(e) {
@@ -66,6 +80,7 @@ export default function Benevole() {
       adresse: adresse.trim() || null,
       competences,
       competences_autre: competencesAutre.trim() || null,
+      missions_possibles: missionsPossibles,
       disponibilite: disponibilite.trim() || null,
       consentement_rgpd: true,
     })
@@ -160,6 +175,18 @@ export default function Benevole() {
               placeholder="Autre (précisez)"
               className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-2">Missions que vous seriez prêt·e à assurer</label>
+            <div className="space-y-2">
+              {MISSIONS_DISPONIBLES.map((m) => (
+                <label key={m.valeur} className="flex items-center gap-2 text-sm text-slate-700">
+                  <input type="checkbox" checked={missionsPossibles.includes(m.valeur)} onChange={() => basculerMission(m.valeur)} />
+                  {m.libelle}
+                </label>
+              ))}
+            </div>
           </div>
 
           <div>

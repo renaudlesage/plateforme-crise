@@ -91,6 +91,14 @@ export default function InstancesCoordination() {
                       {i.frequence_reunion && <span>fréquence : {i.frequence_reunion}</span>}
                       {i.roles?.libelle && <span>présidée par : {i.roles.libelle}</span>}
                       {i.mode_deliberation && <span>mode : {i.mode_deliberation}</span>}
+                      {i.active_depuis_degre_criticite != null && (
+                        <span>s'active à partir du degré {i.active_depuis_degre_criticite}</span>
+                      )}
+                      {i.statut_activation && i.statut_activation !== 'veille' && (
+                        <span className={i.statut_activation === 'active' ? 'text-emerald-700 font-medium' : 'text-slate-400'}>
+                          {i.statut_activation === 'active' ? 'actuellement active' : 'désactivée'}
+                        </span>
+                      )}
                     </p>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
@@ -124,6 +132,7 @@ function FormulaireInstance({ roles, niveaux, valeursInitiales = {}, onValider, 
   const [modeDeliberation, setModeDeliberation] = useState(valeursInitiales.mode_deliberation ?? '')
   const [quorumRegle, setQuorumRegle] = useState(valeursInitiales.quorum_regle ?? '')
   const [presidentRoleId, setPresidentRoleId] = useState(valeursInitiales.president_role_id ?? '')
+  const [activeDepuisDegre, setActiveDepuisDegre] = useState(valeursInitiales.active_depuis_degre_criticite ?? '')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -137,6 +146,7 @@ function FormulaireInstance({ roles, niveaux, valeursInitiales = {}, onValider, 
       mode_deliberation: modeDeliberation.trim() || null,
       quorum_regle: quorumRegle.trim() || null,
       president_role_id: presidentRoleId || null,
+      active_depuis_degre_criticite: activeDepuisDegre === '' ? null : Number(activeDepuisDegre),
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -189,6 +199,12 @@ function FormulaireInstance({ roles, niveaux, valeursInitiales = {}, onValider, 
           <label className="block text-xs font-medium text-slate-600 mb-1">Règle de quorum</label>
           <input value={quorumRegle} onChange={(e) => setQuorumRegle(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
         </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1">S'active à partir du degré de criticité (1-4)</label>
+        <p className="text-xs text-slate-400 mb-1">Cascade d'activation des organes de crise selon le degré PRGC — laisser vide si l'activation n'est pas liée à la criticité.</p>
+        <input type="number" min="1" max="4" value={activeDepuisDegre} onChange={(e) => setActiveDepuisDegre(e.target.value)} className="w-full sm:w-32 rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
       </div>
 
       {erreur && <p className="text-sm text-red-600">{erreur}</p>}

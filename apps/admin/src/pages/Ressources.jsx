@@ -14,6 +14,7 @@ const CATEGORIES = [
   'hebergement',
   'interprete',
   'personnel',
+  'reservoir_souple',
 ]
 
 export default function Ressources() {
@@ -167,6 +168,11 @@ function ListeRessources() {
                       contact : {r.contacts.prenom} {r.contacts.nom}
                     </p>
                   )}
+                  {r.disponible_hors_contexte && (
+                    <p className="text-xs text-institution-700 mt-0.5">
+                      partageable hors contexte{r.rayon_partage_km ? ` (rayon ${r.rayon_partage_km} km)` : ''}
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2 flex-shrink-0 ml-3">
                   <BoutonDiscret onClick={() => setLigneEnEdition(r.id)}>Modifier</BoutonDiscret>
@@ -197,6 +203,9 @@ function FormulaireRessource({ contacts, valeursInitiales = {}, onValider, onAnn
     const entries = Object.entries(initial)
     return entries.length > 0 ? entries.map(([cle, valeur]) => ({ cle, valeur: String(valeur) })) : [{ cle: '', valeur: '' }]
   })
+  const [disponibleHorsContexte, setDisponibleHorsContexte] = useState(valeursInitiales.disponible_hors_contexte ?? false)
+  const [rayonPartageKm, setRayonPartageKm] = useState(valeursInitiales.rayon_partage_km ?? '')
+  const [conditionsPartage, setConditionsPartage] = useState(valeursInitiales.conditions_partage ?? '')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -224,6 +233,9 @@ function FormulaireRessource({ contacts, valeursInitiales = {}, onValider, onAnn
       nom: nom.trim(),
       contact_id: contactId || null,
       attributs: attributsObjet,
+      disponible_hors_contexte: disponibleHorsContexte,
+      rayon_partage_km: rayonPartageKm === '' ? null : Number(rayonPartageKm),
+      conditions_partage: conditionsPartage.trim() || null,
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -303,6 +315,25 @@ function FormulaireRessource({ contacts, valeursInitiales = {}, onValider, onAnn
         <button type="button" onClick={ajouterAttribut} className="mt-2 text-xs text-slate-500 hover:text-slate-800 underline">
           + ajouter un attribut
         </button>
+      </div>
+
+      <div className="space-y-2 bg-institution-50/40 border border-institution-100 rounded-lg p-3">
+        <label className="flex items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" checked={disponibleHorsContexte} onChange={(e) => setDisponibleHorsContexte(e.target.checked)} />
+          Partageable avec les contextes voisins (coordination inter-zone)
+        </label>
+        {disponibleHorsContexte && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Rayon de partage (km)</label>
+              <input type="number" value={rayonPartageKm} onChange={(e) => setRayonPartageKm(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Conditions de partage</label>
+              <input value={conditionsPartage} onChange={(e) => setConditionsPartage(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+            </div>
+          </div>
+        )}
       </div>
 
       {erreur && <p className="text-sm text-red-600">{erreur}</p>}

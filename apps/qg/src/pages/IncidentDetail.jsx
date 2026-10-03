@@ -32,6 +32,11 @@ export default function IncidentDetail() {
     chargerIncident()
   }
 
+  async function changerDegreCriticite(valeur) {
+    await supabase.from('incidents').update({ degre_criticite: valeur === '' ? null : Number(valeur) }).eq('id', id)
+    chargerIncident()
+  }
+
   if (chargementIncident) return <p className="text-sm text-slate-400">Chargement…</p>
   if (!incident) return <p className="text-sm text-red-600">Incident introuvable.</p>
 
@@ -46,6 +51,20 @@ export default function IncidentDetail() {
             {incident.type_evenement && <>{incident.type_evenement} · </>}
             {incident.niveaux_escalade?.libelle} · statut : {incident.statut}
           </p>
+          <div className="flex items-center gap-2 mt-1.5">
+            <label className="text-xs text-slate-500">Degré de criticité :</label>
+            <select
+              value={incident.degre_criticite ?? ''}
+              onChange={(e) => changerDegreCriticite(e.target.value)}
+              className="rounded-md border border-slate-300 px-2 py-1 text-xs bg-white"
+            >
+              <option value="">—</option>
+              <option value="1">1 — faible</option>
+              <option value="2">2 — modéré</option>
+              <option value="3">3 — sérieux</option>
+              <option value="4">4 — majeur</option>
+            </select>
+          </div>
         </div>
         {incident.statut !== 'cloture' && (
           <BoutonDiscret onClick={cloturer}>Clôturer l'incident</BoutonDiscret>
