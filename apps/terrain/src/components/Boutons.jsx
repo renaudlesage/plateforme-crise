@@ -1,20 +1,17 @@
-export function BoutonDiscret({ children, ...props }) {
+// Boutons du socle Eventware 2.0 : classes natives de components/bundle.css
+// (button, .principal, .discret), pas des utilitaires Tailwind. Rayon,
+// bordure et couleurs suivent déjà les deux thèmes via les tokens.
+export function BoutonDiscret({ children, className = '', ...props }) {
   return (
-    <button
-      {...props}
-      className="text-xs px-2 py-1 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors disabled:opacity-40"
-    >
+    <button {...props} className={`discret ${className}`.trim()}>
       {children}
     </button>
   )
 }
 
-export function BoutonPrincipal({ children, ...props }) {
+export function BoutonPrincipal({ children, className = '', ...props }) {
   return (
-    <button
-      {...props}
-      className="text-sm px-3 py-1.5 rounded-md bg-slate-900 text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
-    >
+    <button {...props} className={`principal ${className}`.trim()}>
       {children}
     </button>
   )

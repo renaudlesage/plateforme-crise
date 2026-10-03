@@ -1,0 +1,2277 @@
+/* ===================================================================
+   EVENTWARE 2.0 — feuille de composants
+   -------------------------------------------------------------------
+   Copie conforme de src/styles.css (renaudlesage/eventware-2.0,
+   main, état du 19/09/2026 — jeton on-teinte, bordure des champs en trait-fort), amputée du seul bloc :root / thèmes : ces variables
+   vivent désormais dans tokens.json et sont compilées en tokens.css,
+   chargée avant ce fichier.
+
+   Les deux piles de police sont déclarées dans tokens.json sous
+   type.families (clés `texte` et `mono`) et compilées en --font-texte
+   et --font-mono. Le code du dépôt appelle --texte et --mono : le pont
+   ci-dessous relie les deux, et rien d'autre n'est ajouté.
+   =================================================================== */
+
+:root {
+  --texte: var(--font-texte);
+  --mono: var(--font-mono);
+}
+
+/* ===================================================================
+   EVENTWARE 2.0 — feuille de style
+   -------------------------------------------------------------------
+   Parti pris : un tableau de bord d'instruments, pas un site.
+
+   Deux thèmes, pour une raison opérationnelle et non esthétique :
+   le QG tourne la nuit sous chapiteau, où un fond clair aveugle ;
+   le terrain tourne en plein soleil, où un fond sombre est illisible.
+
+   La couleur ne décore rien : chaque teinte porte un sens fixe —
+   phase, priorité, niveau d'alerte, état du réseau. Aucune couleur
+   « de marque » ne vient concurrencer ces significations.
+   =================================================================== */
+
+
+* { box-sizing: border-box; }
+
+html, body { background: var(--fond); }
+
+body {
+  margin: 0;
+  color: var(--encre);
+  font-family: var(--texte);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+:focus-visible {
+  outline: 2px solid var(--etat-info);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+.attente { padding: 40px 20px; color: var(--sourdine); }
+
+/* ---------------- Marque ---------------- */
+
+.marque {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.marque-nom {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-size: 17px;
+}
+
+.marque-suite {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--sourdine);
+}
+
+.marque.compacte .marque-nom { font-size: 14px; }
+
+/* Sur petit écran, la marque cède la place aux contrôles utiles */
+@media (max-width: 700px) {
+  .marque.compacte { display: none; }
+}
+
+/* ---------------- Accès ---------------- */
+
+.acces {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.acces-carte {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  padding: 28px 24px;
+}
+
+.acces-role {
+  margin: 2px 0 22px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sourdine);
+}
+
+.acces-carte button { width: 100%; margin-bottom: 8px; }
+
+/* ---------------- Coquille ---------------- */
+
+.poste {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 16px 64px;
+}
+
+/* Bloc de tête — mobile d'abord.
+   Deux rangées explicites plutôt qu'un flex-wrap qui se replie au hasard :
+   c'est ce repli qui produisait le chevauchement.
+   Pas de collage sous 940 px : sur mobile, le gain est nul et les barres
+   de navigateur qui apparaissent et disparaissent le rendent instable. */
+.tete {
+  background: var(--fond);
+  border-bottom: 2px solid var(--trait-fort);
+  padding-bottom: 10px;
+  margin-bottom: 18px;
+}
+
+@media (min-width: 940px) {
+  .tete { position: sticky; top: 0; z-index: 30; }
+}
+
+.barre-haut,
+.barre-bas {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.barre-haut { padding: 10px 0 6px; }
+.barre-bas  { padding: 0 0 10px; }
+
+.pousse { flex: 1; min-width: 0; }
+
+.selecteur-evenement {
+  width: auto;
+  margin: 0;
+  min-width: 0;
+  max-width: 100%;
+  font-weight: 600;
+  padding: 7px 10px;
+  text-overflow: ellipsis;
+}
+
+.compte {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--sourdine);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+button.sortie { padding: 5px 11px; font-size: 12px; white-space: nowrap; }
+
+/* Témoin de réseau */
+.temoin {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sourdine);
+  white-space: nowrap;
+}
+
+.temoin.coupe {
+  color: var(--etat-chaud);
+  font-weight: 700;
+}
+/* Écritures en attente d'envoi : cliquable, parce que la première
+   réaction de quelqu'un qui voit « 3 en attente » est d'essayer de les
+   pousser lui-même. */
+.temoin.attente {
+  background: none;
+  border: 1px solid var(--etat-veille);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--etat-veille);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Plaques : étiquettes d'état, inspirées des plaques de signalisation */
+
+.plaque {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+
+.plaque.role { color: var(--sourdine); }
+.plaque.phase-preparation { color: var(--etat-info); }
+.plaque.phase-montage,
+.plaque.phase-demontage    { color: var(--etat-veille); }
+.plaque.phase-exploitation { color: var(--etat-ok); }
+.plaque.phase-cloture      { color: var(--etat-froid); }
+
+/* ---------------- Bandeau d'état ---------------- */
+
+/* Quatre cadrans, donc 2×2 sur mobile et 4 colonnes au-delà :
+   jamais de case vide en fin de grille. */
+.etat {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--trait);
+  border: 1px solid var(--trait);
+}
+
+@media (min-width: 620px) {
+  .etat { grid-template-columns: repeat(4, 1fr); }
+}
+
+.cadran {
+  all: unset;
+  cursor: pointer;
+  background: var(--surface);
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 60px;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.cadran-valeur {
+  font-family: var(--mono);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.cadran-libelle {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sourdine);
+  line-height: 1.25;
+}
+
+/* Un cadran chaud se signale par sa valeur et une barre, pas par un
+   aplat plein : quand trois cadrans sur quatre sont pleins, plus rien
+   ne ressort et l'œil cesse de les lire. */
+.cadran.chaud { box-shadow: inset 3px 0 0 var(--etat-chaud); }
+.cadran.chaud .cadran-valeur { color: var(--etat-chaud); }
+.cadran.chaud .cadran-libelle { color: var(--encre); }
+
+.cadran:hover { background: var(--surface-2); }
+
+/* ---------------- Navigation par plaques ---------------- */
+
+.corps { display: block; }
+
+.plaques {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.plaque-nav {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 13px;
+  font-size: 13px;
+  border: 1px solid var(--trait);
+  border-left: 3px solid var(--teinte, var(--trait));
+  background: var(--surface);
+  color: var(--encre);
+  white-space: nowrap;
+  border-radius: 2px;
+}
+
+.plaque-nav svg { color: var(--teinte, var(--sourdine)); flex: 0 0 auto; }
+
+.plaque-nav:hover { border-color: var(--trait-fort); border-left-color: var(--teinte); }
+
+/* Hors d'un conteneur de domaine (Réglages, listes de modules), on
+   retombe sur --etat-info plutôt que --encre : --encre est la couleur
+   du TEXTE en thème nuit — donc claire — et l'utiliser comme fond
+   produisait du texte blanc sur un fond quasi blanc. --etat-info reste
+   un vrai bleu dans les deux thèmes. */
+.plaque-nav.actif {
+  background: var(--teinte, var(--etat-info));
+  border-color: var(--teinte, var(--etat-info));
+  color: var(--on-teinte);
+  font-weight: 600;
+}
+
+.plaque-nav.actif svg { color: var(--on-teinte); }
+
+.plaque-nav:disabled { opacity: 0.4; cursor: default; }
+
+/* Paysage sur smartphone : la largeur disponible permet 4 colonnes au
+   lieu de 3, ce qui ramène onze entrées de quatre lignes à trois. Le
+   flex-wrap habituel dépend de la largeur naturelle de chaque bouton,
+   trop imprévisible pour garantir un compte de colonnes précis — une
+   grille fige le nombre. Ciblé sur l'orientation, pas seulement la
+   largeur, pour ne pas toucher une tablette étroite en portrait. */
+@media (orientation: landscape) and (max-width: 939px) {
+  .plaques { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .plaque-nav { justify-content: flex-start; }
+}
+
+.dom-indigo   { --teinte: var(--dom-indigo); }
+.dom-violet   { --teinte: var(--dom-violet); }
+.dom-sarcelle { --teinte: var(--dom-sarcelle); }
+.dom-grenat   { --teinte: var(--dom-grenat); }
+.dom-orange   { --teinte: var(--dom-orange); }
+.dom-bronze   { --teinte: var(--dom-bronze); }
+.dom-mousse   { --teinte: var(--dom-mousse); }
+.dom-azur     { --teinte: var(--dom-azur); }
+.dom-prune    { --teinte: var(--dom-prune); }
+.dom-ardoise  { --teinte: var(--dom-ardoise); }
+.dom-tilleul  { --teinte: var(--dom-tilleul); }
+.dom-gris     { --teinte: var(--dom-gris); }
+
+@media (min-width: 940px) {
+  .corps { display: grid; grid-template-columns: 176px 1fr; gap: 26px; align-items: start; }
+  .plaques { flex-direction: column; position: sticky; top: 16px; }
+  .plaque-nav { text-align: left; }
+}
+
+.travail { min-width: 0; }
+
+/* ---------------- Blocs et titres ---------------- */
+
+.bloc { margin-bottom: 30px; }
+
+h2 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--sourdine);
+  margin: 0 0 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+h2 svg { color: var(--teinte, var(--sourdine)); }
+
+h2::before {
+  content: "";
+  width: 14px;
+  height: 2px;
+  background: var(--teinte, var(--trait));
+  flex: 0 0 auto;
+}
+
+.carte {
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  padding: 13px 15px;
+  margin-bottom: 8px;
+  box-shadow: var(--ombre);
+}
+
+.carte .titre { font-weight: 600; margin-bottom: 3px; }
+
+.meta {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--sourdine);
+  display: flex;
+  gap: 13px;
+  flex-wrap: wrap;
+}
+
+.vide { color: var(--sourdine); font-size: 14px; padding: 12px 0; }
+
+.aide {
+  font-size: 12px;
+  color: var(--sourdine);
+  line-height: 1.55;
+  margin: 8px 0 12px;
+}
+
+.aide.alerte { color: var(--etat-chaud); }
+.mono { font-family: var(--mono); }
+.alerte-texte { color: var(--etat-chaud); }
+
+.etiquette {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--sourdine);
+  margin-bottom: 4px;
+}
+
+.identite { margin-top: 14px; }
+
+.identite code {
+  display: block;
+  font-family: var(--mono);
+  font-size: 12px;
+  word-break: break-all;
+  background: var(--surface);
+  border: 1px dashed var(--trait);
+  padding: 8px 10px;
+}
+
+/* ---------------- Formulaires ---------------- */
+
+label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--sourdine);
+  margin-bottom: 4px;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 9px 10px;
+  /* `trait` vaut 1,3:1 sur `surface` : correct pour un séparateur, pas
+     pour la seule ligne qui délimite une zone de saisie. `trait-fort`
+     tient 3:1 dans les deux thèmes (écart 3 du système de design). */
+  border: 1px solid var(--trait-fort);
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--encre);
+  margin-bottom: 12px;
+  border-radius: var(--rayon);
+}
+
+input[type="file"] { padding: 7px; font-size: 13px; }
+
+button {
+  padding: 9px 16px;
+  border: 1px solid var(--trait-fort);
+  background: var(--encre);
+  color: var(--fond);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: var(--rayon);
+}
+
+button:disabled { opacity: 0.4; cursor: default; }
+
+button.principal { background: var(--etat-info); border-color: var(--etat-info); color: var(--on-teinte); }
+
+button.discret {
+  background: transparent;
+  color: var(--encre);
+  border-color: var(--trait);
+}
+
+button.lien {
+  all: unset;
+  cursor: pointer;
+  color: var(--etat-info);
+  font-size: 12px;
+  text-decoration: underline;
+}
+
+.ligne-boutons { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.saisie-rapide { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.saisie-rapide input { flex: 1 1 200px; margin-bottom: 0; }
+
+.formulaire {
+  border: 1px solid var(--trait);
+  background: var(--surface-2);
+  padding: 14px;
+  margin: 12px 0;
+}
+
+/* ---------------- Messages ---------------- */
+
+.message {
+  padding: 10px 12px;
+  border-left: 3px solid var(--etat-ok);
+  background: var(--surface);
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+.message.erreur { border-left-color: var(--etat-chaud); }
+
+/* ---------------- Onglets internes ---------------- */
+
+.onglets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+
+button.module {
+  background: transparent;
+  color: var(--sourdine);
+  border: 1px solid var(--trait);
+  font-size: 13px;
+  padding: 6px 12px;
+}
+
+button.module.actif {
+  background: var(--teinte, var(--etat-info));
+  border-color: var(--teinte, var(--etat-info));
+  color: var(--on-teinte);
+}
+
+button.module:disabled { opacity: 0.5; }
+
+/* ---------------- Compteurs et pavés ---------------- */
+
+.compteurs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--sourdine);
+  margin-bottom: 16px;
+}
+
+.compteurs strong { font-family: var(--mono); color: var(--encre); }
+
+.dashboard { margin-bottom: 20px; }
+
+.entete-dashboard {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.reglage-paves { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.reglage-paves .aide { flex-basis: 100%; margin: 4px 0 0; }
+
+
+.grille-paves {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 8px;
+}
+
+.pave {
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  padding: 12px 14px;
+}
+
+.pave-titre {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--sourdine);
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.pave .grand,
+.moniteur-corps .grand {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.05;
+  margin-bottom: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pave .vide { padding: 0; font-size: 13px; }
+
+.liste-pave { list-style: none; margin: 0; padding: 0; font-size: 13px; line-height: 1.65; }
+ol.liste-pave { list-style: decimal; padding-left: 18px; }
+.liste-pave .mono { font-size: 11px; color: var(--sourdine); }
+
+.detail-metrique {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--sourdine);
+  padding: 3px 0;
+  border-bottom: 1px solid var(--trait);
+}
+
+.detail-metrique strong { font-family: var(--mono); color: var(--encre); }
+.detail-metrique.alerte-texte strong { color: var(--etat-chaud); }
+
+.repartition { margin-top: 10px; }
+.barre-ligne { display: flex; align-items: center; gap: 6px; font-size: 11px; margin-bottom: 3px; }
+.barre-lib { flex: 0 0 74px; color: var(--sourdine); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.barre { flex: 1; height: 7px; background: var(--fond); display: block; }
+.barre > span { display: block; height: 100%; background: var(--etat-info); }
+
+/* ---------------- Jetons ---------------- */
+
+.jeton {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border: 1px solid currentColor;
+}
+
+.jeton.admin { color: var(--etat-chaud); }
+.jeton.phase { color: var(--etat-ok); }
+.jeton.prio-P1 { color: var(--etat-chaud); font-weight: 700; }
+.jeton.prio-P2 { color: var(--etat-veille); }
+.jeton.prio-P3, .jeton.prio-P4 { color: var(--sourdine); }
+.jeton.nouveau  { color: var(--etat-ok); }
+.jeton.existant { color: var(--sourdine); }
+.jeton.rejete   { color: var(--etat-chaud); }
+.jeton.alerte-jeton { color: var(--etat-chaud); margin-left: 10px; }
+
+.carte.urgent { border-left: 3px solid var(--etat-chaud); }
+.carte.a-moi  { border-left: 3px solid var(--etat-ok); }
+
+/* ---------------- Chronologie ---------------- */
+
+.chrono { list-style: none; margin: 0 0 12px; padding: 0; border-left: 2px solid var(--trait); }
+
+.chrono li {
+  display: flex;
+  gap: 10px;
+  padding: 5px 0 5px 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  border-bottom: 1px solid var(--trait);
+}
+
+.chrono .heure { color: var(--sourdine); font-size: 11px; padding-top: 2px; flex: 0 0 38px; font-family: var(--mono); }
+.chrono .corps { flex: 1; }
+.chrono li.src-systeme .corps { color: var(--sourdine); }
+.chrono li.imp-majeur { border-left: 2px solid var(--etat-chaud); margin-left: -2px; }
+.chrono li.imp-majeur .corps { color: var(--encre); font-weight: 500; }
+
+.chrono .tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--sourdine);
+  margin-left: 8px;
+}
+
+/* ---------------- Cartes géographiques ---------------- */
+
+.carte-conteneur { height: 300px; border: 1px solid var(--trait); margin-bottom: 12px; }
+/*
+ * Leaflet gère ses propres couches en interne : .leaflet-pane est à
+ * z-index 400, les contrôles montent à 1000. Toutes les surfaces de
+ * l'application (barre d'onglets 55, boutons flottants 60, tiroirs 70)
+ * passaient donc DESSOUS n'importe quelle carte — un tiroir ouvert sur
+ * Parcours > Trace se faisait recouvrir par la carte.
+ *
+ * isolation crée un contexte d'empilement sur l'enveloppe : les
+ * z-index de Leaflet restent confinés à l'intérieur et ne rivalisent
+ * plus avec ceux de l'application. Une seule règle, les trois cartes
+ * (Trace, Plan d'implantation, Signalements), bureau et mobile.
+ */
+.carte-conteneur { isolation: isolate; }
+.carte-conteneur .leaflet-container { height: 100%; width: 100%; background: var(--surface-2); }
+
+.lien-externe { align-self: center; font-size: 13px; color: var(--etat-info); }
+
+.profil { border: 1px solid var(--trait); background: var(--surface); padding: 12px 8px 4px; margin-bottom: 14px; }
+.svg-profil { width: 100%; height: 130px; display: block; }
+.svg-profil .axe { font-family: var(--mono); font-size: 10px; fill: var(--sourdine); }
+
+/* ---------------- Alertes ---------------- */
+
+.bandeaux { margin: 12px 0 0; }
+
+.bandeau-alerte { display: flex; border: 2px solid; margin-bottom: 8px; background: var(--surface); }
+
+.bandeau-alerte .niv {
+  flex: 0 0 92px;
+  padding: 10px 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--on-teinte);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.bandeau-alerte .contenu { padding: 10px 12px; flex: 1; }
+.bandeau-alerte .msg { font-size: 13px; margin-top: 2px; }
+.bandeau-alerte .consigne { font-size: 13px; font-weight: 600; margin-top: 5px; }
+.bandeau-alerte .meta { margin-top: 5px; }
+
+.niv-information { border-color: var(--etat-info); }
+.niv-information .niv { background: var(--etat-info); }
+.niv-vigilance { border-color: var(--etat-veille); }
+.niv-vigilance .niv { background: var(--etat-veille); }
+.niv-urgence, .niv-evacuation { border-color: var(--etat-chaud); }
+.niv-urgence .niv, .niv-evacuation .niv { background: var(--etat-chaud); }
+
+.gestion-alertes { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--trait); }
+
+.bloc-alerte {
+  border: 1px solid var(--etat-chaud);
+  border-left-width: 3px;
+  background: var(--surface);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.ligne-retard { padding: 8px 0; border-bottom: 1px solid var(--trait); }
+.ligne-retard:last-of-type { border-bottom: none; }
+.ligne-retard .meta { margin-top: 3px; }
+.ligne-retard a.lien-externe { font-family: var(--mono); font-weight: 700; }
+
+/* ---------------- Terrain ---------------- */
+
+.bouton-terrain { width: 100%; padding: 19px; font-size: 17px; margin-top: 6px; }
+
+.grille-comptage { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 12px 0; }
+.grille-comptage button { padding: 16px 4px; font-size: 16px; font-variant-numeric: tabular-nums; }
+
+.securite .carte .ligne-boutons button { padding: 11px 17px; font-size: 15px; }
+
+.memento { margin-bottom: 20px; }
+
+.age-cache {
+  font-size: 12px;
+  color: var(--sourdine);
+  background: var(--surface);
+  border-left: 3px solid var(--etat-ok);
+  padding: 8px 10px;
+  margin-bottom: 12px;
+}
+
+.age-cache.alerte { border-left-color: var(--etat-veille); color: var(--encre); }
+
+.bouton-appel {
+  display: inline-block;
+  padding: 14px 26px;
+  background: var(--etat-chaud);
+  color: var(--on-teinte);
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+  text-decoration: none;
+  letter-spacing: 0.05em;
+}
+
+dl.fiche { margin: 8px 0 0; font-size: 13px; }
+dl.fiche dt {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sourdine);
+  margin-top: 6px;
+}
+dl.fiche dd { margin: 1px 0 0; }
+
+/* ---------------- Import ---------------- */
+
+.import { margin-bottom: 20px; }
+.resume { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+
+.apercu { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px; }
+.apercu th {
+  text-align: left;
+  font-weight: 700;
+  color: var(--sourdine);
+  border-bottom: 1px solid var(--trait-fort);
+  padding: 4px 6px;
+}
+.apercu td { padding: 4px 6px; border-bottom: 1px solid var(--trait); }
+.apercu tr.rejete td { color: var(--etat-chaud); }
+.apercu tr.existant td { color: var(--sourdine); }
+
+/* ---------------- Écran participant ---------------- */
+
+.participant {
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+}
+
+.participant .bandeau {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--trait-fort);
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+
+.participant .bandeau h1 { font-size: 20px; margin: 0; }
+.participant .session { font-family: var(--mono); font-size: 12px; color: var(--sourdine); }
+.participant .session.hors-ligne { color: var(--etat-chaud); font-weight: 700; }
+
+.participant input, .participant select, .participant button {
+  font-size: 16px;   /* en dessous, iOS zoome au focus et décale l'écran */
+  padding: 12px;
+}
+
+.participant button { width: 100%; }
+
+.etat-sos { font-size: 13px; font-weight: 700; margin-top: 2px; }
+
+.carte.sos-en_attente { border-left: 3px solid var(--etat-veille); }
+.carte.sos-recu       { border-left: 3px solid var(--etat-ok); }
+.carte.sos-echec      { border-left: 3px solid var(--etat-froid); }
+
+.geo {
+  font-size: 12px;
+  color: var(--sourdine);
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  padding: 10px;
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+
+/* ---------------- Planches QR ---------------- */
+
+.qr { margin-bottom: 20px; }
+
+.planches { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+
+.planche {
+  border: 2px solid var(--trait-fort);
+  background: #fff;
+  color: #000;
+  padding: 12px 10px;
+  text-align: center;
+  break-inside: avoid;
+}
+
+.planche-titre { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.planche-lieu { margin-top: 8px; font-size: 13px; line-height: 1.35; }
+.planche-pied { margin-top: 8px; font-size: 10px; color: #555; line-height: 1.4; }
+.planche-pied strong { color: #b3311d; }
+
+/* ---------------- Impression ---------------- */
+
+@media print {
+  :root { --fond: #fff; --surface: #fff; --encre: #000; --trait: #999; --sourdine: #444; }
+  body { background: #fff; font-size: 11pt; }
+  .barre, .etat, .plaques, .onglets, .ligne-boutons, .geo, .aide,
+  .dashboard, .compteurs, .bandeaux, button, input, select,
+  .carte-conteneur, .travail > * > h2 { display: none !important; }
+  .imprimable { display: block !important; }
+  .imprimable .carte { border: 1px solid #000; break-inside: avoid; margin-bottom: 6mm; padding: 4mm; }
+  .titre-impression { display: block !important; font-size: 15px; margin: 0 0 10px; }
+  .planches { display: grid !important; grid-template-columns: repeat(2, 1fr); gap: 8mm; }
+  .planche { border: 1.5pt solid #000; padding: 6mm; }
+  a[href]:after { content: ""; }
+}
+
+/* --- Rattrapages après refonte --- */
+
+.pcops { margin-bottom: 22px; }
+
+.identifiant {
+  font-family: var(--mono);
+  font-size: 12px;
+  word-break: break-all;
+  background: var(--surface);
+  border: 1px dashed var(--trait);
+  padding: 8px 10px;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.session-bloc {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--trait);
+}
+
+/* --- Grille des capacités --- */
+
+.grille-capacites {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.grille-capacites th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--sourdine);
+  padding: 5px 6px;
+  font-size: 11px;
+}
+
+.grille-capacites thead th {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--trait-fort);
+  text-align: center;
+}
+
+.grille-capacites tbody th { white-space: nowrap; }
+.grille-capacites td { padding: 2px; text-align: center; border-bottom: 1px solid var(--trait); }
+
+.case {
+  all: unset;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  min-width: 34px;
+  height: 26px;
+  line-height: 26px;
+  text-align: center;
+  border: 1px solid var(--trait);
+  font-family: var(--mono);
+  color: var(--sourdine);
+}
+
+.case:hover { border-color: var(--trait-fort); }
+.case.active { background: var(--etat-ok); border-color: var(--etat-ok); color: var(--on-teinte); font-weight: 700; }
+.case.partielle { background: var(--surface-2); color: var(--etat-veille); border-color: var(--etat-veille); }
+
+/* --- Situation générale --- */
+
+.situation { margin-bottom: 20px; }
+
+.situation .grille-paves { margin-bottom: 20px; }
+
+button.grand-lien {
+  all: unset;
+  cursor: pointer;
+  display: block;
+}
+
+button.grand-lien .grand { text-decoration: underline; text-decoration-color: var(--trait); }
+button.grand-lien:hover .grand { text-decoration-color: currentColor; }
+
+.situation .grand {
+  font-family: var(--mono);
+  font-size: 27px;
+  font-weight: 700;
+  line-height: 1.05;
+  display: block;
+  margin-bottom: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Page autorité --- */
+
+.autorite {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+}
+
+.autorite .bandeau {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--trait-fort);
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.autorite h1 { font-size: 21px; margin: 0; }
+.autorite .acces-role { margin: 4px 0 0; }
+
+.etat-droite {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.autorite .grand {
+  font-family: var(--mono);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.05;
+  margin-bottom: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.carte.revoque { opacity: 0.55; }
+
+/* --- Console plateforme --- */
+
+.plateforme { margin-bottom: 24px; }
+
+.jeton.statut-essai     { color: var(--etat-info); }
+.jeton.statut-active    { color: var(--etat-ok); }
+.jeton.statut-suspendue { color: var(--etat-chaud); }
+.jeton.statut-close     { color: var(--sourdine); }
+
+/* --- Cartes teintées par domaine ------------------------------------
+   Le filet de gauche rappelle le module ; le rouge et l'ambre restent
+   réservés aux états, et l'emportent toujours sur la teinte. */
+
+.dom-indigo .carte, .dom-violet .carte, .dom-sarcelle .carte,
+.dom-grenat .carte, .dom-orange .carte, .dom-bronze .carte,
+.dom-mousse .carte, .dom-azur .carte, .dom-prune .carte,
+.dom-ardoise .carte, .dom-tilleul .carte, .dom-gris .carte {
+  border-left: 3px solid color-mix(in srgb, var(--teinte) 35%, transparent);
+}
+
+.carte.urgent { border-left: 3px solid var(--etat-chaud) !important; }
+.carte.a-moi  { border-left: 3px solid var(--etat-ok) !important; }
+
+/* Pavés : bandeau de titre coloré */
+.pave-titre {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.pave-titre::before {
+  content: "";
+  width: 10px;
+  height: 2px;
+  background: var(--teinte, var(--trait));
+  flex: 0 0 auto;
+}
+
+/* Chronologie : le filet prend la teinte du module */
+.chrono { border-left-color: color-mix(in srgb, var(--teinte, var(--trait)) 45%, var(--trait)); }
+
+/* Boutons principaux : teinte du module plutôt que noir uniforme */
+/*
+ * Boutons pleins colorés par domaine — RÉSERVÉ aux boutons d'action
+ * simples (une ligne de texte). Les widgets composites (tuiles, pavés
+ * cliquables) contiennent plusieurs blocs de texte avec leurs propres
+ * couleurs fixes ; leur appliquer un fond plein rendait ce texte gris
+ * illisible dessus. D'où l'exclusion explicite de .tuile et .pave-lien.
+ *
+ * .jour-onglet relève du même cas et manquait à la liste : dans le bloc
+ * Planning (.dom-azur), TOUS les onglets de jour recevaient l'aplat
+ * azur, y compris les inactifs — leur propre règle .actif, moins
+ * spécifique que cette liste, ne pouvait pas l'emporter. Le jour
+ * sélectionné ne se distinguait plus des autres.
+ */
+.dom-indigo button:not(.discret):not(.module):not(.lien):not(.plaque-nav):not(.case):not(.tuile):not(.pave-lien):not(.grand-lien):not(.pastille):not(.ligne-mission-resume):not(.moniteur-lien):not(.pave-lien-ligne):not(.jour-onglet):not(.colonne-tete),
+.dom-violet button:not(.discret):not(.module):not(.lien):not(.plaque-nav):not(.case):not(.tuile):not(.pave-lien):not(.grand-lien):not(.pastille):not(.ligne-mission-resume):not(.moniteur-lien):not(.pave-lien-ligne):not(.jour-onglet):not(.colonne-tete),
+.dom-sarcelle button:not(.discret):not(.module):not(.lien):not(.plaque-nav):not(.case):not(.tuile):not(.pave-lien):not(.grand-lien):not(.pastille):not(.ligne-mission-resume):not(.moniteur-lien):not(.pave-lien-ligne):not(.jour-onglet):not(.colonne-tete),
+.dom-grenat button:not(.discret):not(.module):not(.lien):not(.plaque-nav):not(.case):not(.tuile):not(.pave-lien):not(.grand-lien):not(.pastille):not(.ligne-mission-resume):not(.moniteur-lien):not(.pave-lien-ligne):not(.jour-onglet):not(.colonne-tete),
+.dom-orange button:not(.discret):not(.module):not(.lien):not(.plaque-nav):not(.case):not(.tuile):not(.pave-lien):not(.grand-lien):not(.pastille):not(.ligne-mission-resume):not(.moniteur-lien):not(.pave-lien-ligne):not(.jour-onglet):not(.colonne-tete),
+.dom-bronze button:not(.discret):not(.module):not(.lien):not(.plaque-nav):not(.case):not(.tuile):not(.pave-lien):not(.grand-lien):not(.pastille):not(.ligne-mission-resume):not(.moniteur-lien):not(.pave-lien-ligne):not(.jour-onglet):not(.colonne-tete),
+.dom-mousse button:not(.discret):not(.module):not(.lien):not(.plaque-nav):not(.case):not(.tuile):not(.pave-lien):not(.grand-lien):not(.pastille):not(.ligne-mission-resume):not(.moniteur-lien):not(.pave-lien-ligne):not(.jour-onglet):not(.colonne-tete),
+.dom-azur button:not(.discret):not(.module):not(.lien):not(.plaque-nav):not(.case):not(.tuile):not(.pave-lien):not(.grand-lien):not(.pastille):not(.ligne-mission-resume):not(.moniteur-lien):not(.pave-lien-ligne):not(.jour-onglet):not(.colonne-tete),
+.dom-prune button:not(.discret):not(.module):not(.lien):not(.plaque-nav):not(.case):not(.tuile):not(.pave-lien):not(.grand-lien):not(.pastille):not(.ligne-mission-resume):not(.moniteur-lien):not(.pave-lien-ligne):not(.jour-onglet):not(.colonne-tete),
+.dom-tilleul button:not(.discret):not(.module):not(.lien):not(.plaque-nav):not(.case):not(.tuile):not(.pave-lien):not(.grand-lien):not(.pastille):not(.ligne-mission-resume):not(.moniteur-lien):not(.pave-lien-ligne):not(.jour-onglet):not(.colonne-tete),
+.dom-ardoise button:not(.discret):not(.module):not(.lien):not(.plaque-nav):not(.case):not(.tuile):not(.pave-lien):not(.grand-lien):not(.pastille):not(.ligne-mission-resume):not(.moniteur-lien):not(.pave-lien-ligne):not(.jour-onglet):not(.colonne-tete) {
+  background: var(--teinte);
+  border-color: var(--teinte);
+  color: var(--on-teinte);
+}
+
+/* Repères de statut : pastille colorée plutôt que texte nu */
+.jeton {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 2px;
+}
+
+/* --- Boutons SOS et REX, présents partout ---------------------------
+   Fixés en bas à droite, au pouce. Au moment où l'on constate quelque
+   chose, on est sur l'écran où l'on travaillait — pas sur celui où il
+   faudrait le déclarer. */
+
+.flottants {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.flottant {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 18px;
+  border: none;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--on-teinte);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+}
+
+.flottant.sos { background: var(--etat-chaud); }
+.flottant.rex { background: var(--dom-ardoise); padding: 10px 15px; font-size: 13px; }
+
+.flottant:active { transform: translateY(1px); }
+
+@media (max-width: 560px) {
+  .flottant.rex span { display: none; }
+  .flottant.rex { padding: 12px; }
+}
+
+/* Tiroir de saisie */
+
+.voile {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+@media (min-width: 620px) {
+  .voile { align-items: center; }
+}
+
+.tiroir {
+  background: var(--fond);
+  border: 1px solid var(--trait-fort);
+  width: 100%;
+  max-width: 520px;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 16px 18px 22px;
+}
+
+.tiroir-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--trait-fort);
+}
+
+.tiroir-tete button.lien { display: flex; align-items: center; }
+
+/* Laisser respirer le bas de page sous les boutons flottants */
+.poste { padding-bottom: 110px; }
+
+/* Rang dans une liste ordonnée éditable */
+.rang {
+  flex: 0 0 20px;
+  align-self: center;
+  font-size: 11px;
+  color: var(--sourdine);
+  text-align: right;
+}
+
+/* --- SITREP ---------------------------------------------------------
+   Document destiné au papier : sa mise en forme vise la lisibilité
+   imprimée, pas l'écran. À l'écran il sert d'aperçu. */
+
+.reglages-sitrep { margin-bottom: 20px; }
+
+.sitrep {
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  padding: 22px;
+  font-size: 13px;
+}
+
+.sitrep-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  border-bottom: 2px solid var(--trait-fort);
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+
+.sitrep-titre { font-size: 17px; font-weight: 700; }
+.sitrep-sous { font-size: 14px; color: var(--sourdine); margin-top: 2px; }
+.sitrep-ref { font-size: 11px; color: var(--sourdine); }
+
+.sitrep-section {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: var(--sourdine);
+  margin: 18px 0 8px;
+  border-bottom: 1px solid var(--trait);
+  padding-bottom: 4px;
+}
+
+.sitrep-entete { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.sitrep-entete th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--sourdine);
+  padding: 3px 12px 3px 0;
+  white-space: nowrap;
+  vertical-align: top;
+  width: 190px;
+}
+.sitrep-entete td { padding: 3px 0; }
+
+.sitrep-journal { width: 100%; border-collapse: collapse; font-size: 12px; }
+.sitrep-journal th {
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--sourdine);
+  border-bottom: 1px solid var(--trait-fort);
+  padding: 4px 8px 4px 0;
+}
+.sitrep-journal td {
+  padding: 4px 8px 4px 0;
+  border-bottom: 1px solid var(--trait);
+  vertical-align: top;
+}
+.sitrep-journal tr.majeur td { font-weight: 600; }
+.sitrep-journal .nowrap { white-space: nowrap; }
+.sitrep-marque { color: var(--sourdine); font-size: 11px; }
+
+.sitrep-pied { margin-top: 22px; border-top: 1px solid var(--trait); padding-top: 12px; }
+.sitrep-pied p { font-size: 11.5px; color: var(--sourdine); line-height: 1.5; }
+
+.sitrep-signature {
+  margin-top: 26px;
+  border-top: 1px solid var(--trait-fort);
+  width: 240px;
+  padding-top: 4px;
+  font-size: 11px;
+  color: var(--sourdine);
+}
+
+@media print {
+  .reglages-sitrep { display: none !important; }
+  .sitrep { border: none; padding: 0; font-size: 10.5pt; }
+  .sitrep-journal tr { break-inside: avoid; }
+  .sitrep-pied { break-inside: avoid; }
+  .sitrep-tete { border-bottom: 2pt solid #000; }
+  @page { margin: 16mm 14mm; }
+}
+
+/* --- Mayday --- */
+
+.flottant.mayday {
+  background: var(--dom-grenat);
+  border: 2px solid #fff;
+  padding: 13px 18px;
+}
+
+.case-confirme {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--encre);
+  margin: 14px 0;
+  line-height: 1.45;
+}
+
+.case-confirme input {
+  width: auto;
+  margin: 2px 0 0;
+  flex: 0 0 auto;
+  transform: scale(1.3);
+}
+
+.bouton-mayday {
+  background: var(--etat-chaud) !important;
+  border-color: var(--etat-chaud) !important;
+  color: var(--on-teinte) !important;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* --- Veille météo --- */
+
+.meteo { margin-bottom: 22px; }
+
+.bandes-meteo {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+@media (min-width: 620px) {
+  .bandes-meteo { grid-template-columns: repeat(24, 1fr); }
+}
+
+.bande {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 5px 1px;
+  background: var(--surface);
+  border-top: 3px solid var(--etat-ok);
+  font-size: 10px;
+  min-width: 0;
+}
+
+.bande.niv-jaune  { border-top-color: #d4a017; background: var(--surface-2); }
+.bande.niv-orange { border-top-color: var(--etat-veille); background: var(--surface-2); }
+.bande.niv-rouge  { border-top-color: var(--etat-chaud); background: var(--surface-2); }
+.bande.niv-rouge .bande-valeur { color: var(--etat-chaud); font-weight: 700; }
+
+.bande-heure { color: var(--sourdine); font-size: 8.5px; }
+.bande-valeur { font-size: 11px; font-weight: 600; }
+.bande-temp { font-size: 9.5px; color: var(--sourdine); }
+
+/* Hauteur fixe même vide : une colonne sèche ne doit pas raccourcir
+   sa voisine pluvieuse — les lignes du tableau restent alignées. */
+.bande-pluie {
+  font-size: 8px;
+  line-height: 1;
+  min-height: 9px;
+}
+
+/* --- Mayday : traitement --- */
+
+.mayday-bloc { --teinte: var(--etat-chaud); }
+
+.cadran.chaud[data-clef="mayday"] { background: var(--etat-chaud); }
+
+/* ====================================================================
+   Situation — densité de poste de commandement
+   --------------------------------------------------------------------
+   Repris de la logique du dashboard v18 : tailles de 9 à 12 px, un seul
+   niveau de gros chiffre, panneaux à hauteur fixe avec défilement
+   interne. L'écran du QG doit tout montrer d'un coup ; une page qui
+   s'allonge oblige à faire défiler pendant qu'on répond à la radio.
+   ==================================================================== */
+
+.tuiles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--trait);
+  border: 1px solid var(--trait);
+  margin-bottom: 14px;
+}
+
+@media (min-width: 560px) { .tuiles { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 900px) { .tuiles { grid-template-columns: repeat(6, 1fr); } }
+
+.tuile {
+  all: unset;
+  background: var(--surface);
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+button.tuile { cursor: pointer; }
+button.tuile:hover { background: var(--surface-2); }
+
+.tuile-libelle {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--sourdine);
+}
+
+.tuile-valeur {
+  font-family: var(--mono);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.tuile-detail {
+  font-size: 9.5px;
+  color: var(--sourdine);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tuile.chaude { box-shadow: inset 3px 0 0 var(--etat-chaud); }
+
+/* --- Panneaux --- */
+
+.panneaux {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 900px) {
+  .panneaux { grid-template-columns: repeat(2, 1fr); }
+  .panneau.large { grid-column: 1 / -1; }
+}
+
+.panneau {
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  padding: 11px 13px;
+  display: flex;
+  flex-direction: column;
+  max-height: 340px;
+  min-height: 0;
+}
+
+.panneau h2 { margin-bottom: 8px; flex: 0 0 auto; }
+
+.panneau-corps {
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+  padding-right: 3px;
+}
+
+/* Cartes internes : plus serrées que dans le reste de l'application */
+.panneau .carte {
+  padding: 7px 9px;
+  margin-bottom: 5px;
+  font-size: 12px;
+  box-shadow: none;
+}
+
+.panneau .carte .titre { font-size: 12px; margin-bottom: 1px; }
+.panneau .meta { font-size: 10.5px; gap: 9px; }
+.panneau .chrono li { font-size: 11.5px; padding: 3px 0 3px 10px; }
+.panneau .chrono .heure { font-size: 10px; flex-basis: 34px; }
+
+/* La météo garde ses pavés, mais réduits */
+.meteo .grand { font-size: 21px; }
+.meteo .pave { padding: 9px 11px; }
+
+/* --- Transport : lien Maps désactivé tant que l'adresse est vide --- */
+
+.bouton-maps {
+  padding: 9px 14px;
+  border: 1px solid var(--trait);
+  background: var(--surface);
+  color: var(--etat-info);
+  font-size: 13px;
+  text-decoration: none;
+  align-self: center;
+  white-space: nowrap;
+}
+
+.bouton-maps.inactif {
+  color: var(--sourdine);
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* --- Champ adresse désactivé quand un lieu du dispositif est choisi --- */
+input:disabled {
+  background: var(--surface-2);
+  color: var(--sourdine);
+  cursor: not-allowed;
+}
+
+/* --- Planning : timeline fusionnée --- */
+
+.planning { margin-bottom: 22px; }
+
+.jours-planning {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin-bottom: 14px;
+  padding-bottom: 2px;
+}
+
+.jour-onglet {
+  all: unset;
+  cursor: pointer;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 14px;
+  border: 1px solid var(--trait);
+  background: var(--surface);
+  min-width: 64px;
+}
+
+.jour-onglet.actif {
+  background: var(--dom-azur);
+  border-color: var(--dom-azur);
+}
+.jour-onglet.actif * { color: var(--on-teinte); }
+
+.jour-nom {
+  font-size: 11px;
+  text-transform: capitalize;
+  color: var(--sourdine);
+}
+.jour-date { font-size: 13px; font-weight: 600; }
+.jour-compte { font-size: 10px; color: var(--sourdine); }
+
+.timeline {
+  border-left: 2px solid var(--trait);
+  margin-left: 6px;
+}
+
+.item-planning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0 8px 14px;
+  position: relative;
+  opacity: 1;
+  transition: opacity 0.2s;
+}
+
+.item-planning::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 14px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--teinte, var(--sourdine));
+  border: 2px solid var(--fond);
+}
+
+.item-planning.passe { opacity: 0.4; }
+
+.item-planning.en-cours {
+  background: color-mix(in srgb, var(--etat-ok) 8%, transparent);
+  margin-left: -14px;
+  padding-left: 28px;
+  border-left: 3px solid var(--etat-ok);
+}
+.item-planning.en-cours::before { left: -10px; background: var(--etat-ok); }
+
+.item-planning.urgent::before { background: var(--etat-chaud); }
+
+.item-heure {
+  flex: 0 0 44px;
+  font-size: 13px;
+  font-weight: 700;
+  padding-top: 1px;
+}
+
+.item-corps { flex: 1; min-width: 0; }
+.item-titre { font-size: 13.5px; font-weight: 500; }
+.item-detail { font-size: 11.5px; color: var(--sourdine); margin-top: 1px; }
+
+.en-cours-jeton {
+  color: var(--etat-ok);
+  border-color: var(--etat-ok);
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+/* --- Pavé Planning --- */
+
+.pave-lien {
+  all: unset;
+  cursor: pointer;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+}
+.pave-lien:hover { background: var(--surface-2); }
+
+.planning-tag {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--sourdine);
+  margin-top: 2px;
+}
+.planning-tag.en-direct {
+  color: var(--etat-ok);
+  font-weight: 700;
+  margin-top: 0;
+}
+
+/* --- Logo d'événement --- */
+
+.logo-barre {
+  height: 28px;
+  max-width: 140px;
+  object-fit: contain;
+}
+
+.logo-participant {
+  height: 40px;
+  width: 40px;
+  object-fit: contain;
+  border-radius: 4px;
+  flex: 0 0 auto;
+}
+
+.bandeau-titre {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ligne-logo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.logo-apercu {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border: 1px solid var(--trait);
+  background: var(--surface);
+  border-radius: 4px;
+  flex: 0 0 auto;
+}
+
+.logo-vide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--sourdine);
+  text-align: center;
+  padding: 4px;
+}
+
+.bouton-fichier {
+  display: inline-block;
+  padding: 9px 16px;
+  border: 1px solid var(--trait-fort);
+  background: var(--encre);
+  color: var(--fond);
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+/* ====================================================================
+   Grille de domaines — Situation
+   --------------------------------------------------------------------
+   Repris du dashboard v18 : bandeau coloré par domaine, compteurs
+   minuscules colorés par ÉTAT (pas par domaine), panneau qui défile,
+   lien direct vers l'écran complet. Densité maximale sur un seul
+   écran, sans jamais faire défiler la page entière.
+   ==================================================================== */
+
+.grille-domaines {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 640px)  { .grille-domaines { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1080px) { .grille-domaines { grid-template-columns: repeat(4, 1fr); } }
+
+/* Mon poste : même grille que la Situation, moniteur un peu plus haut
+   parce que Mes missions et Alertes y sont interactifs (boutons,
+   formulaire), pas seulement lus. Reste borné : la page ne s'allonge
+   jamais au gré du contenu d'un seul bloc. */
+.grille-poste .moniteur-corps { max-height: 300px; }
+.grille-poste .moniteur-corps .bloc,
+.grille-poste .moniteur-corps .gestion-alertes { padding: 0; border: none; background: none; margin: 0; }
+.grille-poste .moniteur-corps .entete-dashboard { margin-bottom: 6px; }
+
+.colonne-domaine {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--trait);
+  background: var(--surface);
+  min-width: 0;
+}
+
+/* Cet en-tête est un <button> (il replie le bloc sur téléphone) : il
+   faut donc neutraliser l'apparence par défaut du navigateur —
+   bordure, police, alignement — pour qu'il reste visuellement
+   l'en-tête qu'il était sur bureau. */
+.colonne-tete {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 11px;
+  background: color-mix(in srgb, var(--teinte) 16%, var(--surface));
+  border: none;
+  border-bottom: 1px solid var(--trait);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Repli des blocs — partagé bureau et mobile. Ce qu'il résout est le
+   nombre de blocs (neuf sur Mon poste pour un coordinateur), pas la
+   largeur de l'écran. Seul le DÉFAUT dépend de l'appareil, côté JS. */
+.colonne-chevron {
+  margin-left: auto;
+  flex: none;
+  color: var(--sourdine);
+  transition: transform 0.15s ease;
+}
+
+.colonne-domaine.replie .colonne-chevron { transform: rotate(-90deg); }
+.colonne-domaine.replie .moniteur { display: none; }
+.colonne-domaine.replie .colonne-compteurs { margin-bottom: 0; }
+
+.colonne-icone {
+  font-size: 13px;
+  color: var(--teinte);
+  line-height: 1;
+}
+
+.colonne-titre {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--teinte);
+}
+
+.colonne-compteurs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 1px;
+  background: var(--trait);
+}
+
+.compteur-mini {
+  background: var(--surface);
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.compteur-mini-valeur {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.compteur-mini-libelle {
+  font-size: 8.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sourdine);
+  text-align: center;
+}
+
+.compteur-mini.etat-urgent  .compteur-mini-valeur { color: var(--etat-chaud); }
+.compteur-mini.etat-attente .compteur-mini-valeur { color: var(--etat-veille); }
+.compteur-mini.etat-cours   .compteur-mini-valeur { color: var(--etat-info); }
+.compteur-mini.etat-ok      .compteur-mini-valeur { color: var(--etat-ok); }
+
+/* Fond très légèrement teinté selon l'état — reste net grâce au texte
+   qui porte lui-même la couleur pleine, jamais l'inverse. */
+.compteur-mini.etat-urgent  { background: color-mix(in srgb, var(--etat-chaud) 8%, var(--surface)); }
+.compteur-mini.etat-attente { background: color-mix(in srgb, var(--etat-veille) 8%, var(--surface)); }
+.compteur-mini.etat-cours   { background: color-mix(in srgb, var(--etat-info) 8%, var(--surface)); }
+.compteur-mini.etat-ok      { background: color-mix(in srgb, var(--etat-ok) 8%, var(--surface)); }
+
+.moniteur {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.moniteur-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 11px;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sourdine);
+  border-bottom: 1px solid var(--trait);
+}
+
+.moniteur-lien {
+  all: unset;
+  cursor: pointer;
+  color: var(--teinte);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.moniteur-corps {
+  flex: 1;
+  min-height: 120px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 8px 11px;
+}
+
+.moniteur-vide {
+  color: var(--sourdine);
+  font-size: 11.5px;
+  font-style: italic;
+  text-align: center;
+  margin: 20px 4px;
+  line-height: 1.5;
+}
+
+.moniteur-vide.alerte { color: var(--etat-chaud); font-style: normal; font-weight: 600; }
+
+.moniteur-ligne {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 11.5px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--trait);
+}
+
+.moniteur-ligne:last-child { border-bottom: none; }
+.moniteur-ligne strong { font-weight: 600; }
+.moniteur-ligne span { color: var(--sourdine); font-size: 10.5px; }
+.moniteur-ligne.urgent strong { color: var(--etat-chaud); }
+
+/* Une ligne de .chrono rendue cliquable, sans rien changer à son
+   apparence — pour un pavé comme « Mes demandes » où chaque ligne
+   mène à un écran différent selon son module. */
+.pave-lien-ligne {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+/* --- Planning : icône par type, dans un carré coloré --- */
+
+.item-icone {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--teinte) 20%, var(--surface));
+  color: var(--teinte);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.item-planning.en-cours .item-icone {
+  background: var(--etat-ok);
+  color: var(--on-teinte);
+}
+
+.item-planning::before { display: none; } /* remplacé par .item-icone */
+
+/* --- Météo : la bordure du panneau porte l'état, visible d'un coup d'œil --- */
+
+.meteo {
+  border: 2px solid var(--trait);
+  padding: 12px 14px;
+  transition: border-color 0.3s;
+}
+
+.meteo-jaune  { border-color: #d4a017; }
+.meteo-orange { border-color: var(--etat-veille); }
+.meteo-rouge  { border-color: var(--etat-chaud); }
+
+/* Badge de vigilance — pastille colorée, comme sur les cartes IRM et
+   dans la v18 : « VERT », « JAUNE », « ORANGE » ou « ROUGE » se lit
+   avant même le reste du panneau. */
+.badge-vigilance {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1.5px solid currentColor;
+}
+
+.badge-vigilance.niv-vert   { color: var(--etat-ok); }
+.badge-vigilance.niv-jaune  { color: #d4a017; }
+.badge-vigilance.niv-orange { color: var(--etat-veille); }
+.badge-vigilance.niv-rouge  { color: var(--etat-chaud); background: color-mix(in srgb, var(--etat-chaud) 12%, transparent); }
+
+/* --- Cartographie linéaire du parcours -------------------------------
+   Repris du PC-Ops v18 : une ligne P0 → étapes → P0 avec la position
+   de chaque groupe au dernier pointage. Plus parlant qu'une liste pour
+   voir d'un coup d'œil qui est où, et où se creuse un trou. */
+
+.ligne-parcours-bloc {
+  border: 1px solid var(--trait);
+  background: var(--surface);
+  padding: 14px 16px 10px;
+  margin-bottom: 14px;
+}
+
+.ligne-parcours-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 26px;
+}
+
+.ligne-parcours-total {
+  font-size: 12px;
+  color: var(--sourdine);
+}
+.ligne-parcours-total strong {
+  font-family: var(--mono);
+  color: var(--encre);
+  font-size: 15px;
+}
+
+.ligne-parcours {
+  position: relative;
+  height: 68px;
+  margin: 0 8px;
+}
+
+.ligne-parcours-piste {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 28px;
+  height: 3px;
+  background: var(--trait-fort);
+}
+
+.ligne-parcours-borne {
+  position: absolute;
+  top: 22px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.ligne-parcours-point {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--fond);
+  border: 2px solid var(--trait-fort);
+}
+
+.ligne-parcours-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--sourdine);
+  white-space: nowrap;
+}
+
+.ligne-parcours-groupe {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  top: 0;
+  min-width: 26px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--etat-info);
+  color: var(--on-teinte);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  cursor: default;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.ligne-parcours-groupe::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 5px;
+  background: currentColor;
+}
+
+.ligne-parcours-groupe.urgent { background: var(--etat-chaud); }
+
+.ligne-parcours-groupe.incertain {
+  background: transparent;
+  color: var(--sourdine);
+  border: 1.5px dashed var(--sourdine);
+}
+
+/* ====================================================================
+   Missions — inspiré du BFMF v18 en production
+   --------------------------------------------------------------------
+   Quatre gros compteurs colorés par état, des pastilles de filtre avec
+   leur compte, des lignes compactes qui se déplient au tap plutôt que
+   des cartes toujours ouvertes — indispensable dès qu'on dépasse une
+   dizaine de missions.
+   ==================================================================== */
+
+.compteurs-carres {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+@media (min-width: 560px) { .compteurs-carres { grid-template-columns: repeat(4, 1fr); } }
+
+.compteur-carre {
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  padding: 12px 14px;
+}
+
+.compteur-carre-libelle {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sourdine);
+  margin-bottom: 6px;
+}
+
+.compteur-carre-valeur {
+  font-family: var(--mono);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.compteur-carre.etat-attente .compteur-carre-valeur { color: var(--etat-veille); }
+.compteur-carre.etat-cours   .compteur-carre-valeur { color: var(--etat-info); }
+.compteur-carre.etat-cours2  .compteur-carre-valeur { color: var(--etat-ok); }
+.compteur-carre.etat-urgent  .compteur-carre-valeur { color: var(--etat-chaud); }
+
+/* Pastilles de filtre */
+
+.pastilles-filtre {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.pastille {
+  all: unset;
+  cursor: pointer;
+  padding: 6px 13px;
+  border: 1px solid var(--trait);
+  border-radius: 999px;
+  font-size: 12.5px;
+  color: var(--sourdine);
+  white-space: nowrap;
+}
+
+.pastille.actif {
+  background: color-mix(in srgb, var(--teinte) 20%, var(--surface));
+  border-color: var(--teinte);
+  color: var(--encre);
+  font-weight: 600;
+}
+
+.pastille-n { color: var(--sourdine); font-family: var(--mono); font-size: 11px; }
+
+/* Ligne d'actions */
+
+.actions-missions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.actions-missions button { flex: 1 1 auto; min-width: 120px; }
+
+.action-creer {
+  background: var(--etat-ok);
+  border-color: var(--etat-ok);
+  color: var(--on-teinte);
+}
+
+.action-urgente {
+  background: transparent;
+  border: 1px solid var(--etat-veille);
+  color: var(--etat-veille);
+  font-weight: 600;
+}
+
+/* Lignes compactes, dépliables au tap */
+
+.ligne-mission {
+  border: 1px solid var(--trait);
+  background: var(--surface);
+  margin-bottom: 6px;
+}
+
+.ligne-mission-resume {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+}
+
+.point-etat {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.point-etat.point-urgent  { background: var(--etat-chaud); }
+.point-etat.point-attente { background: var(--etat-veille); }
+.point-etat.point-cours   { background: var(--etat-info); }
+.point-etat.point-ok      { background: var(--etat-ok); }
+
+.ligne-mission-ref {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--sourdine);
+}
+
+.ligne-mission-titre {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.ligne-mission-chevron {
+  flex: 0 0 auto;
+  color: var(--sourdine);
+  font-size: 15px;
+}
+
+.ligne-mission-detail {
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--trait);
+  padding-top: 10px;
+  font-size: 13px;
+}
+
+/* --- Carte « Mon groupe » — accompagnateur de balade -----------------
+   Repris de la v18 : un accompagnateur a UN groupe, pas une liste à
+   choisir. Une seule carte, un seul bouton, qui connaît déjà la
+   prochaine étape. */
+
+.carte-mon-groupe {
+  border: 2px solid var(--etat-info);
+  background: var(--surface);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.position-actuelle {
+  background: var(--surface-2);
+  border: 1px solid var(--trait);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+
+.position-actuelle-label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sourdine);
+  margin-bottom: 3px;
+}
+
+.position-actuelle-valeur {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.bouton-arrivee {
+  background: var(--etat-ok) !important;
+  border-color: var(--etat-ok) !important;
+  color: var(--on-teinte) !important;
+}
+
+/* --- Avertissement officiel IRM (relais Meteoalarm) --- */
+
+.irm-bloc {
+  border: 1px solid var(--trait);
+  border-left: 3px solid var(--sourdine);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  background: var(--surface-2);
+}
+
+.irm-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.irm-jaune  { border-left-color: #d4a017; }
+.irm-orange { border-left-color: var(--etat-veille); }
+.irm-rouge  { border-left-color: var(--etat-chaud); }
+
+.irm-bloc a { color: var(--etat-info); }
+
+.irm-ras { color: var(--etat-ok); font-style: normal; }
+
+/* --- Veille météo : vue compacte (Situation) --- */
+
+.meteo-compact { padding: 10px 12px; }
+.meteo-compact .entete-dashboard { margin-bottom: 4px; }
+
+.meteo-resume {
+  font-size: 13px;
+  color: var(--sourdine);
+  margin: 0;
+}
+
+/* Complément local à un item de référentiel : ce que la zone de secours
+   ou la commune ajoute au texte national. Décalé et souligné à gauche
+   pour qu'on voie d'un coup d'œil ce qui ne vient pas du texte. */
+.bloc-local {
+  margin-top: 8px;
+  padding: 6px 0 6px 10px;
+  border-left: 2px solid var(--etat-info);
+}
+.bloc-local textarea {
+  margin-bottom: 6px;
+}

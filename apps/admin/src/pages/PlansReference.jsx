@@ -29,16 +29,16 @@ export default function PlansReference() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-display text-xl font-semibold text-slate-900">Plans de référence</h1>
+        <h1 className="text-xl font-semibold text-encre">Plans de référence</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter un plan</BoutonPrincipal>
         )}
       </div>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-sourdine mb-4">
         PGUI, PPUI par risque, PUI des exploitants, ou plans internes de référence.
       </p>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulairePlan
@@ -56,7 +56,7 @@ export default function PlansReference() {
         <select
           value={filtreType}
           onChange={(e) => setFiltreType(e.target.value)}
-          className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white"
+          className=""
         >
           <option value="">Tous types</option>
           {TYPES.map((t) => (
@@ -66,16 +66,16 @@ export default function PlansReference() {
       </div>
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : plansFiltres.length === 0 ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
           Aucun plan de référence enregistré.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
           {plansFiltres.map((p) =>
             ligneEnEdition === p.id ? (
-              <li key={p.id} className="bg-slate-50 p-3">
+              <li key={p.id} className="bg-fond p-3">
                 <FormulairePlan
                   objetsRisque={objetsRisque}
                   valeursInitiales={p}
@@ -88,24 +88,24 @@ export default function PlansReference() {
                 />
               </li>
             ) : (
-              <li key={p.id} className="flex items-start justify-between px-4 py-3 bg-white">
+              <li key={p.id} className="flex items-start justify-between px-4 py-3 bg-surface">
                 <div>
-                  <p className="text-sm font-medium text-slate-900">
+                  <p className="text-sm font-medium text-encre">
                     {p.nom}
-                    <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">{p.type}</span>
-                    {p.version && <span className="ml-1 text-xs text-slate-400">v{p.version}</span>}
+                    <span className="jeton ml-2 bg-surface-2 text-sourdine">{p.type}</span>
+                    {p.version && <span className="ml-1 text-xs text-sourdine">v{p.version}</span>}
                   </p>
                   {p.objets_a_risque?.identification && (
-                    <p className="text-xs text-slate-500">objet à risque : {p.objets_a_risque.identification}</p>
+                    <p className="text-xs text-sourdine">objet à risque : {p.objets_a_risque.identification}</p>
                   )}
-                  <p className="text-xs text-slate-400 mt-0.5 flex flex-wrap gap-x-3">
+                  <p className="text-xs text-sourdine mt-0.5 flex flex-wrap gap-x-3">
                     {p.date_agrement_local && <span>agréé (local) : {p.date_agrement_local}</span>}
                     {p.date_approbation_autorite && <span>approuvé : {p.date_approbation_autorite}</span>}
                     {p.autorite_approbatrice && <span>par : {p.autorite_approbatrice}</span>}
                     {p.frequence_mise_a_jour && <span>MàJ : {p.frequence_mise_a_jour}</span>}
                   </p>
                   {p.fichier_url && (
-                    <a href={p.fichier_url} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline">
+                    <a href={p.fichier_url} target="_blank" rel="noreferrer" className="text-xs text-info hover:underline">
                       voir le document
                     </a>
                   )}
@@ -161,21 +161,21 @@ function FormulairePlan({ objetsRisque, valeursInitiales = {}, onValider, onAnnu
   }
 
   return (
-    <form onSubmit={soumettre} className="border border-slate-200 rounded-lg p-4 mb-4 bg-slate-50 space-y-3">
+    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-4 bg-fond space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="sm:col-span-2">
-          <label className="block text-xs font-medium text-slate-600 mb-1">Nom</label>
+          <label className="block text-xs font-medium text-sourdine mb-1">Nom</label>
           <input
             required
             value={nom}
             onChange={(e) => setNom(e.target.value)}
             placeholder="ex. PPUI Zoning industriel Nord"
-            className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+            className="w-full"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Type</label>
-          <select value={type} onChange={(e) => setType(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Type</label>
+          <select value={type} onChange={(e) => setType(e.target.value)} className="w-full">
             {TYPES.map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}
@@ -185,12 +185,12 @@ function FormulairePlan({ objetsRisque, valeursInitiales = {}, onValider, onAnnu
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Version</label>
-          <input value={version} onChange={(e) => setVersion(e.target.value)} placeholder="ex. 2026-1" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Version</label>
+          <input value={version} onChange={(e) => setVersion(e.target.value)} placeholder="ex. 2026-1" className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Objet à risque lié</label>
-          <select value={objetRisqueId} onChange={(e) => setObjetRisqueId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Objet à risque lié</label>
+          <select value={objetRisqueId} onChange={(e) => setObjetRisqueId(e.target.value)} className="w-full">
             <option value="">—</option>
             {objetsRisque.map((o) => (
               <option key={o.id} value={o.id}>{o.identification}</option>
@@ -201,32 +201,32 @@ function FormulairePlan({ objetsRisque, valeursInitiales = {}, onValider, onAnnu
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Date d'agrément (local)</label>
-          <input type="date" value={dateAgrementLocal} onChange={(e) => setDateAgrementLocal(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Date d'agrément (local)</label>
+          <input type="date" value={dateAgrementLocal} onChange={(e) => setDateAgrementLocal(e.target.value)} className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Date d'approbation (autorité)</label>
-          <input type="date" value={dateApprobation} onChange={(e) => setDateApprobation(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Date d'approbation (autorité)</label>
+          <input type="date" value={dateApprobation} onChange={(e) => setDateApprobation(e.target.value)} className="w-full" />
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Autorité approbatrice</label>
-          <input value={autoriteApprobatrice} onChange={(e) => setAutoriteApprobatrice(e.target.value)} placeholder="ex. Gouverneur de province" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Autorité approbatrice</label>
+          <input value={autoriteApprobatrice} onChange={(e) => setAutoriteApprobatrice(e.target.value)} placeholder="ex. Gouverneur de province" className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Fréquence de mise à jour</label>
-          <input value={frequenceMaj} onChange={(e) => setFrequenceMaj(e.target.value)} placeholder="ex. tous les 3 ans" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Fréquence de mise à jour</label>
+          <input value={frequenceMaj} onChange={(e) => setFrequenceMaj(e.target.value)} placeholder="ex. tous les 3 ans" className="w-full" />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Lien vers le document</label>
-        <input value={fichierUrl} onChange={(e) => setFichierUrl(e.target.value)} placeholder="https://…" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Lien vers le document</label>
+        <input value={fichierUrl} onChange={(e) => setFichierUrl(e.target.value)} placeholder="https://…" className="w-full" />
       </div>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>

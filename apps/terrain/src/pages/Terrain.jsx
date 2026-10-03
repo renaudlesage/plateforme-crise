@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
-import { BoutonPrincipal, BoutonDiscret } from '../components/Boutons'
+import { BoutonDiscret } from '../components/Boutons'
 import { supabase } from '../lib/supabase'
 
 const STORAGE_KEY_ROLE = 'terrain_role_id_selectionne'
@@ -23,26 +23,22 @@ export default function Terrain() {
   }
 
   if (chargementRoles) {
-    return <p className="text-sm text-slate-400 text-center mt-10">Chargement…</p>
+    return <p className="vide text-center mt-10">Chargement…</p>
   }
 
   if (!roleId) {
     return (
       <div>
-        <h1 className="text-lg font-semibold text-slate-900 mb-1">Qui êtes-vous ?</h1>
-        <p className="text-sm text-slate-500 mb-4">Sélectionnez votre rôle pour cette intervention.</p>
+        <h1 className="text-lg font-semibold text-encre mb-1">Qui êtes-vous ?</h1>
+        <p className="text-sm text-sourdine mb-4">Sélectionnez votre rôle pour cette intervention.</p>
         {roles.length === 0 ? (
-          <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+          <p className="vide border border-dashed border-trait text-center p-6">
             Aucun rôle défini pour ce contexte (à créer dans l'app Admin).
           </p>
         ) : (
           <div className="space-y-2">
             {roles.map((r) => (
-              <button
-                key={r.id}
-                onClick={() => choisirRole(r.id)}
-                className="w-full text-left bg-white border border-slate-200 rounded-lg px-4 py-4 text-base font-medium text-slate-900 active:bg-slate-100"
-              >
+              <button key={r.id} onClick={() => choisirRole(r.id)} className="bouton-terrain discret">
                 {r.libelle}
               </button>
             ))}
@@ -58,8 +54,8 @@ export default function Terrain() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-xs text-slate-500">Rôle actif</p>
-          <p className="text-base font-semibold text-slate-900">{roleActuel?.libelle ?? '—'}</p>
+          <p className="etiquette">Rôle actif</p>
+          <p className="text-base font-semibold text-encre">{roleActuel?.libelle ?? '—'}</p>
         </div>
         <BoutonDiscret onClick={changerDeRole}>Changer</BoutonDiscret>
       </div>
@@ -91,11 +87,11 @@ function IncidentActif({ contexteId, roleId }) {
     charger()
   }, [charger])
 
-  if (chargement) return <p className="text-sm text-slate-400 text-center mt-6">Chargement…</p>
+  if (chargement) return <p className="vide text-center mt-6">Chargement…</p>
 
   if (!incident) {
     return (
-      <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+      <p className="vide border border-dashed border-trait text-center p-6">
         Aucun incident en cours pour ce contexte actuellement.
       </p>
     )
@@ -103,16 +99,17 @@ function IncidentActif({ contexteId, roleId }) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-red-50 border border-red-100 rounded-lg px-4 py-3">
-        <p className="text-sm font-medium text-red-800">
-          {incident.nom}
-          {incident.degre_criticite != null && (
-            <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-red-900 text-white">
-              degré {incident.degre_criticite}
-            </span>
-          )}
-        </p>
-        {incident.type_evenement && <p className="text-xs text-red-600">{incident.type_evenement}</p>}
+      <div className="bandeau-alerte niv-urgence">
+        <div className="niv">Incident</div>
+        <div className="contenu">
+          <p className="consigne">
+            {incident.nom}
+            {incident.degre_criticite != null && (
+              <span className="jeton text-chaud ml-2">degré {incident.degre_criticite}</span>
+            )}
+          </p>
+          {incident.type_evenement && <p className="msg">{incident.type_evenement}</p>}
+        </div>
       </div>
 
       <ChecklistRole incidentId={incident.id} contexteId={contexteId} roleId={roleId} />
@@ -174,12 +171,12 @@ function ChecklistRole({ incidentId, contexteId, roleId }) {
 
   return (
     <div>
-      <h2 className="text-sm font-semibold text-slate-700 mb-2">Ma checklist</h2>
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      <h2>Ma checklist</h2>
+      {erreur && <p className="message erreur mb-2">{erreur}</p>}
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="vide">Chargement…</p>
       ) : templates.length === 0 ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-4 text-center">
+        <p className="vide border border-dashed border-trait text-center p-4">
           Aucune action prévue pour votre rôle.
         </p>
       ) : (
@@ -191,18 +188,12 @@ function ChecklistRole({ incidentId, contexteId, roleId }) {
               <li key={t.id}>
                 <button
                   onClick={() => basculer(t)}
-                  className={`w-full text-left flex items-start gap-3 rounded-lg border px-4 py-3 active:bg-slate-100 ${
-                    fait ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'
-                  }`}
+                  className={`carte w-full text-left flex items-start gap-3 ${fait ? 'a-moi' : ''}`}
                 >
-                  <span
-                    className={`flex-shrink-0 w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center text-xs ${
-                      fait ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300'
-                    }`}
-                  >
+                  <span className={`case flex-shrink-0 ${fait ? 'active' : ''}`} style={{ width: 22, height: 22 }}>
                     {fait ? '✓' : ''}
                   </span>
-                  <span className={`text-sm ${fait ? 'text-slate-500 line-through' : 'text-slate-900'}`}>
+                  <span className={`text-sm ${fait ? 'text-sourdine line-through' : 'text-encre'}`}>
                     {t.libelle}
                   </span>
                 </button>
@@ -253,20 +244,20 @@ function SignalementRapide({ incidentId }) {
 
   return (
     <div>
-      <h2 className="text-sm font-semibold text-slate-700 mb-2">Signaler quelque chose</h2>
+      <h2>Signaler quelque chose</h2>
       <form onSubmit={envoyer} className="space-y-2">
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Ce que vous constatez sur place…"
           rows={3}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="w-full"
         />
-        {erreur && <p className="text-sm text-red-600">{erreur}</p>}
-        {envoye && <p className="text-sm text-emerald-600">Envoyé au PC-Ops.</p>}
-        <BoutonPrincipal type="submit" disabled={enCours || !message.trim()}>
+        {erreur && <p className="message erreur">{erreur}</p>}
+        {envoye && <p className="message">Envoyé au PC-Ops.</p>}
+        <button type="submit" className="bouton-terrain principal" disabled={enCours || !message.trim()}>
           {enCours ? 'Envoi…' : 'Envoyer au PC-Ops'}
-        </BoutonPrincipal>
+        </button>
       </form>
     </div>
   )

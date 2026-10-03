@@ -60,7 +60,7 @@ export default function ObjetsARisque() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-display text-xl font-semibold text-slate-900">Objets à risque</h1>
+        <h1 className="text-xl font-semibold text-encre">Objets à risque</h1>
         <div className="flex gap-2">
           {!packDejaImporte && (
             <BoutonDiscret onClick={importerPackDemarrage} disabled={importEnCours}>
@@ -72,13 +72,13 @@ export default function ObjetsARisque() {
           )}
         </div>
       </div>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-sourdine mb-4">
         Inventaire des risques identifiés — l'évaluation détaillée et le plan d'action se
         feront depuis la fiche de chaque objet (à venir).
       </p>
-      {erreurImport && <p className="text-sm text-red-600 mb-2">{erreurImport}</p>}
+      {erreurImport && <p className="text-sm text-chaud mb-2">{erreurImport}</p>}
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulaireObjet
@@ -95,7 +95,7 @@ export default function ObjetsARisque() {
         <select
           value={filtreCategorie}
           onChange={(e) => setFiltreCategorie(e.target.value)}
-          className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white"
+          className=""
         >
           <option value="">Toutes catégories</option>
           {CATEGORIES.map((c) => (
@@ -107,16 +107,16 @@ export default function ObjetsARisque() {
       </div>
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : objetsFiltres.length === 0 ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
           Aucun objet à risque enregistré.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
           {objetsFiltres.map((o) =>
             ligneEnEdition === o.id ? (
-              <li key={o.id} className="bg-slate-50 p-3">
+              <li key={o.id} className="bg-fond p-3">
                 <FormulaireObjet
                   valeursInitiales={o}
                   onAnnuler={() => setLigneEnEdition(null)}
@@ -128,23 +128,23 @@ export default function ObjetsARisque() {
                 />
               </li>
             ) : (
-              <li key={o.id} className="flex items-start justify-between px-4 py-3 bg-white">
+              <li key={o.id} className="flex items-start justify-between px-4 py-3 bg-surface">
                 <div>
-                  <p className="text-sm font-medium text-slate-900">
+                  <p className="text-sm font-medium text-encre">
                     {o.identification}
-                    {o.code && <span className="ml-2 text-xs font-mono text-slate-400">{o.code}</span>}
+                    {o.code && <span className="ml-2 text-xs font-mono text-sourdine">{o.code}</span>}
                     {o.declencheur && (
-                      <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-institution-50 text-institution-700">
+                      <span className="jeton ml-2 text-info">
                         cascade renseignée
                       </span>
                     )}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-sourdine">
                     {LIBELLE_CATEGORIE[o.categorie] ?? o.categorie}
                     {o.type_risque && <> · {o.type_risque}</>}
                     {o.adresse && <> · {o.adresse}</>}
                   </p>
-                  <p className="text-xs text-slate-400 mt-0.5 flex flex-wrap gap-x-3">
+                  <p className="text-xs text-sourdine mt-0.5 flex flex-wrap gap-x-3">
                     {o.capacite_occupants != null && <span>capacité : {o.capacite_occupants}</span>}
                     {o.conformite_prevention != null && (
                       <span>
@@ -158,7 +158,7 @@ export default function ObjetsARisque() {
                     {o.priorite_cellule_securite != null && (
                       <span>priorité cellule sécurité : {o.priorite_cellule_securite}</span>
                     )}
-                    {o.ppd_requis && <span className="text-amber-600">PPD requis</span>}
+                    {o.ppd_requis && <span className="text-veille">PPD requis</span>}
                     {o.niveau_confidentialite && o.niveau_confidentialite !== 'restreint' && (
                       <span>confidentialité : {o.niveau_confidentialite}</span>
                     )}
@@ -250,91 +250,91 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
   }
 
   return (
-    <form onSubmit={soumettre} className="border border-slate-200 rounded-lg p-4 mb-4 bg-slate-50 space-y-3">
+    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-4 bg-fond space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="sm:col-span-2">
-          <label className="block text-xs font-medium text-slate-600 mb-1">Identification</label>
+          <label className="block text-xs font-medium text-sourdine mb-1">Identification</label>
           <input
             required
             value={identification}
             onChange={(e) => setIdentification(e.target.value)}
             placeholder="ex. Zoning industriel Nord"
-            className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+            className="w-full"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Code interne</label>
-          <input value={code} onChange={(e) => setCode(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm font-mono" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Code interne</label>
+          <input value={code} onChange={(e) => setCode(e.target.value)} className="w-full font-mono" />
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Catégorie</label>
-          <select value={categorie} onChange={(e) => setCategorie(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Catégorie</label>
+          <select value={categorie} onChange={(e) => setCategorie(e.target.value)} className="w-full">
             {CATEGORIES.map((c) => (
               <option key={c.valeur} value={c.valeur}>{c.libelle}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Type de risque</label>
-          <input value={typeRisque} onChange={(e) => setTypeRisque(e.target.value)} placeholder="ex. seveso_seuil_haut" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Type de risque</label>
+          <input value={typeRisque} onChange={(e) => setTypeRisque(e.target.value)} placeholder="ex. seveso_seuil_haut" className="w-full" />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Adresse</label>
-        <input value={adresse} onChange={(e) => setAdresse(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Adresse</label>
+        <input value={adresse} onChange={(e) => setAdresse(e.target.value)} className="w-full" />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Latitude</label>
-          <input value={latitude} onChange={(e) => setLatitude(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Latitude</label>
+          <input value={latitude} onChange={(e) => setLatitude(e.target.value)} className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Longitude</label>
-          <input value={longitude} onChange={(e) => setLongitude(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Longitude</label>
+          <input value={longitude} onChange={(e) => setLongitude(e.target.value)} className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Capacité (occupants)</label>
-          <input type="number" value={capacite} onChange={(e) => setCapacite(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Capacité (occupants)</label>
+          <input type="number" value={capacite} onChange={(e) => setCapacite(e.target.value)} className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Hauteur infrastructure</label>
-          <input value={hauteur} onChange={(e) => setHauteur(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Hauteur infrastructure</label>
+          <input value={hauteur} onChange={(e) => setHauteur(e.target.value)} className="w-full" />
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
-        <label className="flex items-center gap-2 text-sm text-slate-700">
+        <label className="flex items-center gap-2 text-sm text-sourdine">
           <input type="checkbox" checked={conformite} onChange={(e) => setConformite(e.target.checked)} />
           Conforme (rapport prévention)
         </label>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Date du rapport</label>
-          <input type="date" value={conformiteDate} onChange={(e) => setConformiteDate(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Date du rapport</label>
+          <input type="date" value={conformiteDate} onChange={(e) => setConformiteDate(e.target.value)} className="w-full" />
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-sourdine">
         <input type="checkbox" checked={piuRecu} onChange={(e) => setPiuRecu(e.target.checked)} />
         Plan interne d'urgence (PIU) reçu de l'exploitant
       </label>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Priorité déclarant (1-20)</label>
-          <input type="number" min="1" max="20" value={prioriteDeclarant} onChange={(e) => setPrioriteDeclarant(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Priorité déclarant (1-20)</label>
+          <input type="number" min="1" max="20" value={prioriteDeclarant} onChange={(e) => setPrioriteDeclarant(e.target.value)} className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Priorité cellule sécurité (1-20)</label>
-          <input type="number" min="1" max="20" value={prioriteCellule} onChange={(e) => setPrioriteCellule(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Priorité cellule sécurité (1-20)</label>
+          <input type="number" min="1" max="20" value={prioriteCellule} onChange={(e) => setPrioriteCellule(e.target.value)} className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Niveau de confidentialité</label>
-          <select value={niveauConfidentialite} onChange={(e) => setNiveauConfidentialite(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Niveau de confidentialité</label>
+          <select value={niveauConfidentialite} onChange={(e) => setNiveauConfidentialite(e.target.value)} className="w-full">
             {NIVEAUX_CONFIDENTIALITE.map((n) => (
               <option key={n.valeur} value={n.valeur}>{n.libelle}</option>
             ))}
@@ -342,70 +342,70 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
         </div>
       </div>
 
-      <div className="space-y-2 bg-amber-50/40 border border-amber-100 rounded-lg p-3">
-        <label className="flex items-center gap-2 text-sm text-slate-700">
+      <div className="space-y-2 border border-trait rounded p-3">
+        <label className="flex items-center gap-2 text-sm text-sourdine">
           <input type="checkbox" checked={ppdRequis} onChange={(e) => setPpdRequis(e.target.checked)} />
           Plan particulier d'urgence et d'intervention (PPUI) requis
         </label>
         {ppdRequis && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Conditions de déclenchement du PPUI</label>
-              <textarea value={ppdConditions} onChange={(e) => setPpdConditions(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+              <label className="block text-xs font-medium text-sourdine mb-1">Conditions de déclenchement du PPUI</label>
+              <textarea value={ppdConditions} onChange={(e) => setPpdConditions(e.target.value)} rows={2} className="w-full" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Distance de sécurité (m)</label>
-              <input type="number" value={ppdDistanceSecurite} onChange={(e) => setPpdDistanceSecurite(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+              <label className="block text-xs font-medium text-sourdine mb-1">Distance de sécurité (m)</label>
+              <input type="number" value={ppdDistanceSecurite} onChange={(e) => setPpdDistanceSecurite(e.target.value)} className="w-full" />
             </div>
           </div>
         )}
       </div>
 
-      <div className="pt-2 border-t border-slate-200">
+      <div className="pt-2 border-t border-trait">
         <button
           type="button"
           onClick={() => setAfficherCascade((v) => !v)}
-          className="text-sm text-institution-700 font-medium hover:underline"
+          className="text-sm text-info font-medium hover:underline"
         >
           {afficherCascade ? '▾' : '▸'} Analyse cascade {afficherCascade ? '(masquer)' : '(déplier)'}
         </button>
       </div>
 
       {afficherCascade && (
-        <div className="space-y-3 bg-institution-50/40 border border-institution-100 rounded-lg p-3">
+        <div className="space-y-3 border border-trait rounded p-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Déclencheur</label>
-            <input value={declencheur} onChange={(e) => setDeclencheur(e.target.value)} placeholder="ex. Crue > seuil X à la station Y" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+            <label className="block text-xs font-medium text-sourdine mb-1">Déclencheur</label>
+            <input value={declencheur} onChange={(e) => setDeclencheur(e.target.value)} placeholder="ex. Crue > seuil X à la station Y" className="w-full" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Effets directs</label>
-            <textarea value={effetsDirects} onChange={(e) => setEffetsDirects(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+            <label className="block text-xs font-medium text-sourdine mb-1">Effets directs</label>
+            <textarea value={effetsDirects} onChange={(e) => setEffetsDirects(e.target.value)} rows={2} className="w-full" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Effets de cascade potentiels</label>
-            <textarea value={effetsCascade} onChange={(e) => setEffetsCascade(e.target.value)} rows={2} placeholder="ex. coupure électrique -> pompes hors service -> aggravation inondation" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+            <label className="block text-xs font-medium text-sourdine mb-1">Effets de cascade potentiels</label>
+            <textarea value={effetsCascade} onChange={(e) => setEffetsCascade(e.target.value)} rows={2} placeholder="ex. coupure électrique -> pompes hors service -> aggravation inondation" className="w-full" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Signaux faibles à surveiller</label>
-            <textarea value={signauxFaibles} onChange={(e) => setSignauxFaibles(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+            <label className="block text-xs font-medium text-sourdine mb-1">Signaux faibles à surveiller</label>
+            <textarea value={signauxFaibles} onChange={(e) => setSignauxFaibles(e.target.value)} rows={2} className="w-full" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Mesures préventives</label>
-              <textarea value={mesuresPreventives} onChange={(e) => setMesuresPreventives(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+              <label className="block text-xs font-medium text-sourdine mb-1">Mesures préventives</label>
+              <textarea value={mesuresPreventives} onChange={(e) => setMesuresPreventives(e.target.value)} rows={2} className="w-full" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Mesures compensatoires</label>
-              <textarea value={mesuresCompensatoires} onChange={(e) => setMesuresCompensatoires(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+              <label className="block text-xs font-medium text-sourdine mb-1">Mesures compensatoires</label>
+              <textarea value={mesuresCompensatoires} onChange={(e) => setMesuresCompensatoires(e.target.value)} rows={2} className="w-full" />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Décisions à préparer</label>
-            <textarea value={decisionsAPreparer} onChange={(e) => setDecisionsAPreparer(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+            <label className="block text-xs font-medium text-sourdine mb-1">Décisions à préparer</label>
+            <textarea value={decisionsAPreparer} onChange={(e) => setDecisionsAPreparer(e.target.value)} rows={2} className="w-full" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Messages publics pré-rédigés</label>
-            <textarea value={messagesPublics} onChange={(e) => setMessagesPublics(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+            <label className="block text-xs font-medium text-sourdine mb-1">Messages publics pré-rédigés</label>
+            <textarea value={messagesPublics} onChange={(e) => setMessagesPublics(e.target.value)} rows={2} className="w-full" />
           </div>
 
           {valeursInitiales.id && <GestionEvaluationsRisque objetId={valeursInitiales.id} />}
@@ -415,7 +415,7 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
         </div>
       )}
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>
@@ -478,17 +478,17 @@ function GestionPlansAction({ objetId }) {
   }
 
   return (
-    <div className="pt-2 border-t border-institution-100">
+    <div className="pt-2 border-t">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-medium text-slate-600">Plan d'action (étapes ordonnées)</p>
+        <p className="text-xs font-medium text-sourdine">Plan d'action (étapes ordonnées)</p>
         {!enAjout && (
-          <button type="button" onClick={() => setEnAjout(true)} className="text-xs text-institution-700 hover:underline">
+          <button type="button" onClick={() => setEnAjout(true)} className="text-xs text-info hover:underline">
             + ajouter une étape
           </button>
         )}
       </div>
 
-      {erreur && <p className="text-xs text-red-600 mb-1">{erreur}</p>}
+      {erreur && <p className="text-xs text-chaud mb-1">{erreur}</p>}
 
       {enAjout && (
         <FormulaireEtapePlanAction
@@ -504,34 +504,34 @@ function GestionPlansAction({ objetId }) {
       )}
 
       {chargement ? (
-        <p className="text-xs text-slate-400">Chargement…</p>
+        <p className="text-xs text-sourdine">Chargement…</p>
       ) : etapes.length === 0 ? (
-        <p className="text-xs text-slate-400">Aucune étape définie pour l'instant.</p>
+        <p className="text-xs text-sourdine">Aucune étape définie pour l'instant.</p>
       ) : (
         <ul className="space-y-1">
           {etapes.map((e) => (
-            <li key={e.id} className="bg-white rounded px-2.5 py-1.5 border border-slate-200 text-xs">
+            <li key={e.id} className="bg-surface rounded px-2.5 py-1.5 border border-trait text-xs">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-slate-800">
-                    <span className="text-slate-400 mr-1">{e.ordre}.</span>
+                  <p className="text-encre">
+                    <span className="text-sourdine mr-1">{e.ordre}.</span>
                     {e.libelle}
                   </p>
                   {e.contacts && (
-                    <p className="text-slate-400">responsable : {e.contacts.prenom} {e.contacts.nom}</p>
+                    <p className="text-sourdine">responsable : {e.contacts.prenom} {e.contacts.nom}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <select
                     value={e.statut ?? 'a_faire'}
                     onChange={(ev) => changerStatut(e.id, ev.target.value)}
-                    className="rounded border border-slate-300 px-1.5 py-1 text-xs bg-white"
+                    className=""
                   >
                     {STATUTS_PLAN_ACTION.map((s) => (
                       <option key={s.valeur} value={s.valeur}>{s.libelle}</option>
                     ))}
                   </select>
-                  <button type="button" onClick={() => retirer(e.id)} className="text-slate-400 hover:text-red-600">✕</button>
+                  <button type="button" onClick={() => retirer(e.id)} className="text-sourdine hover:text-chaud">✕</button>
                 </div>
               </div>
             </li>
@@ -564,7 +564,7 @@ function FormulaireEtapePlanAction({ objetId, contacts = [], ordreSuivant, onVal
   }
 
   return (
-    <form onSubmit={soumettre} className="bg-white border border-slate-200 rounded-lg p-2.5 mb-2 space-y-2">
+    <form onSubmit={soumettre} className="bg-surface border border-trait rounded p-2.5 mb-2 space-y-2">
       <div className="grid grid-cols-[4rem_1fr] gap-2">
         <input
           type="number"
@@ -572,27 +572,27 @@ function FormulaireEtapePlanAction({ objetId, contacts = [], ordreSuivant, onVal
           value={ordre}
           onChange={(e) => setOrdre(e.target.value)}
           placeholder="Ordre"
-          className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+          className="w-full"
         />
         <input
           required
           value={libelle}
           onChange={(e) => setLibelle(e.target.value)}
           placeholder="ex. Évacuer le périmètre immédiat"
-          className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+          className="w-full"
         />
       </div>
       <select
         value={responsableContactId}
         onChange={(e) => setResponsableContactId(e.target.value)}
-        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs bg-white"
+        className="w-full"
       >
         <option value="">Responsable — aucun</option>
         {contacts.map((c) => (
           <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
         ))}
       </select>
-      {erreur && <p className="text-xs text-red-600">{erreur}</p>}
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
       <div className="flex gap-2">
         <BoutonDiscret type="submit" disabled={enCours}>{enCours ? 'Ajout…' : 'Ajouter'}</BoutonDiscret>
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
@@ -644,17 +644,17 @@ function GestionEvaluationsRisque({ objetId }) {
   }
 
   return (
-    <div className="pt-2 border-t border-institution-100">
+    <div className="pt-2 border-t">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-medium text-slate-600">Évaluation du risque (BNRA/PRGC — 4 dimensions × scénario normal/exceptionnel)</p>
+        <p className="text-xs font-medium text-sourdine">Évaluation du risque (BNRA/PRGC — 4 dimensions × scénario normal/exceptionnel)</p>
         {!enAjout && (
-          <button type="button" onClick={() => setEnAjout(true)} className="text-xs text-institution-700 hover:underline">
+          <button type="button" onClick={() => setEnAjout(true)} className="text-xs text-info hover:underline">
             + nouvelle évaluation
           </button>
         )}
       </div>
 
-      {erreur && <p className="text-xs text-red-600 mb-1">{erreur}</p>}
+      {erreur && <p className="text-xs text-chaud mb-1">{erreur}</p>}
 
       {enAjout && (
         <FormulaireEvaluationRisque
@@ -668,28 +668,28 @@ function GestionEvaluationsRisque({ objetId }) {
       )}
 
       {chargement ? (
-        <p className="text-xs text-slate-400">Chargement…</p>
+        <p className="text-xs text-sourdine">Chargement…</p>
       ) : evaluations.length === 0 ? (
-        <p className="text-xs text-slate-400">Aucune évaluation enregistrée.</p>
+        <p className="text-xs text-sourdine">Aucune évaluation enregistrée.</p>
       ) : (
         <ul className="space-y-1.5">
           {evaluations.map((ev) => (
-            <li key={ev.id} className="bg-white rounded px-2.5 py-2 border border-slate-200 text-xs">
+            <li key={ev.id} className="bg-surface rounded px-2.5 py-2 border border-trait text-xs">
               <div className="flex items-start justify-between gap-2 mb-1">
-                <p className="text-slate-800 font-medium">
+                <p className="text-encre font-medium">
                   {ev.date_evaluation}
-                  {ev.evaluation_globale && <span className="ml-2 text-slate-400 font-normal">— {ev.evaluation_globale}</span>}
+                  {ev.evaluation_globale && <span className="ml-2 text-sourdine font-normal">— {ev.evaluation_globale}</span>}
                 </p>
-                <button type="button" onClick={() => retirer(ev.id)} className="text-slate-400 hover:text-red-600 flex-shrink-0">✕</button>
+                <button type="button" onClick={() => retirer(ev.id)} className="text-sourdine hover:text-chaud flex-shrink-0">✕</button>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-slate-500">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-sourdine">
                 {DIMENSIONS_RISQUE.map((d) => {
                   const score = ev[`${d.cle}_score`]
                   const proba = ev[`${d.cle}_probabilite`]
                   if (score == null && !proba) return null
                   return (
                     <div key={d.cle}>
-                      <span className="text-slate-400">{d.libelle} :</span>{' '}
+                      <span className="text-sourdine">{d.libelle} :</span>{' '}
                       {score != null && <>score {score}</>}
                       {proba && <> ({PROBABILITES.find((p) => p.valeur === proba)?.libelle ?? proba})</>}
                     </div>
@@ -697,13 +697,13 @@ function GestionEvaluationsRisque({ objetId }) {
                 })}
               </div>
               {(ev.duree_situation || ev.vitesse_developpement) && (
-                <p className="text-slate-400 mt-1">
+                <p className="text-sourdine mt-1">
                   {ev.duree_situation && <>durée : {ev.duree_situation}</>}
                   {ev.vitesse_developpement && <> · vitesse de développement : {ev.vitesse_developpement}</>}
                 </p>
               )}
-              {ev.elements_aggravants && <p className="text-slate-400 mt-0.5">aggravants : {ev.elements_aggravants}</p>}
-              {ev.elements_attenuants && <p className="text-slate-400 mt-0.5">atténuants : {ev.elements_attenuants}</p>}
+              {ev.elements_aggravants && <p className="text-sourdine mt-0.5">aggravants : {ev.elements_aggravants}</p>}
+              {ev.elements_attenuants && <p className="text-sourdine mt-0.5">atténuants : {ev.elements_attenuants}</p>}
             </li>
           ))}
         </ul>
@@ -762,16 +762,16 @@ function FormulaireEvaluationRisque({ objetId, onValider, onAnnuler }) {
   }
 
   return (
-    <form onSubmit={soumettre} className="bg-white border border-slate-200 rounded-lg p-3 mb-2 space-y-2.5">
+    <form onSubmit={soumettre} className="bg-surface border border-trait rounded p-3 mb-2 space-y-2.5">
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Date de l'évaluation</label>
-        <input type="date" required value={dateEvaluation} onChange={(e) => setDateEvaluation(e.target.value)} className="w-full sm:w-48 rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Date de l'évaluation</label>
+        <input type="date" required value={dateEvaluation} onChange={(e) => setDateEvaluation(e.target.value)} className="w-full sm:w-48" />
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-xs border-collapse">
           <thead>
-            <tr className="text-slate-400">
+            <tr className="text-sourdine">
               <th className="text-left font-normal pb-1">Dimension</th>
               <th className="text-left font-normal pb-1" colSpan={2}>Scénario normal</th>
               <th className="text-left font-normal pb-1" colSpan={2}>Scénario exceptionnel</th>
@@ -779,8 +779,8 @@ function FormulaireEvaluationRisque({ objetId, onValider, onAnnuler }) {
           </thead>
           <tbody>
             {DIMENSIONS_RISQUE.map((d) => (
-              <tr key={d.cle} className="border-t border-slate-100">
-                <td className="py-1.5 pr-2 text-slate-700">{d.libelle}</td>
+              <tr key={d.cle} className="border-t border-trait">
+                <td className="py-1.5 pr-2 text-sourdine">{d.libelle}</td>
                 <td className="py-1.5 pr-1">
                   <input
                     type="number"
@@ -789,14 +789,14 @@ function FormulaireEvaluationRisque({ objetId, onValider, onAnnuler }) {
                     placeholder="score 1-4"
                     value={valeurs[`${d.cle}_score`]}
                     onChange={(e) => majValeur(`${d.cle}_score`, e.target.value)}
-                    className="w-16 rounded-md border border-slate-300 px-1.5 py-1 text-xs"
+                    className="w-16"
                   />
                 </td>
                 <td className="py-1.5 pr-2">
                   <select
                     value={valeurs[`${d.cle}_probabilite`]}
                     onChange={(e) => majValeur(`${d.cle}_probabilite`, e.target.value)}
-                    className="rounded-md border border-slate-300 px-1.5 py-1 text-xs bg-white"
+                    className=""
                   >
                     <option value="">probabilité —</option>
                     {PROBABILITES.map((p) => (
@@ -812,14 +812,14 @@ function FormulaireEvaluationRisque({ objetId, onValider, onAnnuler }) {
                     placeholder="score 1-4"
                     value={valeurs[`${d.cle}_score_exceptionnel`]}
                     onChange={(e) => majValeur(`${d.cle}_score_exceptionnel`, e.target.value)}
-                    className="w-16 rounded-md border border-slate-300 px-1.5 py-1 text-xs"
+                    className="w-16"
                   />
                 </td>
                 <td className="py-1.5">
                   <select
                     value={valeurs[`${d.cle}_probabilite_exceptionnel`]}
                     onChange={(e) => majValeur(`${d.cle}_probabilite_exceptionnel`, e.target.value)}
-                    className="rounded-md border border-slate-300 px-1.5 py-1 text-xs bg-white"
+                    className=""
                   >
                     <option value="">probabilité —</option>
                     {PROBABILITES.map((p) => (
@@ -834,14 +834,14 @@ function FormulaireEvaluationRisque({ objetId, onValider, onAnnuler }) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        <input value={dureeSituation} onChange={(e) => setDureeSituation(e.target.value)} placeholder="Durée de la situation" className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
-        <input value={vitesseDeveloppement} onChange={(e) => setVitesseDeveloppement(e.target.value)} placeholder="Vitesse de développement" className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
+        <input value={dureeSituation} onChange={(e) => setDureeSituation(e.target.value)} placeholder="Durée de la situation" className="w-full" />
+        <input value={vitesseDeveloppement} onChange={(e) => setVitesseDeveloppement(e.target.value)} placeholder="Vitesse de développement" className="w-full" />
       </div>
-      <textarea value={elementsAggravants} onChange={(e) => setElementsAggravants(e.target.value)} placeholder="Éléments aggravants" rows={2} className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
-      <textarea value={elementsAttenuants} onChange={(e) => setElementsAttenuants(e.target.value)} placeholder="Éléments atténuants" rows={2} className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
-      <input value={evaluationGlobale} onChange={(e) => setEvaluationGlobale(e.target.value)} placeholder="Évaluation globale (synthèse)" className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
+      <textarea value={elementsAggravants} onChange={(e) => setElementsAggravants(e.target.value)} placeholder="Éléments aggravants" rows={2} className="w-full" />
+      <textarea value={elementsAttenuants} onChange={(e) => setElementsAttenuants(e.target.value)} placeholder="Éléments atténuants" rows={2} className="w-full" />
+      <input value={evaluationGlobale} onChange={(e) => setEvaluationGlobale(e.target.value)} placeholder="Évaluation globale (synthèse)" className="w-full" />
 
-      {erreur && <p className="text-xs text-red-600">{erreur}</p>}
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
       <div className="flex gap-2">
         <BoutonDiscret type="submit" disabled={enCours}>{enCours ? 'Enregistrement…' : 'Enregistrer'}</BoutonDiscret>
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
@@ -887,17 +887,17 @@ function GestionMesuresCompensatoires({ objetId }) {
   }
 
   return (
-    <div className="pt-2 border-t border-institution-100">
+    <div className="pt-2 border-t">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-medium text-slate-600">Suivi quantifié des mesures compensatoires</p>
+        <p className="text-xs font-medium text-sourdine">Suivi quantifié des mesures compensatoires</p>
         {!enAjout && (
-          <button type="button" onClick={() => setEnAjout(true)} className="text-xs text-institution-700 hover:underline">
+          <button type="button" onClick={() => setEnAjout(true)} className="text-xs text-info hover:underline">
             + ajouter
           </button>
         )}
       </div>
 
-      {erreur && <p className="text-xs text-red-600 mb-1">{erreur}</p>}
+      {erreur && <p className="text-xs text-chaud mb-1">{erreur}</p>}
 
       {enAjout && (
         <FormulaireMesureCompensatoire
@@ -912,38 +912,38 @@ function GestionMesuresCompensatoires({ objetId }) {
       )}
 
       {chargement ? (
-        <p className="text-xs text-slate-400">Chargement…</p>
+        <p className="text-xs text-sourdine">Chargement…</p>
       ) : mesures.length === 0 ? (
-        <p className="text-xs text-slate-400">Aucune mesure suivie pour l'instant.</p>
+        <p className="text-xs text-sourdine">Aucune mesure suivie pour l'instant.</p>
       ) : (
         <ul className="space-y-1">
           {mesures.map((m) => (
-            <li key={m.id} className="bg-white rounded px-2.5 py-1.5 border border-slate-200 text-xs">
+            <li key={m.id} className="bg-surface rounded px-2.5 py-1.5 border border-trait text-xs">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-slate-800">{m.mesure}</p>
-                  {m.quantification && <p className="text-slate-400">{m.quantification}</p>}
+                  <p className="text-encre">{m.mesure}</p>
+                  {m.quantification && <p className="text-sourdine">{m.quantification}</p>}
                   {(m.date_cible || m.date_realisation) && (
-                    <p className="text-slate-400">
+                    <p className="text-sourdine">
                       {m.date_cible && <>cible : {m.date_cible}</>}
                       {m.date_realisation && <> · réalisée : {m.date_realisation}</>}
                     </p>
                   )}
                   {m.contacts && (
-                    <p className="text-slate-400">responsable : {m.contacts.prenom} {m.contacts.nom}</p>
+                    <p className="text-sourdine">responsable : {m.contacts.prenom} {m.contacts.nom}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <select
                     value={m.statut}
                     onChange={(e) => changerStatut(m.id, e.target.value)}
-                    className="rounded border border-slate-300 px-1.5 py-1 text-xs bg-white"
+                    className=""
                   >
                     {STATUTS_MESURE.map((s) => (
                       <option key={s.valeur} value={s.valeur}>{s.libelle}</option>
                     ))}
                   </select>
-                  <button type="button" onClick={() => retirer(m.id)} className="text-slate-400 hover:text-red-600">✕</button>
+                  <button type="button" onClick={() => retirer(m.id)} className="text-sourdine hover:text-chaud">✕</button>
                 </div>
               </div>
             </li>
@@ -978,34 +978,34 @@ function FormulaireMesureCompensatoire({ objetId, contacts = [], onValider, onAn
   }
 
   return (
-    <form onSubmit={soumettre} className="bg-white border border-slate-200 rounded-lg p-2.5 mb-2 space-y-2">
+    <form onSubmit={soumettre} className="bg-surface border border-trait rounded p-2.5 mb-2 space-y-2">
       <input
         required
         value={mesure}
         onChange={(e) => setMesure(e.target.value)}
         placeholder="ex. Installation de 2 pompes de secours supplémentaires"
-        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+        className="w-full"
       />
       <div className="grid grid-cols-2 gap-2">
         <input
           value={quantification}
           onChange={(e) => setQuantification(e.target.value)}
           placeholder="Quantification (ex. 2/4 réalisées)"
-          className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+          className="w-full"
         />
-        <input type="date" value={dateCible} onChange={(e) => setDateCible(e.target.value)} className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
+        <input type="date" value={dateCible} onChange={(e) => setDateCible(e.target.value)} className="w-full" />
       </div>
       <select
         value={responsableContactId}
         onChange={(e) => setResponsableContactId(e.target.value)}
-        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs bg-white"
+        className="w-full"
       >
         <option value="">Responsable — aucun</option>
         {contacts.map((c) => (
           <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
         ))}
       </select>
-      {erreur && <p className="text-xs text-red-600">{erreur}</p>}
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
       <div className="flex gap-2">
         <BoutonDiscret type="submit" disabled={enCours}>{enCours ? 'Ajout…' : 'Ajouter'}</BoutonDiscret>
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
@@ -1061,25 +1061,25 @@ function GestionFonctionsCritiques({ objetId }) {
   const disponibles = toutesFonctions.filter((f) => !liees.some((l) => l.fonction_critique_id === f.id))
 
   return (
-    <div className="pt-2 border-t border-institution-100">
-      <p className="text-xs font-medium text-slate-600 mb-2">Fonctions critiques impactées</p>
-      {erreur && <p className="text-xs text-red-600 mb-1">{erreur}</p>}
+    <div className="pt-2 border-t">
+      <p className="text-xs font-medium text-sourdine mb-2">Fonctions critiques impactées</p>
+      {erreur && <p className="text-xs text-chaud mb-1">{erreur}</p>}
       {chargement ? (
-        <p className="text-xs text-slate-400">Chargement…</p>
+        <p className="text-xs text-sourdine">Chargement…</p>
       ) : (
         <>
           {liees.length > 0 && (
             <ul className="space-y-1 mb-2">
               {liees.map((l) => (
-                <li key={l.fonction_critique_id} className="flex items-center justify-between text-xs bg-white rounded px-2.5 py-1.5 border border-slate-200">
-                  <span>{l.fonctions_critiques?.nom} <span className="text-slate-400">({l.fonctions_critiques?.statut_actuel})</span></span>
-                  <button type="button" onClick={() => retirer(l.fonction_critique_id)} className="text-slate-400 hover:text-red-600">✕</button>
+                <li key={l.fonction_critique_id} className="jeton flex items-center justify-between bg-surface border border-trait">
+                  <span>{l.fonctions_critiques?.nom} <span className="text-sourdine">({l.fonctions_critiques?.statut_actuel})</span></span>
+                  <button type="button" onClick={() => retirer(l.fonction_critique_id)} className="text-sourdine hover:text-chaud">✕</button>
                 </li>
               ))}
             </ul>
           )}
           <div className="flex gap-2">
-            <select value={selection} onChange={(e) => setSelection(e.target.value)} className="flex-1 rounded-md border border-slate-300 px-2 py-1 text-xs bg-white">
+            <select value={selection} onChange={(e) => setSelection(e.target.value)} className="flex-1">
               <option value="">Ajouter une fonction critique…</option>
               {disponibles.map((f) => (
                 <option key={f.id} value={f.id}>{f.nom}</option>

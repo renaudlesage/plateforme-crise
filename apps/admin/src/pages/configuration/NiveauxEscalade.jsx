@@ -25,8 +25,8 @@ export default function NiveauxEscalade() {
     <section>
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h2 className="font-medium text-slate-900">Niveaux d'escalade</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="font-medium text-encre">Niveaux d'escalade</h2>
+          <p className="text-sm text-sourdine">
             Les paliers de gestion de crise (ex. communal → provincial → fédéral), dans
             l'ordre de montée en puissance.
           </p>
@@ -36,10 +36,10 @@ export default function NiveauxEscalade() {
         )}
       </div>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {roles.length === 0 && (
-        <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">
+        <p className="text-sm text-veille border rounded px-3 py-2 mb-3">
           Aucun rôle n'existe encore — crée d'abord au moins un rôle (onglet Rôles) pour pouvoir
           désigner qui déclenche chaque niveau.
         </p>
@@ -58,16 +58,16 @@ export default function NiveauxEscalade() {
       )}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : niveaux.length === 0 && !enAjout ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
           Aucun niveau d'escalade défini pour ce contexte.
         </p>
       ) : (
         <ol className="space-y-2">
           {niveaux.map((n) =>
             ligneEnEdition === n.id ? (
-              <li key={n.id} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+              <li key={n.id} className="bg-fond rounded p-3 border border-trait">
                 <FormulaireNiveau
                   roles={roles}
                   valeursInitiales={n}
@@ -82,22 +82,22 @@ export default function NiveauxEscalade() {
             ) : (
               <li
                 key={n.id}
-                className="flex items-start justify-between px-4 py-3 bg-white border border-slate-200 rounded-lg"
+                className="flex items-start justify-between px-4 py-3 bg-surface border border-trait rounded"
               >
                 <div className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-slate-900 text-white text-xs flex items-center justify-center mt-0.5">
+                  <span className="flex-shrink-0 w-6 h-6 rounded bg-encre text-fond text-xs flex items-center justify-center mt-0.5">
                     {n.ordre}
                   </span>
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{n.libelle}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-sm font-medium text-encre">{n.libelle}</p>
+                    <p className="text-xs text-sourdine">
                       code : {n.code}
                       {n.roles?.libelle && (
                         <> · déclenché par <strong>{n.roles.libelle}</strong></>
                       )}
                     </p>
                     {n.criteres_declenchement && (
-                      <p className="text-xs text-slate-500 mt-1 italic">
+                      <p className="text-xs text-sourdine mt-1 italic">
                         {n.criteres_declenchement}
                       </p>
                     )}
@@ -158,36 +158,36 @@ function FormulaireNiveau({ roles, valeursInitiales = {}, onValider, onAnnuler }
     <form onSubmit={soumettre} className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="sm:col-span-2">
-          <label className="block text-xs font-medium text-slate-600 mb-1">Libellé</label>
+          <label className="block text-xs font-medium text-sourdine mb-1">Libellé</label>
           <input
             required
             value={libelle}
             onChange={(e) => setLibelle(e.target.value)}
             placeholder="ex. Phase communale"
-            className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+            className="w-full"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Ordre</label>
+          <label className="block text-xs font-medium text-sourdine mb-1">Ordre</label>
           <input
             required
             type="number"
             min="1"
             value={ordre}
             onChange={(e) => setOrdre(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+            className="w-full"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">
-          Rôle déclencheur <span className="text-slate-400">(non délégable)</span>
+        <label className="block text-xs font-medium text-sourdine mb-1">
+          Rôle déclencheur <span className="text-sourdine">(non délégable)</span>
         </label>
         <select
           value={roleDeclencheurId}
           onChange={(e) => setRoleDeclencheurId(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white"
+          className="w-full"
         >
           <option value="">— Aucun / à définir —</option>
           {roles.map((r) => (
@@ -199,7 +199,7 @@ function FormulaireNiveau({ roles, valeursInitiales = {}, onValider, onAnnuler }
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">
+        <label className="block text-xs font-medium text-sourdine mb-1">
           Critères de déclenchement
         </label>
         <textarea
@@ -207,11 +207,11 @@ function FormulaireNiveau({ roles, valeursInitiales = {}, onValider, onAnnuler }
           onChange={(e) => setCriteres(e.target.value)}
           rows={2}
           placeholder="ex. Conséquences limitées au territoire de la commune..."
-          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+          className="w-full"
         />
       </div>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>

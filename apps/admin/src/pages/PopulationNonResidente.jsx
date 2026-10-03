@@ -33,17 +33,17 @@ export default function PopulationNonResidente() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-display text-xl font-semibold text-slate-900">Population non résidente</h1>
+        <h1 className="text-xl font-semibold text-encre">Population non résidente</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter un lieu</BoutonPrincipal>
         )}
       </div>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-sourdine mb-4">
         Population exposée temporaire — campings, plaines de jeux, tourisme — distincte de la
         population résidente recensée.
       </p>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulairePopulation
@@ -58,16 +58,16 @@ export default function PopulationNonResidente() {
       )}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : populations.length === 0 && !enAjout ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
           Aucun lieu enregistré.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
           {populations.map((p) =>
             ligneEnEdition === p.id ? (
-              <li key={p.id} className="bg-slate-50 p-3">
+              <li key={p.id} className="bg-fond p-3">
                 <FormulairePopulation
                   contacts={contacts}
                   valeursInitiales={p}
@@ -80,23 +80,23 @@ export default function PopulationNonResidente() {
                 />
               </li>
             ) : (
-              <li key={p.id} className="flex items-start justify-between px-4 py-3 bg-white">
+              <li key={p.id} className="flex items-start justify-between px-4 py-3 bg-surface">
                 <div>
-                  <p className="text-sm font-medium text-slate-900">
+                  <p className="text-sm font-medium text-encre">
                     {p.lieu}
-                    {!p.actif && <span className="ml-2 text-xs text-slate-400">(inactif)</span>}
+                    {!p.actif && <span className="ml-2 text-xs text-sourdine">(inactif)</span>}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-sourdine">
                     {TYPES.find((t) => t.valeur === p.type_population)?.libelle ?? p.type_population}
                     {p.capacite_max != null && <> · capacité max : {p.capacite_max}</>}
                   </p>
                   {(p.periode_debut || p.periode_fin) && (
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-sourdine mt-0.5">
                       période : {p.periode_debut ?? '?'} → {p.periode_fin ?? '?'}
                     </p>
                   )}
                   {p.contacts && (
-                    <p className="text-xs text-slate-400 mt-0.5">gestionnaire : {p.contacts.prenom} {p.contacts.nom}</p>
+                    <p className="text-xs text-sourdine mt-0.5">gestionnaire : {p.contacts.prenom} {p.contacts.nom}</p>
                   )}
                 </div>
                 <div className="flex gap-2 flex-shrink-0 ml-3">
@@ -150,21 +150,21 @@ function FormulairePopulation({ contacts = [], valeursInitiales = {}, onValider,
   }
 
   return (
-    <form onSubmit={soumettre} className="border border-slate-200 rounded-lg p-4 mb-4 bg-slate-50 space-y-3">
+    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-4 bg-fond space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Lieu</label>
+          <label className="block text-xs font-medium text-sourdine mb-1">Lieu</label>
           <input
             required
             value={lieu}
             onChange={(e) => setLieu(e.target.value)}
             placeholder="ex. Camping des Roches"
-            className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+            className="w-full"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Type</label>
-          <select value={typePopulation} onChange={(e) => setTypePopulation(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Type</label>
+          <select value={typePopulation} onChange={(e) => setTypePopulation(e.target.value)} className="w-full">
             {TYPES.map((t) => (
               <option key={t.valeur} value={t.valeur}>{t.libelle}</option>
             ))}
@@ -174,33 +174,33 @@ function FormulairePopulation({ contacts = [], valeursInitiales = {}, onValider,
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Latitude</label>
-          <input value={latitude} onChange={(e) => setLatitude(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Latitude</label>
+          <input value={latitude} onChange={(e) => setLatitude(e.target.value)} className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Longitude</label>
-          <input value={longitude} onChange={(e) => setLongitude(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Longitude</label>
+          <input value={longitude} onChange={(e) => setLongitude(e.target.value)} className="w-full" />
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Capacité max</label>
-          <input type="number" value={capaciteMax} onChange={(e) => setCapaciteMax(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Capacité max</label>
+          <input type="number" value={capaciteMax} onChange={(e) => setCapaciteMax(e.target.value)} className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Période — début</label>
-          <input type="date" value={periodeDebut} onChange={(e) => setPeriodeDebut(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Période — début</label>
+          <input type="date" value={periodeDebut} onChange={(e) => setPeriodeDebut(e.target.value)} className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Période — fin</label>
-          <input type="date" value={periodeFin} onChange={(e) => setPeriodeFin(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Période — fin</label>
+          <input type="date" value={periodeFin} onChange={(e) => setPeriodeFin(e.target.value)} className="w-full" />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Gestionnaire</label>
-        <select value={contactGestionnaireId} onChange={(e) => setContactGestionnaireId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+        <label className="block text-xs font-medium text-sourdine mb-1">Gestionnaire</label>
+        <select value={contactGestionnaireId} onChange={(e) => setContactGestionnaireId(e.target.value)} className="w-full">
           <option value="">—</option>
           {contacts.map((c) => (
             <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
@@ -208,12 +208,12 @@ function FormulairePopulation({ contacts = [], valeursInitiales = {}, onValider,
         </select>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-sourdine">
         <input type="checkbox" checked={actif} onChange={(e) => setActif(e.target.checked)} />
         Actif
       </label>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>

@@ -1,5 +1,6 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import BasculeTheme from './BasculeTheme'
 
 const SECTIONS = [
   {
@@ -62,67 +63,46 @@ export default function MisEnPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-stone-50">
-      <header className="bg-nuit-900 border-b border-nuit-700">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="font-display font-semibold text-white tracking-tight">Admin</span>
-            <span className="text-nuit-700">/</span>
-            <button
-              onClick={changerDeContexte}
-              className="text-sm text-slate-300 hover:text-white underline decoration-dotted decoration-slate-500"
-            >
-              {contexteActuel?.contextes?.nom ?? 'Aucun contexte'}
-            </button>
+    <div className="poste">
+      <header className="tete">
+        <div className="barre-haut">
+          <div className="marque compacte">
+            <span className="marque-nom">Admin</span>
           </div>
-
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-400 hidden sm:inline font-mono">{utilisateur?.email}</span>
-            <button onClick={deconnexion} className="text-sm text-slate-300 hover:text-white transition-colors">
-              Se déconnecter
-            </button>
-          </div>
+          <button type="button" className="lien" onClick={changerDeContexte}>
+            {contexteActuel?.contextes?.nom ?? 'Aucun contexte'}
+          </button>
+          <div className="pousse" />
+          <span className="compte">{utilisateur?.email}</span>
+          <BasculeTheme />
+          <button type="button" className="sortie discret" onClick={deconnexion}>
+            Se déconnecter
+          </button>
         </div>
       </header>
 
-      <div className="flex-1 max-w-6xl w-full mx-auto flex">
-        <aside className="w-56 flex-shrink-0 bg-nuit-900 py-5 pr-2 hidden sm:block">
-          <nav className="space-y-5">
-            {SECTIONS.map((section, i) => (
-              <div key={i}>
-                {section.titre && (
-                  <p className="px-3 text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-                    {section.titre}
-                  </p>
-                )}
-                <div className="space-y-0.5">
-                  {section.liens.map((lien) => {
-                    const actif = location.pathname === lien.to
-                    return (
-                      <Link
-                        key={lien.to}
-                        to={lien.to}
-                        className={`block px-3 py-1.5 text-sm transition-colors border-l-2 ${
-                          actif
-                            ? 'border-institution-600 bg-nuit-800 text-white font-medium'
-                            : 'border-transparent text-slate-400 hover:bg-nuit-800 hover:text-slate-100'
-                        }`}
-                      >
-                        {lien.libelle}
-                      </Link>
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
-          </nav>
-        </aside>
+      <div className="corps">
+        <nav className="plaques">
+          {SECTIONS.map((section, i) => (
+            <div key={i} className="bloc" style={{ marginBottom: 14 }}>
+              {section.titre && <h2>{section.titre}</h2>}
+              {section.liens.map((lien) => {
+                const actif = location.pathname === lien.to
+                return (
+                  <Link
+                    key={lien.to}
+                    to={lien.to}
+                    className={`plaque-nav${actif ? ' actif' : ''}`}
+                  >
+                    {lien.libelle}
+                  </Link>
+                )
+              })}
+            </div>
+          ))}
+        </nav>
 
-        <main className="flex-1 px-4 sm:px-8 py-8 min-w-0 bg-stone-50">
+        <main className="travail">
           <Outlet />
         </main>
       </div>

@@ -39,17 +39,17 @@ export default function ChecklistTemplates() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-display text-xl font-semibold text-slate-900">Checklists types</h1>
+        <h1 className="text-xl font-semibold text-encre">Checklists types</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter une action</BoutonPrincipal>
         )}
       </div>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-sourdine mb-4">
         Actions à réaliser par rôle, regroupées par déclencheur (pré-alerte, alerte, phase
         communale…). L'exécution en temps réel se fera depuis l'app QG.
       </p>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulaireItem
@@ -69,7 +69,7 @@ export default function ChecklistTemplates() {
         <select
           value={filtreRole}
           onChange={(e) => setFiltreRole(e.target.value)}
-          className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white"
+          className=""
         >
           <option value="">Tous les rôles</option>
           {roles.map((r) => (
@@ -79,20 +79,20 @@ export default function ChecklistTemplates() {
       </div>
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : groupes.length === 0 ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
           Aucune action enregistrée.
         </p>
       ) : (
         <div className="space-y-5">
           {groupes.map((groupe) => (
             <div key={groupe.declencheur}>
-              <h2 className="text-sm font-semibold text-slate-700 mb-2">{groupe.declencheur}</h2>
-              <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+              <h2 className="text-sm font-semibold text-sourdine mb-2">{groupe.declencheur}</h2>
+              <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
                 {groupe.items.map((item) =>
                   ligneEnEdition === item.id ? (
-                    <li key={item.id} className="bg-slate-50 p-3">
+                    <li key={item.id} className="bg-fond p-3">
                       <FormulaireItem
                         roles={roles}
                         niveaux={niveaux}
@@ -106,14 +106,14 @@ export default function ChecklistTemplates() {
                       />
                     </li>
                   ) : (
-                    <li key={item.id} className="flex items-center justify-between px-4 py-2.5 bg-white">
+                    <li key={item.id} className="flex items-center justify-between px-4 py-2.5 bg-surface">
                       <div className="flex items-center gap-3">
-                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-100 text-slate-500 text-xs flex items-center justify-center">
+                        <span className="flex-shrink-0 w-5 h-5 rounded bg-surface-2 text-sourdine text-xs flex items-center justify-center">
                           {item.ordre}
                         </span>
                         <div>
-                          <p className="text-sm text-slate-900">{item.libelle}</p>
-                          <p className="text-xs text-slate-400">
+                          <p className="text-sm text-encre">{item.libelle}</p>
+                          <p className="text-xs text-sourdine">
                             {item.roles?.libelle}
                             {item.niveaux_escalade?.libelle && <> · {item.niveaux_escalade.libelle}</>}
                           </p>
@@ -165,28 +165,28 @@ function FormulaireItem({ roles, niveaux, valeursInitiales = {}, prioriteParDefa
   }
 
   return (
-    <form onSubmit={soumettre} className="border border-slate-200 rounded-lg p-4 mb-4 bg-slate-50 space-y-3">
+    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-4 bg-fond space-y-3">
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Action</label>
+        <label className="block text-xs font-medium text-sourdine mb-1">Action</label>
         <input
           required
           value={libelle}
           onChange={(e) => setLibelle(e.target.value)}
           placeholder="ex. Informer le gouverneur du déclenchement"
-          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+          className="w-full"
         />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Déclencheur</label>
+          <label className="block text-xs font-medium text-sourdine mb-1">Déclencheur</label>
           <input
             required
             list="declencheurs-suggeres"
             value={declencheur}
             onChange={(e) => setDeclencheur(e.target.value)}
             placeholder="ex. Alerte"
-            className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+            className="w-full"
           />
           <datalist id="declencheurs-suggeres">
             <option value="Pré-alerte" />
@@ -197,8 +197,8 @@ function FormulaireItem({ roles, niveaux, valeursInitiales = {}, prioriteParDefa
           </datalist>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Rôle</label>
-          <select value={roleId} onChange={(e) => setRoleId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Rôle</label>
+          <select value={roleId} onChange={(e) => setRoleId(e.target.value)} className="w-full">
             <option value="">—</option>
             {roles.map((r) => (
               <option key={r.id} value={r.id}>{r.libelle}</option>
@@ -206,14 +206,14 @@ function FormulaireItem({ roles, niveaux, valeursInitiales = {}, prioriteParDefa
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Ordre</label>
-          <input type="number" min="1" required value={ordre} onChange={(e) => setOrdre(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Ordre</label>
+          <input type="number" min="1" required value={ordre} onChange={(e) => setOrdre(e.target.value)} className="w-full" />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Niveau associé (optionnel)</label>
-        <select value={niveauId} onChange={(e) => setNiveauId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+        <label className="block text-xs font-medium text-sourdine mb-1">Niveau associé (optionnel)</label>
+        <select value={niveauId} onChange={(e) => setNiveauId(e.target.value)} className="w-full">
           <option value="">—</option>
           {niveaux.map((n) => (
             <option key={n.id} value={n.id}>{n.libelle}</option>
@@ -221,7 +221,7 @@ function FormulaireItem({ roles, niveaux, valeursInitiales = {}, prioriteParDefa
         </select>
       </div>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>

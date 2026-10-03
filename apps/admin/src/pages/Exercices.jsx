@@ -44,16 +44,16 @@ export default function Exercices() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-display text-xl font-semibold text-slate-900">Exercices</h1>
+        <h1 className="text-xl font-semibold text-encre">Exercices</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter un exercice</BoutonPrincipal>
         )}
       </div>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-sourdine mb-4">
         Exercices planifiés, réalisés et leur évaluation.
       </p>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulaireExercice
@@ -67,16 +67,16 @@ export default function Exercices() {
       )}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : exercices.length === 0 && !enAjout ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
           Aucun exercice enregistré.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
           {exercices.map((ex) =>
             ligneEnEdition === ex.id ? (
-              <li key={ex.id} className="bg-slate-50 p-3">
+              <li key={ex.id} className="bg-fond p-3">
                 <FormulaireExercice
                   valeursInitiales={ex}
                   onAnnuler={() => setLigneEnEdition(null)}
@@ -88,23 +88,23 @@ export default function Exercices() {
                 />
               </li>
             ) : (
-              <li key={ex.id} className="flex items-start justify-between px-4 py-3 bg-white">
+              <li key={ex.id} className="flex items-start justify-between px-4 py-3 bg-surface">
                 <div>
-                  <p className="text-sm font-medium text-slate-900">
+                  <p className="text-sm font-medium text-encre">
                     {LIBELLE_TYPE_EXERCICE[ex.type_exercice] ?? ex.type_exercice}
                     {ex.valide_par_niveau_superieur && (
-                      <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700">
+                      <span className="jeton ml-2 text-ok">
                         validé niveau supérieur
                       </span>
                     )}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-sourdine">
                     {ex.date_planifiee && <>planifié : {ex.date_planifiee}</>}
                     {ex.date_realisee && <> · réalisé : {ex.date_realisee}</>}
                   </p>
-                  {ex.objectifs && <p className="text-xs text-slate-400 mt-1">objectifs : {ex.objectifs}</p>}
-                  {ex.evaluation && <p className="text-xs text-slate-400 mt-0.5">évaluation : {ex.evaluation}</p>}
-                  {ex.rapport_final && <p className="text-xs text-slate-400 mt-0.5">rapport final renseigné</p>}
+                  {ex.objectifs && <p className="text-xs text-sourdine mt-1">objectifs : {ex.objectifs}</p>}
+                  {ex.evaluation && <p className="text-xs text-sourdine mt-0.5">évaluation : {ex.evaluation}</p>}
+                  {ex.rapport_final && <p className="text-xs text-sourdine mt-0.5">rapport final renseigné</p>}
                 </div>
                 <div className="flex gap-2 flex-shrink-0 ml-3">
                   <BoutonDiscret onClick={() => setLigneEnEdition(ex.id)}>Modifier</BoutonDiscret>
@@ -159,13 +159,13 @@ function FormulaireExercice({ valeursInitiales = {}, onValider, onAnnuler }) {
   }
 
   return (
-    <form onSubmit={soumettre} className="border border-slate-200 rounded-lg p-4 mb-4 bg-slate-50 space-y-3">
+    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-4 bg-fond space-y-3">
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Type d'exercice</label>
+        <label className="block text-xs font-medium text-sourdine mb-1">Type d'exercice</label>
         <select
           value={typeExercice}
           onChange={(e) => setTypeExercice(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white"
+          className="w-full"
         >
           {TYPES_EXERCICE.map((t) => (
             <option key={t.valeur} value={t.valeur}>{t.libelle}</option>
@@ -175,47 +175,47 @@ function FormulaireExercice({ valeursInitiales = {}, onValider, onAnnuler }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Date planifiée</label>
-          <input type="date" value={datePlanifiee} onChange={(e) => setDatePlanifiee(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Date planifiée</label>
+          <input type="date" value={datePlanifiee} onChange={(e) => setDatePlanifiee(e.target.value)} className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Date réalisée</label>
-          <input type="date" value={dateRealisee} onChange={(e) => setDateRealisee(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Date réalisée</label>
+          <input type="date" value={dateRealisee} onChange={(e) => setDateRealisee(e.target.value)} className="w-full" />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Objectifs (résumé libre)</label>
-        <textarea value={objectifs} onChange={(e) => setObjectifs(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Objectifs (résumé libre)</label>
+        <textarea value={objectifs} onChange={(e) => setObjectifs(e.target.value)} rows={2} className="w-full" />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Objectifs structurés (un par ligne)</label>
-        <textarea value={objectifsStructures} onChange={(e) => setObjectifsStructures(e.target.value)} rows={3} placeholder={'ex.\nTester l’activation du Comité de Coordination\nValider le délai de notification des disciplines'} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Objectifs structurés (un par ligne)</label>
+        <textarea value={objectifsStructures} onChange={(e) => setObjectifsStructures(e.target.value)} rows={3} placeholder={'ex.\nTester l’activation du Comité de Coordination\nValider le délai de notification des disciplines'} className="w-full" />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">MEL — Main Events List (un événement par ligne)</label>
-        <textarea value={mel} onChange={(e) => setMel(e.target.value)} rows={3} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">MEL — Main Events List (un événement par ligne)</label>
+        <textarea value={mel} onChange={(e) => setMel(e.target.value)} rows={3} className="w-full" />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Consignes de sécurité</label>
-        <textarea value={consignesSecurite} onChange={(e) => setConsignesSecurite(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Consignes de sécurité</label>
+        <textarea value={consignesSecurite} onChange={(e) => setConsignesSecurite(e.target.value)} rows={2} className="w-full" />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Évaluation (synthèse)</label>
-        <textarea value={evaluation} onChange={(e) => setEvaluation(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Évaluation (synthèse)</label>
+        <textarea value={evaluation} onChange={(e) => setEvaluation(e.target.value)} rows={2} className="w-full" />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Rapport final</label>
-        <p className="text-xs text-slate-400 mb-1">Jugement sur le dispositif uniquement — jamais nominatif sur une personne.</p>
-        <textarea value={rapportFinal} onChange={(e) => setRapportFinal(e.target.value)} rows={3} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Rapport final</label>
+        <p className="text-xs text-sourdine mb-1">Jugement sur le dispositif uniquement — jamais nominatif sur une personne.</p>
+        <textarea value={rapportFinal} onChange={(e) => setRapportFinal(e.target.value)} rows={3} className="w-full" />
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-sourdine">
         <input type="checkbox" checked={valide} onChange={(e) => setValide(e.target.checked)} />
         Validé par le niveau supérieur
       </label>
@@ -223,7 +223,7 @@ function FormulaireExercice({ valeursInitiales = {}, onValider, onAnnuler }) {
       {valeursInitiales.id && <GestionRolesExercice exerciceId={valeursInitiales.id} />}
       {valeursInitiales.id && <GestionEvaluationsExercice exerciceId={valeursInitiales.id} />}
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>
@@ -287,35 +287,35 @@ function GestionRolesExercice({ exerciceId }) {
   }
 
   return (
-    <div className="pt-2 border-t border-slate-200">
-      <p className="text-xs font-medium text-slate-600 mb-2">Rôles tenus durant l'exercice</p>
-      {erreur && <p className="text-xs text-red-600 mb-1">{erreur}</p>}
+    <div className="pt-2 border-t border-trait">
+      <p className="text-xs font-medium text-sourdine mb-2">Rôles tenus durant l'exercice</p>
+      {erreur && <p className="text-xs text-chaud mb-1">{erreur}</p>}
       {chargement ? (
-        <p className="text-xs text-slate-400">Chargement…</p>
+        <p className="text-xs text-sourdine">Chargement…</p>
       ) : (
         <>
           {roles.length > 0 && (
             <ul className="space-y-1 mb-2">
               {roles.map((r) => (
-                <li key={r.id} className="flex items-center justify-between text-xs bg-white rounded px-2.5 py-1.5 border border-slate-200">
+                <li key={r.id} className="jeton flex items-center justify-between bg-surface border border-trait">
                   <span>
                     {r.contacts?.prenom} {r.contacts?.nom} — {r.fonction_jouee}
-                    {r.roles?.libelle && <span className="ml-1 text-slate-400">({r.roles.libelle})</span>}
-                    {r.est_evaluateur && <span className="ml-1 text-slate-400">(évaluateur)</span>}
+                    {r.roles?.libelle && <span className="ml-1 text-sourdine">({r.roles.libelle})</span>}
+                    {r.est_evaluateur && <span className="ml-1 text-sourdine">(évaluateur)</span>}
                   </span>
-                  <button type="button" onClick={() => retirer(r.id)} className="text-slate-400 hover:text-red-600">✕</button>
+                  <button type="button" onClick={() => retirer(r.id)} className="text-sourdine hover:text-chaud">✕</button>
                 </li>
               ))}
             </ul>
           )}
           <div className="flex flex-wrap gap-2 items-center">
-            <select value={contactId} onChange={(e) => setContactId(e.target.value)} className="rounded-md border border-slate-300 px-2 py-1 text-xs bg-white">
+            <select value={contactId} onChange={(e) => setContactId(e.target.value)} className="">
               <option value="">Participant…</option>
               {contacts.map((c) => (
                 <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
               ))}
             </select>
-            <select value={roleId} onChange={(e) => setRoleId(e.target.value)} className="rounded-md border border-slate-300 px-2 py-1 text-xs bg-white">
+            <select value={roleId} onChange={(e) => setRoleId(e.target.value)} className="">
               <option value="">Rôle formel —</option>
               {rolesDisponibles.map((r) => (
                 <option key={r.id} value={r.id}>{r.libelle}</option>
@@ -325,9 +325,9 @@ function GestionRolesExercice({ exerciceId }) {
               value={fonctionJouee}
               onChange={(e) => setFonctionJouee(e.target.value)}
               placeholder="fonction jouée"
-              className="rounded-md border border-slate-300 px-2 py-1 text-xs flex-1 min-w-[140px]"
+              className="flex-1 min-w-[140px]"
             />
-            <label className="flex items-center gap-1 text-xs text-slate-600">
+            <label className="flex items-center gap-1 text-xs text-sourdine">
               <input type="checkbox" checked={estEvaluateur} onChange={(e) => setEstEvaluateur(e.target.checked)} />
               évaluateur
             </label>
@@ -375,17 +375,17 @@ function GestionEvaluationsExercice({ exerciceId }) {
   }
 
   return (
-    <div className="pt-2 border-t border-slate-200">
+    <div className="pt-2 border-t border-trait">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-medium text-slate-600">Évaluation par objectif (sur le dispositif, jamais nominatif)</p>
+        <p className="text-xs font-medium text-sourdine">Évaluation par objectif (sur le dispositif, jamais nominatif)</p>
         {!enAjout && (
-          <button type="button" onClick={() => setEnAjout(true)} className="text-xs text-institution-700 hover:underline">
+          <button type="button" onClick={() => setEnAjout(true)} className="text-xs text-info hover:underline">
             + ajouter
           </button>
         )}
       </div>
 
-      {erreur && <p className="text-xs text-red-600 mb-1">{erreur}</p>}
+      {erreur && <p className="text-xs text-chaud mb-1">{erreur}</p>}
 
       {enAjout && (
         <FormulaireEvaluationExercice
@@ -400,28 +400,28 @@ function GestionEvaluationsExercice({ exerciceId }) {
       )}
 
       {chargement ? (
-        <p className="text-xs text-slate-400">Chargement…</p>
+        <p className="text-xs text-sourdine">Chargement…</p>
       ) : evaluations.length === 0 ? (
-        <p className="text-xs text-slate-400">Aucune évaluation pour l'instant.</p>
+        <p className="text-xs text-sourdine">Aucune évaluation pour l'instant.</p>
       ) : (
         <ul className="space-y-1">
           {evaluations.map((ev) => (
-            <li key={ev.id} className="bg-white rounded px-2.5 py-1.5 border border-slate-200 text-xs">
+            <li key={ev.id} className="bg-surface rounded px-2.5 py-1.5 border border-trait text-xs">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-slate-800">
+                  <p className="text-encre">
                     {ev.objectif_evalue}
-                    <span className="ml-2 text-slate-400">
+                    <span className="ml-2 text-sourdine">
                       ({NIVEAUX_ATTEINTE.find((n) => n.valeur === ev.niveau_atteinte)?.libelle ?? ev.niveau_atteinte})
                     </span>
                   </p>
-                  {ev.constat && <p className="text-slate-400">constat : {ev.constat}</p>}
-                  {ev.recommandation && <p className="text-slate-400">recommandation : {ev.recommandation}</p>}
+                  {ev.constat && <p className="text-sourdine">constat : {ev.constat}</p>}
+                  {ev.recommandation && <p className="text-sourdine">recommandation : {ev.recommandation}</p>}
                   {ev.contacts && (
-                    <p className="text-slate-400">évaluateur : {ev.contacts.prenom} {ev.contacts.nom}</p>
+                    <p className="text-sourdine">évaluateur : {ev.contacts.prenom} {ev.contacts.nom}</p>
                   )}
                 </div>
-                <button type="button" onClick={() => retirer(ev.id)} className="text-slate-400 hover:text-red-600 flex-shrink-0">✕</button>
+                <button type="button" onClick={() => retirer(ev.id)} className="text-sourdine hover:text-chaud flex-shrink-0">✕</button>
               </div>
             </li>
           ))}
@@ -457,32 +457,32 @@ function FormulaireEvaluationExercice({ exerciceId, contacts = [], onValider, on
   }
 
   return (
-    <form onSubmit={soumettre} className="bg-white border border-slate-200 rounded-lg p-2.5 mb-2 space-y-2">
+    <form onSubmit={soumettre} className="bg-surface border border-trait rounded p-2.5 mb-2 space-y-2">
       <input
         required
         value={objectifEvalue}
         onChange={(e) => setObjectifEvalue(e.target.value)}
         placeholder="Objectif évalué"
-        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+        className="w-full"
       />
-      <select value={niveauAtteinte} onChange={(e) => setNiveauAtteinte(e.target.value)} className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs bg-white">
+      <select value={niveauAtteinte} onChange={(e) => setNiveauAtteinte(e.target.value)} className="w-full">
         {NIVEAUX_ATTEINTE.map((n) => (
           <option key={n.valeur} value={n.valeur}>{n.libelle}</option>
         ))}
       </select>
-      <textarea value={constat} onChange={(e) => setConstat(e.target.value)} placeholder="Constat" rows={2} className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
-      <textarea value={recommandation} onChange={(e) => setRecommandation(e.target.value)} placeholder="Recommandation" rows={2} className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
+      <textarea value={constat} onChange={(e) => setConstat(e.target.value)} placeholder="Constat" rows={2} className="w-full" />
+      <textarea value={recommandation} onChange={(e) => setRecommandation(e.target.value)} placeholder="Recommandation" rows={2} className="w-full" />
       <select
         value={evaluateurContactId}
         onChange={(e) => setEvaluateurContactId(e.target.value)}
-        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs bg-white"
+        className="w-full"
       >
         <option value="">Évaluateur — aucun</option>
         {contacts.map((c) => (
           <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
         ))}
       </select>
-      {erreur && <p className="text-xs text-red-600">{erreur}</p>}
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
       <div className="flex gap-2">
         <BoutonDiscret type="submit" disabled={enCours}>{enCours ? 'Ajout…' : 'Ajouter'}</BoutonDiscret>
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>

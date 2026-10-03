@@ -15,20 +15,20 @@ export default function Configuration() {
 
   return (
     <div>
-      <h1 className="font-display text-xl font-semibold text-slate-900 mb-1">Configuration</h1>
-      <p className="text-sm text-slate-500 mb-4">
+      <h1 className="text-xl font-semibold text-encre mb-1">Configuration</h1>
+      <p className="text-sm text-sourdine mb-4">
         La base sur laquelle reposent les référentiels, checklists et instances de coordination.
       </p>
 
-      <div className="flex gap-1 border-b border-slate-200 mb-5">
+      <div className="flex gap-1 border-b border-trait mb-5">
         {ONGLETS.map((o) => (
           <button
             key={o.id}
             onClick={() => setOngletActif(o.id)}
             className={`px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
               ongletActif === o.id
-                ? 'border-institution-600 text-institution-700 font-medium'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-info text-info font-medium'
+                : 'border-transparent text-sourdine hover:text-encre'
             }`}
           >
             {o.label}

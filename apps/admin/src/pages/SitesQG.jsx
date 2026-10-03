@@ -20,17 +20,17 @@ export default function SitesQG() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-display text-xl font-semibold text-slate-900">Sites QG</h1>
+        <h1 className="text-xl font-semibold text-encre">Sites QG</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter un site</BoutonPrincipal>
         )}
       </div>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-sourdine mb-4">
         Emplacements du centre de crise, classés par priorité — le site 1 est le principal,
         les suivants sont des solutions de repli.
       </p>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulaireSite
@@ -45,16 +45,16 @@ export default function SitesQG() {
       )}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : sites.length === 0 && !enAjout ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
           Aucun site QG enregistré.
         </p>
       ) : (
         <ol className="space-y-2">
           {sites.map((s) =>
             ligneEnEdition === s.id ? (
-              <li key={s.id} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+              <li key={s.id} className="bg-fond rounded p-3 border border-trait">
                 <FormulaireSite
                   valeursInitiales={s}
                   onAnnuler={() => setLigneEnEdition(null)}
@@ -66,22 +66,22 @@ export default function SitesQG() {
                 />
               </li>
             ) : (
-              <li key={s.id} className="flex items-start justify-between px-4 py-3 bg-white border border-slate-200 rounded-lg shadow-sm">
+              <li key={s.id} className="flex items-start justify-between px-4 py-3 bg-surface border border-trait rounded shadow-sm">
                 <div className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-slate-900 text-white text-xs flex items-center justify-center mt-0.5">
+                  <span className="flex-shrink-0 w-6 h-6 rounded bg-encre text-fond text-xs flex items-center justify-center mt-0.5">
                     {s.priorite}
                   </span>
                   <div>
-                    <p className="text-sm font-medium text-slate-900">
+                    <p className="text-sm font-medium text-encre">
                       {s.nom}
-                      {!s.actif && <span className="ml-2 text-xs text-slate-400">(inactif)</span>}
+                      {!s.actif && <span className="ml-2 text-xs text-sourdine">(inactif)</span>}
                     </p>
-                    <p className="text-xs text-slate-500">{s.adresse}</p>
+                    <p className="text-xs text-sourdine">{s.adresse}</p>
                     {s.latitude != null && s.longitude != null && (
-                      <p className="text-xs text-slate-400">{s.latitude}, {s.longitude}</p>
+                      <p className="text-xs text-sourdine">{s.latitude}, {s.longitude}</p>
                     )}
                     {Array.isArray(s.equipements) && s.equipements.length > 0 && (
-                      <p className="text-xs text-slate-400 mt-1">
+                      <p className="text-xs text-sourdine mt-1">
                         équipements : {s.equipements.join(', ')}
                       </p>
                     )}
@@ -153,46 +153,46 @@ function FormulaireSite({ valeursInitiales = {}, prioriteParDefaut = 1, onValide
     <form onSubmit={soumettre} className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="sm:col-span-2">
-          <label className="block text-xs font-medium text-slate-600 mb-1">Nom</label>
+          <label className="block text-xs font-medium text-sourdine mb-1">Nom</label>
           <input
             required
             value={nom}
             onChange={(e) => setNom(e.target.value)}
             placeholder="ex. Hôtel de Ville - salle du conseil"
-            className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+            className="w-full"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Priorité</label>
+          <label className="block text-xs font-medium text-sourdine mb-1">Priorité</label>
           <input
             required
             type="number"
             min="1"
             value={priorite}
             onChange={(e) => setPriorite(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+            className="w-full"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Adresse</label>
-        <input value={adresse} onChange={(e) => setAdresse(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Adresse</label>
+        <input value={adresse} onChange={(e) => setAdresse(e.target.value)} className="w-full" />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Latitude</label>
-          <input value={latitude} onChange={(e) => setLatitude(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Latitude</label>
+          <input value={latitude} onChange={(e) => setLatitude(e.target.value)} className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Longitude</label>
-          <input value={longitude} onChange={(e) => setLongitude(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Longitude</label>
+          <input value={longitude} onChange={(e) => setLongitude(e.target.value)} className="w-full" />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Équipements</label>
+        <label className="block text-xs font-medium text-sourdine mb-1">Équipements</label>
         <div className="space-y-2">
           {equipements.map((eq, i) => (
             <div key={i} className="flex gap-2">
@@ -200,23 +200,23 @@ function FormulaireSite({ valeursInitiales = {}, prioriteParDefaut = 1, onValide
                 value={eq}
                 onChange={(e) => majEquipement(i, e.target.value)}
                 placeholder="ex. 6 postes téléphoniques"
-                className="flex-1 rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+                className="flex-1"
               />
               <BoutonDiscret type="button" onClick={() => retirerEquipement(i)}>✕</BoutonDiscret>
             </div>
           ))}
         </div>
-        <button type="button" onClick={ajouterEquipement} className="mt-2 text-xs text-slate-500 hover:text-slate-800 underline">
+        <button type="button" onClick={ajouterEquipement} className="mt-2 text-xs text-sourdine hover:text-encre underline">
           + ajouter un équipement
         </button>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-sourdine">
         <input type="checkbox" checked={actif} onChange={(e) => setActif(e.target.checked)} />
         Actif
       </label>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>

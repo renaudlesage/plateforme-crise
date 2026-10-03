@@ -30,16 +30,16 @@ export default function Incidents() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="text-lg font-semibold text-slate-900">Incidents</h1>
+        <h1 className="text-lg font-semibold text-encre">Incidents</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Déclencher un incident</BoutonPrincipal>
         )}
       </div>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-sourdine mb-4">
         Vue d'ensemble des incidents en cours et clôturés pour ce contexte.
       </p>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulaireIncident
@@ -54,47 +54,47 @@ export default function Incidents() {
       )}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : incidentsTries.length === 0 && !enAjout ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
           Aucun incident enregistré pour ce contexte.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden">
           {incidentsTries.map((i) => (
             <li key={i.id}>
               <Link
                 to={`/incidents/${i.id}`}
-                className="flex items-center justify-between px-4 py-3 bg-white hover:bg-slate-50 transition-colors"
+                className="flex items-center justify-between px-4 py-3 bg-surface hover:bg-fond transition-colors"
               >
                 <div>
-                  <p className="text-sm font-medium text-slate-900">
+                  <p className="text-sm font-medium text-encre">
                     {i.nom}
                     <span
-                      className={`ml-2 text-xs px-1.5 py-0.5 rounded ${
+                      className={`jeton ml-2 ${
                         i.statut === 'en_cours'
-                          ? 'bg-red-50 text-red-700'
+                          ? 'text-chaud'
                           : i.statut === 'pre_alerte'
-                          ? 'bg-amber-50 text-amber-700'
-                          : 'bg-slate-100 text-slate-500'
+                          ? 'text-veille'
+                          : 'text-sourdine'
                       }`}
                     >
                       {LIBELLE_STATUT[i.statut] ?? i.statut}
                     </span>
                     {i.degre_criticite != null && (
-                      <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-slate-900 text-white">
+                      <span className="jeton ml-2 bg-encre text-fond">
                         degré {i.degre_criticite}
                       </span>
                     )}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-sourdine">
                     {i.type_evenement && <>{i.type_evenement} · </>}
                     {i.niveaux_escalade?.libelle}
                     {' · '}
                     {new Date(i.date_debut).toLocaleString('fr-BE')}
                   </p>
                 </div>
-                <span className="text-slate-400 text-sm">→</span>
+                <span className="text-sourdine text-sm">→</span>
               </Link>
             </li>
           ))}
@@ -127,26 +127,26 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
   }
 
   return (
-    <form onSubmit={soumettre} className="border border-slate-200 rounded-lg p-4 mb-4 bg-slate-50 space-y-3">
+    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-4 bg-fond space-y-3">
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Nom de l'incident</label>
+        <label className="block text-xs font-medium text-sourdine mb-1">Nom de l'incident</label>
         <input
           required
           value={nom}
           onChange={(e) => setNom(e.target.value)}
           placeholder="ex. Inondation Rue du Centre"
-          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+          className="w-full"
         />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Type d'événement</label>
-          <input value={typeEvenement} onChange={(e) => setTypeEvenement(e.target.value)} placeholder="ex. inondation" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Type d'événement</label>
+          <input value={typeEvenement} onChange={(e) => setTypeEvenement(e.target.value)} placeholder="ex. inondation" className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Niveau déclenché</label>
-          <select value={niveauId} onChange={(e) => setNiveauId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Niveau déclenché</label>
+          <select value={niveauId} onChange={(e) => setNiveauId(e.target.value)} className="w-full">
             <option value="">—</option>
             {niveaux.map((n) => (
               <option key={n.id} value={n.id}>{n.libelle}</option>
@@ -156,9 +156,9 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Degré de criticité (1-4, PRGC)</label>
-        <p className="text-xs text-slate-400 mb-1">Axe indépendant du niveau d'escalade — à ajuster au fil de l'incident.</p>
-        <select value={degreCriticite} onChange={(e) => setDegreCriticite(e.target.value)} className="w-full sm:w-48 rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+        <label className="block text-xs font-medium text-sourdine mb-1">Degré de criticité (1-4, PRGC)</label>
+        <p className="text-xs text-sourdine mb-1">Axe indépendant du niveau d'escalade — à ajuster au fil de l'incident.</p>
+        <select value={degreCriticite} onChange={(e) => setDegreCriticite(e.target.value)} className="w-full sm:w-48">
           <option value="">—</option>
           <option value="1">1 — faible</option>
           <option value="2">2 — modéré</option>
@@ -167,7 +167,7 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
         </select>
       </div>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>

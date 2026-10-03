@@ -1,0 +1,140 @@
+/* ===================================================================
+   EVENTWARE 2.0 — tokens compilés
+   -------------------------------------------------------------------
+   Généré depuis project/tokens.json du design system "Eventware 2.0"
+   (artefact Claude), sans modification des valeurs. Ne pas éditer à la
+   main : toute mise à jour du design system se répercute ici en
+   régénérant ce fichier depuis tokens.json.
+
+   Thème piloté par [data-theme="clair"|"sombre"] sur <html>, avec
+   repli sur prefers-color-scheme si aucun choix n'a été fait (voir
+   le composant de bascule de thème de chaque application).
+   =================================================================== */
+
+:root {
+  /* Polices (deux piles système uniquement, aucune police réseau) */
+  --font-texte: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+
+  /* Rayons */
+  --rayon: 2px;
+  --rayon-temoin: 4px;
+  --rayon-pilule: 999px;
+
+  /* Empilement */
+  --profondeur-tete: 30;
+  --profondeur-onglets: 55;
+  --profondeur-flottants: 60;
+  --profondeur-voile: 70;
+}
+
+/* ---------------- Thème clair (défaut) ---------------- */
+:root,
+:root[data-theme="clair"] {
+  --fond: #eef0f2;
+  --surface: #ffffff;
+  --surface-2: #f6f7f9;
+  --encre: #10151b;
+  --sourdine: #5d6874;
+  --trait: #ccd2d9;
+  --trait-fort: #10151b;
+  --on-teinte: #ffffff;
+
+  --etat-ok: #1f6f4f;
+  --etat-veille: #a86a00;
+  --etat-chaud: #b3311d;
+  --etat-info: #23557f;
+  --etat-froid: #5d6874;
+
+  --dom-indigo: #4c5bb8;
+  --dom-violet: #7a4fb0;
+  --dom-sarcelle: #17796f;
+  --dom-grenat: #a8324a;
+  --dom-orange: #c25a12;
+  --dom-bronze: #8a6212;
+  --dom-mousse: #3f7a2e;
+  --dom-azur: #1f6ba8;
+  --dom-prune: #8c3f7a;
+  --dom-ardoise: #4a6572;
+  --dom-tilleul: #6d7a1c;
+  --dom-gris: #5d6874;
+
+  --ombre: 0 1px 0 rgba(16, 21, 27, 0.06);
+  --ombre-flottant: 0 3px 12px rgba(0, 0, 0, 0.28);
+
+  color-scheme: light;
+}
+
+/* ---------------- Thème sombre (choisi explicitement) ---------------- */
+:root[data-theme="sombre"] {
+  --fond: #0d1116;
+  --surface: #161c23;
+  --surface-2: #1c242d;
+  --encre: #e6eaee;
+  --sourdine: #8d99a6;
+  --trait: #2b343e;
+  --trait-fort: #6c7a89;
+  --on-teinte: #0d1116;
+
+  --etat-ok: #3d9c74;
+  --etat-veille: #d09122;
+  --etat-chaud: #e2543a;
+  --etat-info: #4a8ec2;
+  --etat-froid: #8d99a6;
+
+  --dom-indigo: #8b97e8;
+  --dom-violet: #b085e0;
+  --dom-sarcelle: #4bb8ab;
+  --dom-grenat: #e0798c;
+  --dom-orange: #ef9450;
+  --dom-bronze: #cfa242;
+  --dom-mousse: #7fbd6a;
+  --dom-azur: #5ea8e0;
+  --dom-prune: #d07cba;
+  --dom-ardoise: #8fa8b8;
+  --dom-tilleul: #b8c95c;
+  --dom-gris: #8d99a6;
+
+  --ombre: none;
+  --ombre-flottant: 0 3px 12px rgba(0, 0, 0, 0.28);
+
+  color-scheme: dark;
+}
+
+/* ---------------- Repli système : aucun choix explicite fait ---------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="clair"]):not([data-theme="sombre"]) {
+    --fond: #0d1116;
+    --surface: #161c23;
+    --surface-2: #1c242d;
+    --encre: #e6eaee;
+    --sourdine: #8d99a6;
+    --trait: #2b343e;
+    --trait-fort: #6c7a89;
+    --on-teinte: #0d1116;
+
+    --etat-ok: #3d9c74;
+    --etat-veille: #d09122;
+    --etat-chaud: #e2543a;
+    --etat-info: #4a8ec2;
+    --etat-froid: #8d99a6;
+
+    --dom-indigo: #8b97e8;
+    --dom-violet: #b085e0;
+    --dom-sarcelle: #4bb8ab;
+    --dom-grenat: #e0798c;
+    --dom-orange: #ef9450;
+    --dom-bronze: #cfa242;
+    --dom-mousse: #7fbd6a;
+    --dom-azur: #5ea8e0;
+    --dom-prune: #d07cba;
+    --dom-ardoise: #8fa8b8;
+    --dom-tilleul: #b8c95c;
+    --dom-gris: #8d99a6;
+
+    --ombre: none;
+    --ombre-flottant: 0 3px 12px rgba(0, 0, 0, 0.28);
+
+    color-scheme: dark;
+  }
+}

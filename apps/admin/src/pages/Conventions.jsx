@@ -20,17 +20,17 @@ export default function Conventions() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-display text-xl font-semibold text-slate-900">Conventions</h1>
+        <h1 className="text-xl font-semibold text-encre">Conventions</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter une convention</BoutonPrincipal>
         )}
       </div>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-sourdine mb-4">
         Accords formalisés avec des partenaires publics ou privés — base juridique des ressources
         mobilisables sous convention.
       </p>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulaireConvention
@@ -44,16 +44,16 @@ export default function Conventions() {
       )}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : conventions.length === 0 && !enAjout ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
           Aucune convention enregistrée.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
           {conventions.map((c) =>
             ligneEnEdition === c.id ? (
-              <li key={c.id} className="bg-slate-50 p-3">
+              <li key={c.id} className="bg-fond p-3">
                 <FormulaireConvention
                   valeursInitiales={c}
                   onAnnuler={() => setLigneEnEdition(null)}
@@ -65,19 +65,19 @@ export default function Conventions() {
                 />
               </li>
             ) : (
-              <li key={c.id} className="flex items-start justify-between px-4 py-3 bg-white">
+              <li key={c.id} className="flex items-start justify-between px-4 py-3 bg-surface">
                 <div>
-                  <p className="text-sm font-medium text-slate-900">
+                  <p className="text-sm font-medium text-encre">
                     {c.partenaire}
                     {c.fichier_url && (
-                      <a href={c.fichier_url} target="_blank" rel="noreferrer" className="ml-2 text-xs text-institution-700 hover:underline">
+                      <a href={c.fichier_url} target="_blank" rel="noreferrer" className="ml-2 text-xs text-info hover:underline">
                         document
                       </a>
                     )}
                   </p>
-                  {c.objet && <p className="text-xs text-slate-500">{c.objet}</p>}
+                  {c.objet && <p className="text-xs text-sourdine">{c.objet}</p>}
                   {(c.date_debut || c.date_fin) && (
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-sourdine mt-0.5">
                       {c.date_debut ?? '?'} → {c.date_fin ?? '?'}
                     </p>
                   )}
@@ -125,40 +125,40 @@ function FormulaireConvention({ valeursInitiales = {}, onValider, onAnnuler }) {
   }
 
   return (
-    <form onSubmit={soumettre} className="border border-slate-200 rounded-lg p-4 mb-4 bg-slate-50 space-y-3">
+    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-4 bg-fond space-y-3">
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Partenaire</label>
+        <label className="block text-xs font-medium text-sourdine mb-1">Partenaire</label>
         <input
           required
           value={partenaire}
           onChange={(e) => setPartenaire(e.target.value)}
           placeholder="ex. Croix-Rouge de Belgique"
-          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+          className="w-full"
         />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Objet de la convention</label>
-        <textarea value={objet} onChange={(e) => setObjet(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Objet de la convention</label>
+        <textarea value={objet} onChange={(e) => setObjet(e.target.value)} rows={2} className="w-full" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Date de début</label>
-          <input type="date" value={dateDebut} onChange={(e) => setDateDebut(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Date de début</label>
+          <input type="date" value={dateDebut} onChange={(e) => setDateDebut(e.target.value)} className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Date de fin</label>
-          <input type="date" value={dateFin} onChange={(e) => setDateFin(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Date de fin</label>
+          <input type="date" value={dateFin} onChange={(e) => setDateFin(e.target.value)} className="w-full" />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Lien vers le document (URL)</label>
-        <input value={fichierUrl} onChange={(e) => setFichierUrl(e.target.value)} placeholder="https://…" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Lien vers le document (URL)</label>
+        <input value={fichierUrl} onChange={(e) => setFichierUrl(e.target.value)} placeholder="https://…" className="w-full" />
       </div>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>

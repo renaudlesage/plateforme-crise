@@ -1,5 +1,6 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import BasculeTheme from './BasculeTheme'
 
 export default function MisEnPageQG() {
   const { utilisateur, contexteActuel, deconnexion, selectionnerContexte } = useAuth()
@@ -11,36 +12,34 @@ export default function MisEnPageQG() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="font-semibold text-slate-900">QG</span>
-            <span className="text-slate-300">/</span>
-            <button
-              onClick={changerDeContexte}
-              className="text-sm text-slate-600 hover:text-slate-900 underline decoration-dotted"
-            >
+    <div className="poste">
+      <header className="tete">
+        <div className="barre-haut">
+          <div className="marque compacte">
+            <span className="marque-nom">QG</span>
+            <span className="marque-suite">
               {contexteActuel?.contextes?.nom ?? 'Aucun contexte'}
-            </button>
+            </span>
           </div>
-
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-500 hidden sm:inline">{utilisateur?.email}</span>
-            <button onClick={deconnexion} className="text-sm text-slate-600 hover:text-slate-900">
-              Se déconnecter
-            </button>
-          </div>
+          <button type="button" className="lien" onClick={changerDeContexte}>
+            Changer de contexte
+          </button>
+          <div className="pousse" />
+          <span className="compte">{utilisateur?.email}</span>
+          <BasculeTheme />
+          <button type="button" className="sortie discret" onClick={deconnexion}>
+            Se déconnecter
+          </button>
         </div>
 
-        <nav className="max-w-6xl mx-auto px-4 flex gap-4 text-sm border-t border-slate-100">
-          <Link to="/" className="py-2 text-slate-600 hover:text-slate-900">
+        <div className="barre-bas plaques">
+          <Link to="/" className="plaque-nav actif">
             Incidents
           </Link>
-        </nav>
+        </div>
       </header>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6">
+      <main>
         <Outlet />
       </main>
     </div>

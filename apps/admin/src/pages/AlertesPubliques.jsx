@@ -5,9 +5,9 @@ import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
 import { supabase } from '../lib/supabase'
 
 const NIVEAUX = [
-  { valeur: 'info', libelle: 'Information', classe: 'bg-slate-100 text-slate-600' },
-  { valeur: 'vigilance', libelle: 'Vigilance', classe: 'bg-amber-100 text-amber-700' },
-  { valeur: 'urgence', libelle: 'Urgence', classe: 'bg-red-100 text-red-700' },
+  { valeur: 'info', libelle: 'Information', classe: 'bg-surface-2 text-sourdine' },
+  { valeur: 'vigilance', libelle: 'Vigilance', classe: 'text-veille' },
+  { valeur: 'urgence', libelle: 'Urgence', classe: 'text-chaud' },
 ]
 
 export default function AlertesPubliques() {
@@ -29,17 +29,17 @@ export default function AlertesPubliques() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-display text-xl font-semibold text-slate-900">Alertes publiques</h1>
+        <h1 className="text-xl font-semibold text-encre">Alertes publiques</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Publier une alerte</BoutonPrincipal>
         )}
       </div>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-sourdine mb-4">
         Ce qui est communiqué au grand public via l'app Citoyen — distinct des SitRep et du
         livre de bord internes.
       </p>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulaireAlerte
@@ -53,16 +53,16 @@ export default function AlertesPubliques() {
       )}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : alertesTriees.length === 0 && !enAjout ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
           Aucune alerte publiée.
         </p>
       ) : (
         <ul className="space-y-2">
           {alertesTriees.map((a) =>
             ligneEnEdition === a.id ? (
-              <li key={a.id} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+              <li key={a.id} className="bg-fond rounded p-3 border border-trait">
                 <FormulaireAlerte
                   valeursInitiales={a}
                   onAnnuler={() => setLigneEnEdition(null)}
@@ -74,20 +74,20 @@ export default function AlertesPubliques() {
                 />
               </li>
             ) : (
-              <li key={a.id} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+              <li key={a.id} className="bg-surface border border-trait rounded p-4 shadow-sm">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">
+                    <p className="text-sm font-medium text-encre">
                       {a.titre}
                       <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${NIVEAUX.find((n) => n.valeur === a.niveau_alerte)?.classe}`}>
                         {NIVEAUX.find((n) => n.valeur === a.niveau_alerte)?.libelle}
                       </span>
-                      {!a.actif && <span className="ml-2 text-xs text-slate-400">(inactive)</span>}
+                      {!a.actif && <span className="ml-2 text-xs text-sourdine">(inactive)</span>}
                     </p>
-                    <p className="text-sm text-slate-600 mt-1">{a.message}</p>
-                    {a.consignes && <p className="text-xs text-slate-500 mt-1">consignes : {a.consignes}</p>}
-                    {a.zone_concernee && <p className="text-xs text-slate-400 mt-1">zone : {a.zone_concernee}</p>}
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-sm text-sourdine mt-1">{a.message}</p>
+                    {a.consignes && <p className="text-xs text-sourdine mt-1">consignes : {a.consignes}</p>}
+                    {a.zone_concernee && <p className="text-xs text-sourdine mt-1">zone : {a.zone_concernee}</p>}
+                    <p className="text-xs text-sourdine mt-1">
                       publiée le {new Date(a.date_publication).toLocaleString('fr-BE')}
                       {a.date_expiration && <> · expire le {new Date(a.date_expiration).toLocaleString('fr-BE')}</>}
                     </p>
@@ -136,16 +136,16 @@ function BoutonDiffusion({ alerteId }) {
   }
 
   return (
-    <div className="mt-2 pt-2 border-t border-slate-100">
+    <div className="mt-2 pt-2 border-t border-trait">
       <BoutonDiscret onClick={diffuser} disabled={enCours}>
         {enCours ? 'Diffusion en cours…' : 'Diffuser vers les canaux'}
       </BoutonDiscret>
-      {erreur && <p className="text-xs text-red-600 mt-1">{erreur}</p>}
-      {resultats?.message && <p className="text-xs text-slate-400 mt-1">{resultats.message}</p>}
+      {erreur && <p className="text-xs text-chaud mt-1">{erreur}</p>}
+      {resultats?.message && <p className="text-xs text-sourdine mt-1">{resultats.message}</p>}
       {resultats?.resultats?.length > 0 && (
         <ul className="text-xs mt-1 space-y-0.5">
           {resultats.resultats.map((r, i) => (
-            <li key={i} className={r.statut === 'envoye' ? 'text-emerald-600' : 'text-red-600'}>
+            <li key={i} className={r.statut === 'envoye' ? 'text-ok' : 'text-chaud'}>
               {r.canal} — {r.statut === 'envoye' ? 'envoyé' : `échec (${r.erreur})`}
             </li>
           ))}
@@ -187,65 +187,65 @@ function FormulaireAlerte({ valeursInitiales = {}, onValider, onAnnuler }) {
   return (
     <form onSubmit={soumettre} className="space-y-3">
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Titre</label>
+        <label className="block text-xs font-medium text-sourdine mb-1">Titre</label>
         <input
           required
           value={titre}
           onChange={(e) => setTitre(e.target.value)}
           placeholder="ex. Inondation Rue du Centre"
-          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+          className="w-full"
         />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Message au public</label>
+        <label className="block text-xs font-medium text-sourdine mb-1">Message au public</label>
         <textarea
           required
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           rows={3}
           placeholder="Ce que le citoyen doit savoir…"
-          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+          className="w-full"
         />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Consignes</label>
+        <label className="block text-xs font-medium text-sourdine mb-1">Consignes</label>
         <textarea
           value={consignes}
           onChange={(e) => setConsignes(e.target.value)}
           rows={2}
           placeholder="ex. Évitez le secteur, privilégiez un itinéraire alternatif"
-          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+          className="w-full"
         />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Niveau</label>
-          <select value={niveauAlerte} onChange={(e) => setNiveauAlerte(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Niveau</label>
+          <select value={niveauAlerte} onChange={(e) => setNiveauAlerte(e.target.value)} className="w-full">
             {NIVEAUX.map((n) => (
               <option key={n.valeur} value={n.valeur}>{n.libelle}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Zone concernée</label>
-          <input value={zoneConcernee} onChange={(e) => setZoneConcernee(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Zone concernée</label>
+          <input value={zoneConcernee} onChange={(e) => setZoneConcernee(e.target.value)} className="w-full" />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Expiration (optionnel)</label>
-        <input type="datetime-local" value={dateExpiration} onChange={(e) => setDateExpiration(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Expiration (optionnel)</label>
+        <input type="datetime-local" value={dateExpiration} onChange={(e) => setDateExpiration(e.target.value)} className="w-full" />
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-sourdine">
         <input type="checkbox" checked={actif} onChange={(e) => setActif(e.target.checked)} />
         Active (visible par le public immédiatement)
       </label>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>

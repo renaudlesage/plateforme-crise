@@ -36,17 +36,17 @@ export default function SeuilsMeteoDeclencheurs() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-display text-xl font-semibold text-slate-900">Seuils météo déclencheurs</h1>
+        <h1 className="text-xl font-semibold text-encre">Seuils météo déclencheurs</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter un seuil</BoutonPrincipal>
         )}
       </div>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-sourdine mb-4">
         Seuils numériques génériques (température, vent, niveau d'un cours d'eau...) qui
         déclenchent une action — rattachables à un objet à risque précis, ou génériques.
       </p>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulaireSeuilMeteo
@@ -61,16 +61,16 @@ export default function SeuilsMeteoDeclencheurs() {
       )}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : seuils.length === 0 && !enAjout ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
           Aucun seuil météo défini.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
           {seuils.map((s) =>
             ligneEnEdition === s.id ? (
-              <li key={s.id} className="bg-slate-50 p-3">
+              <li key={s.id} className="bg-fond p-3">
                 <FormulaireSeuilMeteo
                   objetsRisque={objetsRisque}
                   valeursInitiales={s}
@@ -83,18 +83,18 @@ export default function SeuilsMeteoDeclencheurs() {
                 />
               </li>
             ) : (
-              <li key={s.id} className="flex items-start justify-between px-4 py-3 bg-white">
+              <li key={s.id} className="flex items-start justify-between px-4 py-3 bg-surface">
                 <div>
-                  <p className="text-sm font-medium text-slate-900">
+                  <p className="text-sm font-medium text-encre">
                     {s.libelle}
-                    {!s.actif && <span className="ml-2 text-xs text-slate-400">(inactif)</span>}
+                    {!s.actif && <span className="ml-2 text-xs text-sourdine">(inactif)</span>}
                   </p>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">
+                  <p className="text-xs text-sourdine font-mono mt-0.5">
                     {PARAMETRES.find((p) => p.valeur === s.parametre)?.libelle ?? s.parametre} {s.operateur} {s.valeur_seuil} {s.unite}
                   </p>
-                  {s.action_associee && <p className="text-xs text-slate-500 mt-0.5">action : {s.action_associee}</p>}
+                  {s.action_associee && <p className="text-xs text-sourdine mt-0.5">action : {s.action_associee}</p>}
                   {s.objets_a_risque?.identification && (
-                    <p className="text-xs text-slate-400 mt-0.5">objet : {s.objets_a_risque.identification}</p>
+                    <p className="text-xs text-sourdine mt-0.5">objet : {s.objets_a_risque.identification}</p>
                   )}
                 </div>
                 <div className="flex gap-2 flex-shrink-0 ml-3">
@@ -146,49 +146,49 @@ function FormulaireSeuilMeteo({ objetsRisque, valeursInitiales = {}, onValider, 
   }
 
   return (
-    <form onSubmit={soumettre} className="border border-slate-200 rounded-lg p-4 mb-4 bg-slate-50 space-y-3">
+    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-4 bg-fond space-y-3">
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Libellé</label>
+        <label className="block text-xs font-medium text-sourdine mb-1">Libellé</label>
         <input
           required
           value={libelle}
           onChange={(e) => setLibelle(e.target.value)}
           placeholder="ex. Risque de feu de forêt — conditions réunies"
-          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+          className="w-full"
         />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="sm:col-span-2">
-          <label className="block text-xs font-medium text-slate-600 mb-1">Paramètre</label>
-          <select value={parametre} onChange={(e) => setParametre(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Paramètre</label>
+          <select value={parametre} onChange={(e) => setParametre(e.target.value)} className="w-full">
             {PARAMETRES.map((p) => (
               <option key={p.valeur} value={p.valeur}>{p.libelle}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Opérateur</label>
-          <select value={operateur} onChange={(e) => setOperateur(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Opérateur</label>
+          <select value={operateur} onChange={(e) => setOperateur(e.target.value)} className="w-full">
             {OPERATEURS.map((o) => (
               <option key={o} value={o}>{o}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Valeur seuil</label>
-          <input required type="number" step="any" value={valeurSeuil} onChange={(e) => setValeurSeuil(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Valeur seuil</label>
+          <input required type="number" step="any" value={valeurSeuil} onChange={(e) => setValeurSeuil(e.target.value)} className="w-full" />
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Unité</label>
-          <input value={unite} onChange={(e) => setUnite(e.target.value)} placeholder="ex. °C, km/h, m" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Unité</label>
+          <input value={unite} onChange={(e) => setUnite(e.target.value)} placeholder="ex. °C, km/h, m" className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Objet à risque lié</label>
-          <select value={objetRisqueId} onChange={(e) => setObjetRisqueId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Objet à risque lié</label>
+          <select value={objetRisqueId} onChange={(e) => setObjetRisqueId(e.target.value)} className="w-full">
             <option value="">— générique —</option>
             {objetsRisque.map((o) => (
               <option key={o.id} value={o.id}>{o.identification}</option>
@@ -198,16 +198,16 @@ function FormulaireSeuilMeteo({ objetsRisque, valeursInitiales = {}, onValider, 
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Action associée</label>
-        <textarea value={actionAssociee} onChange={(e) => setActionAssociee(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Action associée</label>
+        <textarea value={actionAssociee} onChange={(e) => setActionAssociee(e.target.value)} rows={2} className="w-full" />
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-sourdine">
         <input type="checkbox" checked={actif} onChange={(e) => setActif(e.target.checked)} />
         Actif
       </label>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>

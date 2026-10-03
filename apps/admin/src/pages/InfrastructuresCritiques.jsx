@@ -24,17 +24,17 @@ export default function InfrastructuresCritiques() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-display text-xl font-semibold text-slate-900">Infrastructures critiques</h1>
+        <h1 className="text-xl font-semibold text-encre">Infrastructures critiques</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter une infrastructure</BoutonPrincipal>
         )}
       </div>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-sourdine mb-4">
         Réseaux, télécom, énergie... géolocalisés, avec leur exposition aux risques — distinct
         des fonctions critiques (qui suivent un service, pas un lieu).
       </p>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulaireInfrastructure
@@ -49,16 +49,16 @@ export default function InfrastructuresCritiques() {
       )}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : infrastructures.length === 0 && !enAjout ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
           Aucune infrastructure critique enregistrée.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
           {infrastructures.map((i) =>
             ligneEnEdition === i.id ? (
-              <li key={i.id} className="bg-slate-50 p-3">
+              <li key={i.id} className="bg-fond p-3">
                 <FormulaireInfrastructure
                   contacts={contacts}
                   valeursInitiales={i}
@@ -71,26 +71,26 @@ export default function InfrastructuresCritiques() {
                 />
               </li>
             ) : (
-              <li key={i.id} className="flex items-start justify-between px-4 py-3 bg-white">
+              <li key={i.id} className="flex items-start justify-between px-4 py-3 bg-surface">
                 <div>
-                  <p className="text-sm font-medium text-slate-900">
+                  <p className="text-sm font-medium text-encre">
                     {i.nom}
-                    {!i.actif && <span className="ml-2 text-xs text-slate-400">(inactif)</span>}
+                    {!i.actif && <span className="ml-2 text-xs text-sourdine">(inactif)</span>}
                     {i.degre_criticite != null && (
-                      <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-slate-900 text-white">
+                      <span className="jeton ml-2 bg-encre text-fond">
                         criticité {i.degre_criticite}
                       </span>
                     )}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-sourdine">
                     {i.type}
                     {i.adresse && <> · {i.adresse}</>}
                   </p>
                   {i.expositions_risques?.length > 0 && (
-                    <p className="text-xs text-slate-400 mt-0.5">exposée à : {i.expositions_risques.join(', ')}</p>
+                    <p className="text-xs text-sourdine mt-0.5">exposée à : {i.expositions_risques.join(', ')}</p>
                   )}
                   {i.contacts && (
-                    <p className="text-xs text-slate-400 mt-0.5">gestionnaire : {i.contacts.prenom} {i.contacts.nom}</p>
+                    <p className="text-xs text-sourdine mt-0.5">gestionnaire : {i.contacts.prenom} {i.contacts.nom}</p>
                   )}
                 </div>
                 <div className="flex gap-2 flex-shrink-0 ml-3">
@@ -144,52 +144,52 @@ function FormulaireInfrastructure({ contacts = [], valeursInitiales = {}, onVali
   }
 
   return (
-    <form onSubmit={soumettre} className="border border-slate-200 rounded-lg p-4 mb-4 bg-slate-50 space-y-3">
+    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-4 bg-fond space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Nom</label>
+          <label className="block text-xs font-medium text-sourdine mb-1">Nom</label>
           <input
             required
             value={nom}
             onChange={(e) => setNom(e.target.value)}
             placeholder="ex. Poste électrique Nord"
-            className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+            className="w-full"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Type</label>
-          <input required value={type} onChange={(e) => setType(e.target.value)} placeholder="ex. électricité, télécom, eau" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Type</label>
+          <input required value={type} onChange={(e) => setType(e.target.value)} placeholder="ex. électricité, télécom, eau" className="w-full" />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Adresse</label>
-        <input value={adresse} onChange={(e) => setAdresse(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Adresse</label>
+        <input value={adresse} onChange={(e) => setAdresse(e.target.value)} className="w-full" />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Latitude</label>
-          <input value={latitude} onChange={(e) => setLatitude(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Latitude</label>
+          <input value={latitude} onChange={(e) => setLatitude(e.target.value)} className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Longitude</label>
-          <input value={longitude} onChange={(e) => setLongitude(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Longitude</label>
+          <input value={longitude} onChange={(e) => setLongitude(e.target.value)} className="w-full" />
         </div>
         <div className="col-span-2">
-          <label className="block text-xs font-medium text-slate-600 mb-1">Niveau de criticité (1-4)</label>
-          <input type="number" min="1" max="4" value={niveauCriticite} onChange={(e) => setNiveauCriticite(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Niveau de criticité (1-4)</label>
+          <input type="number" min="1" max="4" value={niveauCriticite} onChange={(e) => setNiveauCriticite(e.target.value)} className="w-full" />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Expositions aux risques (séparées par des virgules)</label>
-        <input value={expositions} onChange={(e) => setExpositions(e.target.value)} placeholder="ex. inondation, feu de forêt" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Expositions aux risques (séparées par des virgules)</label>
+        <input value={expositions} onChange={(e) => setExpositions(e.target.value)} placeholder="ex. inondation, feu de forêt" className="w-full" />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Gestionnaire</label>
-        <select value={gestionnaireContactId} onChange={(e) => setGestionnaireContactId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+        <label className="block text-xs font-medium text-sourdine mb-1">Gestionnaire</label>
+        <select value={gestionnaireContactId} onChange={(e) => setGestionnaireContactId(e.target.value)} className="w-full">
           <option value="">—</option>
           {contacts.map((c) => (
             <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
@@ -197,12 +197,12 @@ function FormulaireInfrastructure({ contacts = [], valeursInitiales = {}, onVali
         </select>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-sourdine">
         <input type="checkbox" checked={actif} onChange={(e) => setActif(e.target.checked)} />
         Actif
       </label>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>

@@ -27,7 +27,7 @@ export default function SelectionContexte() {
   if (chargementAcces) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-sm text-slate-500">Chargement de vos accès…</p>
+        <p className="text-sm text-sourdine">Chargement de vos accès…</p>
       </div>
     )
   }
@@ -36,14 +36,14 @@ export default function SelectionContexte() {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="max-w-sm text-center">
-          <h1 className="text-lg font-semibold text-slate-900">Aucun accès configuré</h1>
-          <p className="mt-2 text-sm text-slate-500">
+          <h1 className="text-lg font-semibold text-encre">Aucun accès configuré</h1>
+          <p className="mt-2 text-sm text-sourdine">
             Ce compte n'est rattaché à aucun contexte pour l'instant. Contactez l'administrateur
             de la plateforme pour qu'il vous ajoute à une commune ou un événement.
           </p>
           <button
             onClick={deconnexion}
-            className="mt-6 text-sm text-slate-600 underline hover:text-slate-900"
+            className="mt-6 text-sm text-sourdine underline hover:text-encre"
           >
             Se déconnecter
           </button>
@@ -55,8 +55,8 @@ export default function SelectionContexte() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <h1 className="text-lg font-semibold text-slate-900 mb-1">Choisir un contexte</h1>
-        <p className="text-sm text-slate-500 mb-6">
+        <h1 className="text-lg font-semibold text-encre mb-1">Choisir un contexte</h1>
+        <p className="text-sm text-sourdine mb-6">
           Sélectionnez la commune, province ou l'événement sur lequel vous voulez travailler.
         </p>
 
@@ -65,15 +65,15 @@ export default function SelectionContexte() {
             <li key={a.contexte_id}>
               <button
                 onClick={() => choisir(a.contexte_id)}
-                className="w-full text-left bg-white border border-slate-200 rounded-lg px-4 py-3 hover:border-slate-400 transition-colors flex items-center justify-between"
+                className="w-full text-left bg-surface border border-trait rounded px-4 py-3 hover:border-trait-fort transition-colors flex items-center justify-between"
               >
                 <div>
-                  <p className="font-medium text-slate-900">{a.contextes?.nom ?? 'Contexte sans nom'}</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="font-medium text-encre">{a.contextes?.nom ?? 'Contexte sans nom'}</p>
+                  <p className="text-xs text-sourdine">
                     {LIBELLE_TYPE[a.contextes?.type] ?? a.contextes?.type}
                   </p>
                 </div>
-                <span className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-600">
+                <span className="text-xs px-2 py-1 rounded bg-surface-2 text-sourdine">
                   {LIBELLE_NIVEAU[a.niveau_acces] ?? a.niveau_acces}
                 </span>
               </button>
@@ -83,7 +83,7 @@ export default function SelectionContexte() {
 
         <button
           onClick={deconnexion}
-          className="mt-6 text-sm text-slate-500 underline hover:text-slate-900"
+          className="mt-6 text-sm text-sourdine underline hover:text-encre"
         >
           Se déconnecter
         </button>

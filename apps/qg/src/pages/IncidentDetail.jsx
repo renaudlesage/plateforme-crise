@@ -10,12 +10,13 @@ export default function IncidentDetail() {
   const { contexteId } = useAuth()
   const [incident, setIncident] = useState(null)
   const [chargementIncident, setChargementIncident] = useState(true)
+  const { lignes: sitesQG } = useTableContexte('sites_qg', contexteId, { tri: 'priorite' })
 
   const chargerIncident = useCallback(async () => {
     setChargementIncident(true)
     const { data } = await supabase
       .from('incidents')
-      .select('*, niveaux_escalade(id, libelle)')
+      .select('*, niveaux_escalade(id, libelle), sites_qg(id, nom)')
       .eq('id', id)
       .single()
     setIncident(data)
@@ -37,26 +38,31 @@ export default function IncidentDetail() {
     chargerIncident()
   }
 
-  if (chargementIncident) return <p className="text-sm text-slate-400">Chargement…</p>
-  if (!incident) return <p className="text-sm text-red-600">Incident introuvable.</p>
+  async function changerSiteQG(valeur) {
+    await supabase.from('incidents').update({ site_qg_actuel_id: valeur || null }).eq('id', id)
+    chargerIncident()
+  }
+
+  if (chargementIncident) return <p className="text-sm text-sourdine">Chargement…</p>
+  if (!incident) return <p className="text-sm text-chaud">Incident introuvable.</p>
 
   return (
     <div>
-      <Link to="/" className="text-sm text-slate-500 hover:text-slate-800">← retour aux incidents</Link>
+      <Link to="/" className="text-sm text-sourdine hover:text-encre">← retour aux incidents</Link>
 
       <div className="flex items-start justify-between mt-2 mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">{incident.nom}</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-lg font-semibold text-encre">{incident.nom}</h1>
+          <p className="text-sm text-sourdine">
             {incident.type_evenement && <>{incident.type_evenement} · </>}
             {incident.niveaux_escalade?.libelle} · statut : {incident.statut}
           </p>
           <div className="flex items-center gap-2 mt-1.5">
-            <label className="text-xs text-slate-500">Degré de criticité :</label>
+            <label className="text-xs text-sourdine">Degré de criticité :</label>
             <select
               value={incident.degre_criticite ?? ''}
               onChange={(e) => changerDegreCriticite(e.target.value)}
-              className="rounded-md border border-slate-300 px-2 py-1 text-xs bg-white"
+              className=""
             >
               <option value="">—</option>
               <option value="1">1 — faible</option>
@@ -65,10 +71,27 @@ export default function IncidentDetail() {
               <option value="4">4 — majeur</option>
             </select>
           </div>
+          <div className="flex items-center gap-2 mt-1.5">
+            <label className="text-xs text-sourdine">Site QG actuel :</label>
+            <select
+              value={incident.site_qg_actuel_id ?? ''}
+              onChange={(e) => changerSiteQG(e.target.value)}
+              className=""
+            >
+              <option value="">—</option>
+              {sitesQG.map((s) => (
+                <option key={s.id} value={s.id}>{s.nom}</option>
+              ))}
+            </select>
+          </div>
         </div>
         {incident.statut !== 'cloture' && (
           <BoutonDiscret onClick={cloturer}>Clôturer l'incident</BoutonDiscret>
         )}
+      </div>
+
+      <div className="mb-6">
+        <SectionPhasesEscalade incidentId={id} contexteId={contexteId} niveauActuelId={incident.niveau_actuel_id} onChangement={chargerIncident} />
       </div>
 
       <div className="mb-6">
@@ -113,6 +136,199 @@ const STATUTS_ORGANE_LOG = [
   { valeur: 'desactivee', libelle: 'Désactivé' },
 ]
 
+const STATUTS_PHASE = [
+  { valeur: 'active', libelle: 'Active' },
+  { valeur: 'relais', libelle: 'Relais (passation vers un autre niveau)' },
+  { valeur: 'levee', libelle: 'Levée' },
+]
+
+const HORIZONS_TEMPOREL = [
+  { valeur: 'immediat', libelle: 'Immédiat' },
+  { valeur: 'h0_24', libelle: '0-24h' },
+  { valeur: 'h24_72', libelle: '24-72h' },
+  { valeur: 'semaines', libelle: 'Semaines' },
+  { valeur: 'mois', libelle: 'Mois' },
+  { valeur: 'residuel', libelle: 'Résiduel' },
+]
+
+function SectionPhasesEscalade({ incidentId, contexteId, niveauActuelId, onChangement }) {
+  const { lignes: niveaux } = useTableContexte('niveaux_escalade', contexteId, { tri: 'ordre' })
+  const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
+  const [phases, setPhases] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [enAjout, setEnAjout] = useState(false)
+  const [erreur, setErreur] = useState(null)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('phases_incident')
+      .select('*, niveaux_escalade(id, libelle), contacts(id, nom, prenom)')
+      .eq('incident_id', incidentId)
+      .order('date_declenchement', { ascending: false })
+    if (error) setErreur(error.message)
+    else setPhases(data ?? [])
+    setChargement(false)
+  }, [incidentId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="font-medium text-encre">Niveau d'escalade — historique</h2>
+        {!enAjout && <BoutonPrincipal onClick={() => setEnAjout(true)}>Consigner un changement de niveau</BoutonPrincipal>}
+      </div>
+
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
+
+      {enAjout && (
+        <FormulairePhaseEscalade
+          incidentId={incidentId}
+          niveaux={niveaux}
+          contacts={contacts}
+          onAnnuler={() => setEnAjout(false)}
+          onValider={async () => {
+            setEnAjout(false)
+            await rafraichir()
+            await onChangement?.()
+          }}
+        />
+      )}
+
+      {chargement ? (
+        <p className="text-sm text-sourdine">Chargement…</p>
+      ) : phases.length === 0 && !enAjout ? (
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-4 text-center">
+          Aucun changement de niveau consigné pour cet incident.
+        </p>
+      ) : (
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden bg-surface">
+          {phases.map((p) => (
+            <li key={p.id} className="px-4 py-2.5">
+              <p className="text-sm text-encre">
+                {p.niveaux_escalade?.libelle ?? '—'}
+                {p.statut === 'active' && p.niveau_id === niveauActuelId && (
+                  <span className="jeton text-ok ml-2">niveau actuel</span>
+                )}
+                <span className="jeton text-sourdine ml-2">
+                  {STATUTS_PHASE.find((s) => s.valeur === p.statut)?.libelle ?? p.statut}
+                </span>
+                <span className="jeton text-info ml-2">
+                  {HORIZONS_TEMPOREL.find((h) => h.valeur === p.horizon_temporel)?.libelle ?? p.horizon_temporel}
+                </span>
+              </p>
+              <p className="text-xs text-sourdine">
+                déclenché le {new Date(p.date_declenchement).toLocaleString('fr-BE')}
+                {p.date_levee && <> · levé le {new Date(p.date_levee).toLocaleString('fr-BE')}</>}
+                {p.contacts && <> · autorité : {p.contacts.prenom} {p.contacts.nom}</>}
+              </p>
+              {p.motif && <p className="text-xs text-sourdine italic mt-0.5">{p.motif}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function FormulairePhaseEscalade({ incidentId, niveaux, contacts, onValider, onAnnuler }) {
+  const [niveauId, setNiveauId] = useState('')
+  const [statut, setStatut] = useState('active')
+  const [horizonTemporel, setHorizonTemporel] = useState('immediat')
+  const [autoriteContactId, setAutoriteContactId] = useState('')
+  const [motif, setMotif] = useState('')
+  const [erreur, setErreur] = useState(null)
+  const [enCours, setEnCours] = useState(false)
+
+  async function soumettre(e) {
+    e.preventDefault()
+    if (!niveauId) return
+    setEnCours(true)
+    const { error } = await supabase.from('phases_incident').insert({
+      incident_id: incidentId,
+      niveau_id: niveauId,
+      statut,
+      horizon_temporel: horizonTemporel,
+      date_levee: statut === 'levee' ? new Date().toISOString() : null,
+      autorite_contact_id: autoriteContactId || null,
+      motif: motif.trim() || null,
+    })
+    if (!error && statut === 'active') {
+      await supabase.from('incidents').update({ niveau_actuel_id: niveauId }).eq('id', incidentId)
+    }
+    setEnCours(false)
+    if (error) setErreur(error.message)
+    else onValider()
+  }
+
+  return (
+    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-3 bg-fond space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Niveau d'escalade</label>
+          <select required value={niveauId} onChange={(e) => setNiveauId(e.target.value)} className="w-full">
+            <option value="">—</option>
+            {niveaux.map((n) => (
+              <option key={n.id} value={n.id}>{n.libelle}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Statut de la phase</label>
+          <select value={statut} onChange={(e) => setStatut(e.target.value)} className="w-full">
+            {STATUTS_PHASE.map((s) => (
+              <option key={s.valeur} value={s.valeur}>{s.libelle}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Horizon temporel</label>
+          <select value={horizonTemporel} onChange={(e) => setHorizonTemporel(e.target.value)} className="w-full">
+            {HORIZONS_TEMPOREL.map((h) => (
+              <option key={h.valeur} value={h.valeur}>{h.libelle}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Autorité (contact)</label>
+          <select value={autoriteContactId} onChange={(e) => setAutoriteContactId(e.target.value)} className="w-full">
+            <option value="">—</option>
+            {contacts.map((c) => (
+              <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Motif</label>
+        <textarea value={motif} onChange={(e) => setMotif(e.target.value)} rows={2} className="w-full" />
+      </div>
+
+      {statut === 'active' && (
+        <p className="text-xs text-sourdine italic">
+          Enregistrer ce changement en statut "Active" mettra à jour le niveau d'escalade affiché pour l'incident.
+        </p>
+      )}
+
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
+
+      <div className="flex gap-2">
+        <BoutonPrincipal type="submit" disabled={enCours}>
+          {enCours ? 'Enregistrement…' : 'Enregistrer'}
+        </BoutonPrincipal>
+        <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
+      </div>
+    </form>
+  )
+}
+
 function SectionOrganesCrise({ incidentId, contexteId, degreCriticiteIncident }) {
   const { lignes: instances } = useTableContexte('instances_coordination', contexteId, { tri: 'type' })
   const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
@@ -140,11 +356,11 @@ function SectionOrganesCrise({ incidentId, contexteId, degreCriticiteIncident })
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <h2 className="font-medium text-slate-900">Organes de crise activés/désactivés</h2>
+        <h2 className="font-medium text-encre">Organes de crise activés/désactivés</h2>
         {!enAjout && <BoutonPrincipal onClick={() => setEnAjout(true)}>Consigner un changement</BoutonPrincipal>}
       </div>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulaireOrganeCrise
@@ -161,27 +377,27 @@ function SectionOrganesCrise({ incidentId, contexteId, degreCriticiteIncident })
       )}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : historique.length === 0 && !enAjout ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-4 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-4 text-center">
           Aucune activation/désactivation consignée pour cet incident.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden bg-white">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden bg-surface">
           {historique.map((h) => (
             <li key={h.id} className="px-4 py-2.5">
-              <p className="text-sm text-slate-900">
+              <p className="text-sm text-encre">
                 {h.instances_coordination?.type} —{' '}
-                <span className={h.statut === 'active' ? 'text-emerald-700' : 'text-slate-500'}>
+                <span className={h.statut === 'active' ? 'text-ok' : 'text-sourdine'}>
                   {STATUTS_ORGANE_LOG.find((s) => s.valeur === h.statut)?.libelle ?? h.statut}
                 </span>
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-sourdine">
                 {new Date(h.horodatage).toLocaleString('fr-BE')}
                 {h.contacts && <> · déclenché par {h.contacts.prenom} {h.contacts.nom}</>}
                 {h.degre_criticite != null && <> · criticité {h.degre_criticite}</>}
               </p>
-              {h.motif && <p className="text-xs text-slate-400 italic mt-0.5">{h.motif}</p>}
+              {h.motif && <p className="text-xs text-sourdine italic mt-0.5">{h.motif}</p>}
             </li>
           ))}
         </ul>
@@ -216,11 +432,11 @@ function FormulaireOrganeCrise({ incidentId, instances, contacts, degreCriticite
   }
 
   return (
-    <form onSubmit={soumettre} className="border border-slate-200 rounded-lg p-4 mb-3 bg-slate-50 space-y-3">
+    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-3 bg-fond space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Organe</label>
-          <select required value={instanceId} onChange={(e) => setInstanceId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Organe</label>
+          <select required value={instanceId} onChange={(e) => setInstanceId(e.target.value)} className="w-full">
             <option value="">—</option>
             {instances.map((i) => (
               <option key={i.id} value={i.id}>{i.type}</option>
@@ -228,8 +444,8 @@ function FormulaireOrganeCrise({ incidentId, instances, contacts, degreCriticite
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Statut</label>
-          <select value={statut} onChange={(e) => setStatut(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Statut</label>
+          <select value={statut} onChange={(e) => setStatut(e.target.value)} className="w-full">
             {STATUTS_ORGANE_LOG.map((s) => (
               <option key={s.valeur} value={s.valeur}>{s.libelle}</option>
             ))}
@@ -238,8 +454,8 @@ function FormulaireOrganeCrise({ incidentId, instances, contacts, degreCriticite
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Déclenché par</label>
-        <select value={declenchePar} onChange={(e) => setDeclenchePar(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+        <label className="block text-xs font-medium text-sourdine mb-1">Déclenché par</label>
+        <select value={declenchePar} onChange={(e) => setDeclenchePar(e.target.value)} className="w-full">
           <option value="">—</option>
           {contacts.map((c) => (
             <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
@@ -248,11 +464,11 @@ function FormulaireOrganeCrise({ incidentId, instances, contacts, degreCriticite
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Motif</label>
-        <textarea value={motif} onChange={(e) => setMotif(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Motif</label>
+        <textarea value={motif} onChange={(e) => setMotif(e.target.value)} rows={2} className="w-full" />
       </div>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours || !instanceId}>{enCours ? 'Enregistrement…' : 'Enregistrer'}</BoutonPrincipal>
@@ -289,11 +505,11 @@ function SectionSuiviIntervenants({ incidentId, contexteId }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <h2 className="font-medium text-slate-900">Suivi santé/sécurité des intervenants</h2>
+        <h2 className="font-medium text-encre">Suivi santé/sécurité des intervenants</h2>
         {!enAjout && <BoutonPrincipal onClick={() => setEnAjout(true)}>Signaler</BoutonPrincipal>}
       </div>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulaireSuiviIntervenant
@@ -309,26 +525,26 @@ function SectionSuiviIntervenants({ incidentId, contexteId }) {
       )}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : suivis.length === 0 && !enAjout ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-4 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-4 text-center">
           Aucun signalement pour cet incident.
         </p>
       ) : (
         <ul className="space-y-2">
           {suivis.map((s) => (
-            <li key={s.id} className={`bg-white border rounded-lg p-3 ${s.necessite_relai ? 'border-amber-300' : 'border-slate-200'}`}>
-              <p className="text-sm font-medium text-slate-900">
+            <li key={s.id} className={`bg-surface border rounded p-3 ${s.necessite_relai ? 'border-veille' : 'border-trait'}`}>
+              <p className="text-sm font-medium text-encre">
                 {INDICATEURS_INTERVENANT.find((i) => i.valeur === s.indicateur)?.libelle ?? s.indicateur}
-                {s.necessite_relai && <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">relai nécessaire</span>}
+                {s.necessite_relai && <span className="jeton text-veille ml-2">relai nécessaire</span>}
               </p>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-sourdine mt-0.5">
                 {s.contacts && <>{s.contacts.prenom} {s.contacts.nom} · </>}
                 {s.disciplines?.libelle && <>{s.disciplines.libelle} · </>}
                 {new Date(s.horodatage).toLocaleString('fr-BE')}
               </p>
-              {s.valeur && <p className="text-xs text-slate-500 mt-0.5">valeur : {s.valeur}</p>}
-              {s.note && <p className="text-xs text-slate-400 mt-0.5 italic">{s.note}</p>}
+              {s.valeur && <p className="text-xs text-sourdine mt-0.5">valeur : {s.valeur}</p>}
+              {s.note && <p className="text-xs text-sourdine mt-0.5 italic">{s.note}</p>}
             </li>
           ))}
         </ul>
@@ -365,11 +581,11 @@ function FormulaireSuiviIntervenant({ incidentId, contacts, disciplines = [], on
   }
 
   return (
-    <form onSubmit={soumettre} className="border border-slate-200 rounded-lg p-4 mb-3 bg-slate-50 space-y-3">
+    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-3 bg-fond space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Intervenant</label>
-          <select value={contactId} onChange={(e) => setContactId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Intervenant</label>
+          <select value={contactId} onChange={(e) => setContactId(e.target.value)} className="w-full">
             <option value="">—</option>
             {contacts.map((c) => (
               <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
@@ -377,8 +593,8 @@ function FormulaireSuiviIntervenant({ incidentId, contacts, disciplines = [], on
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Indicateur</label>
-          <select value={indicateur} onChange={(e) => setIndicateur(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Indicateur</label>
+          <select value={indicateur} onChange={(e) => setIndicateur(e.target.value)} className="w-full">
             {INDICATEURS_INTERVENANT.map((i) => (
               <option key={i.valeur} value={i.valeur}>{i.libelle}</option>
             ))}
@@ -387,8 +603,8 @@ function FormulaireSuiviIntervenant({ incidentId, contacts, disciplines = [], on
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Discipline</label>
-        <select value={disciplineId} onChange={(e) => setDisciplineId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+        <label className="block text-xs font-medium text-sourdine mb-1">Discipline</label>
+        <select value={disciplineId} onChange={(e) => setDisciplineId(e.target.value)} className="w-full">
           <option value="">—</option>
           {disciplines.map((d) => (
             <option key={d.id} value={d.id}>{d.libelle}</option>
@@ -397,21 +613,21 @@ function FormulaireSuiviIntervenant({ incidentId, contacts, disciplines = [], on
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Valeur mesurée (optionnel)</label>
-        <input value={valeur} onChange={(e) => setValeur(e.target.value)} placeholder="ex. 180 ppm CO" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Valeur mesurée (optionnel)</label>
+        <input value={valeur} onChange={(e) => setValeur(e.target.value)} placeholder="ex. 180 ppm CO" className="w-full" />
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-sourdine">
         <input type="checkbox" checked={necessiteRelai} onChange={(e) => setNecessiteRelai(e.target.checked)} />
         Nécessite un relai immédiat
       </label>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Note</label>
-        <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Note</label>
+        <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} className="w-full" />
       </div>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>{enCours ? 'Enregistrement…' : 'Enregistrer'}</BoutonPrincipal>
@@ -477,37 +693,37 @@ function SectionPhaseTransitoire({ incidentId, contexteId }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <h2 className="font-medium text-slate-900">Phase transitoire post-crise (7 secteurs)</h2>
+        <h2 className="font-medium text-encre">Phase transitoire post-crise (7 secteurs)</h2>
         {secteurs.length < SECTEURS_TRANSITOIRES.length && (
           <BoutonDiscret onClick={initialiser}>Initialiser les secteurs manquants</BoutonDiscret>
         )}
       </div>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : secteurs.length === 0 ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-4 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-4 text-center">
           Phase transitoire pas encore initialisée pour cet incident.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden bg-white">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden bg-surface">
           {secteurs.map((s) => (
             <li key={s.id} className="flex items-center justify-between px-4 py-2.5 gap-2">
               <div>
-                <span className="text-sm text-slate-900">
+                <span className="text-sm text-encre">
                   {SECTEURS_TRANSITOIRES.find((x) => x.valeur === s.secteur)?.libelle ?? s.secteur}
                 </span>
                 {s.contacts && (
-                  <p className="text-xs text-slate-400">responsable : {s.contacts.prenom} {s.contacts.nom}</p>
+                  <p className="text-xs text-sourdine">responsable : {s.contacts.prenom} {s.contacts.nom}</p>
                 )}
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <select
                   value={s.responsable_contact_id ?? ''}
                   onChange={(e) => maj(s.id, { responsable_contact_id: e.target.value || null })}
-                  className="rounded-md border border-slate-300 px-2 py-1 text-xs bg-white"
+                  className=""
                 >
                   <option value="">responsable —</option>
                   {contacts.map((c) => (
@@ -517,7 +733,7 @@ function SectionPhaseTransitoire({ incidentId, contexteId }) {
                 <select
                   value={s.statut}
                   onChange={(e) => maj(s.id, { statut: e.target.value })}
-                  className="rounded-md border border-slate-300 px-2 py-1 text-xs bg-white"
+                  className=""
                 >
                   {STATUTS_SECTEUR.map((st) => (
                     <option key={st.valeur} value={st.valeur}>{st.libelle}</option>
@@ -537,6 +753,13 @@ const STATUTS_EVALUATION_CRISE = [
   { valeur: 'en_cours', libelle: 'En cours' },
   { valeur: 'realise', libelle: 'Réalisé' },
   { valeur: 'en_retard', libelle: 'En retard' },
+]
+
+const STATUTS_REX_RECOMMANDATION = [
+  { valeur: 'ouverte', libelle: 'Ouverte' },
+  { valeur: 'en_cours', libelle: 'En cours' },
+  { valeur: 'cloturee', libelle: 'Clôturée' },
+  { valeur: 'abandonnee', libelle: 'Abandonnée' },
 ]
 
 function SectionRex({ incidentId, contexteId }) {
@@ -595,30 +818,36 @@ function SectionRex({ incidentId, contexteId }) {
     await rafraichir()
   }
 
+  async function changerStatutRecommandation(id, statut) {
+    const { error } = await supabase.from('rex_recommandations').update({ statut }).eq('id', id)
+    if (error) setErreur(error.message)
+    else await rafraichir()
+  }
+
   return (
     <div>
-      <h2 className="font-medium text-slate-900 mb-2">REX — évaluation post-crise</h2>
+      <h2 className="font-medium text-encre mb-2">REX — évaluation post-crise</h2>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : !evaluation ? (
-        <div className="border border-dashed border-slate-300 rounded-lg p-4 text-center">
-          <p className="text-sm text-slate-500 mb-2">Aucun REX formel démarré pour cet incident.</p>
+        <div className="border border-dashed border-trait rounded p-4 text-center">
+          <p className="text-sm text-sourdine mb-2">Aucun REX formel démarré pour cet incident.</p>
           <BoutonDiscret onClick={demarrerRex}>Démarrer le REX (échéance à 3 mois)</BoutonDiscret>
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-3">
+        <div className="bg-surface border border-trait rounded p-4 space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-sm text-slate-700">
+            <p className="text-sm text-sourdine">
               Échéance : <strong>{evaluation.echeance_rex}</strong>
             </p>
             <div className="flex items-center gap-2">
               <select
                 value={evaluation.responsable_contact_id ?? ''}
                 onChange={(e) => majEvaluation({ responsable_contact_id: e.target.value || null })}
-                className="rounded-md border border-slate-300 px-2 py-1 text-xs bg-white"
+                className=""
               >
                 <option value="">responsable —</option>
                 {contacts.map((c) => (
@@ -628,7 +857,7 @@ function SectionRex({ incidentId, contexteId }) {
               <select
                 value={evaluation.statut}
                 onChange={(e) => majEvaluation({ statut: e.target.value })}
-                className="rounded-md border border-slate-300 px-2 py-1 text-xs bg-white"
+                className=""
               >
                 {STATUTS_EVALUATION_CRISE.map((s) => (
                   <option key={s.valeur} value={s.valeur}>{s.libelle}</option>
@@ -637,7 +866,7 @@ function SectionRex({ incidentId, contexteId }) {
             </div>
           </div>
           {evaluation.contacts && (
-            <p className="text-xs text-slate-400">responsable REX : {evaluation.contacts.prenom} {evaluation.contacts.nom}</p>
+            <p className="text-xs text-sourdine">responsable REX : {evaluation.contacts.prenom} {evaluation.contacts.nom}</p>
           )}
 
           <textarea
@@ -646,14 +875,14 @@ function SectionRex({ incidentId, contexteId }) {
             onBlur={(e) => majEvaluation({ synthese: e.target.value.trim() || null })}
             placeholder="Synthèse du REX…"
             rows={3}
-            className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+            className="w-full"
           />
 
-          <div className="pt-2 border-t border-slate-100">
+          <div className="pt-2 border-t border-trait">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-slate-600">Recommandations</p>
+              <p className="text-xs font-medium text-sourdine">Recommandations</p>
               {!enAjoutRecommandation && (
-                <button type="button" onClick={() => setEnAjoutRecommandation(true)} className="text-xs text-institution-700 hover:underline">
+                <button type="button" onClick={() => setEnAjoutRecommandation(true)} className="text-xs text-info hover:underline">
                   + ajouter
                 </button>
               )}
@@ -672,21 +901,32 @@ function SectionRex({ incidentId, contexteId }) {
             )}
 
             {recommandations.length === 0 ? (
-              <p className="text-xs text-slate-400">Aucune recommandation pour l'instant.</p>
+              <p className="text-xs text-sourdine">Aucune recommandation pour l'instant.</p>
             ) : (
               <ul className="space-y-1">
                 {recommandations.map((r) => (
-                  <li key={r.id} className="flex items-start justify-between gap-2 text-xs bg-slate-50 rounded px-2.5 py-1.5 border border-slate-200">
+                  <li key={r.id} className="flex items-start justify-between gap-2 text-xs bg-fond rounded px-2.5 py-1.5 border border-trait">
                     <div>
-                      <p className="text-slate-800">{r.recommandation}</p>
-                      <p className="text-slate-400">
-                        constat : {r.constat}{r.echeance && <> · échéance : {r.echeance}</>} · {r.statut}
+                      <p className="text-encre">{r.recommandation}</p>
+                      <p className="text-sourdine">
+                        constat : {r.constat}{r.echeance && <> · échéance : {r.echeance}</>}
                       </p>
                       {r.contacts && (
-                        <p className="text-slate-400">responsable : {r.contacts.prenom} {r.contacts.nom}</p>
+                        <p className="text-sourdine">responsable : {r.contacts.prenom} {r.contacts.nom}</p>
                       )}
                     </div>
-                    <button type="button" onClick={() => retirerRecommandation(r.id)} className="text-slate-400 hover:text-red-600 flex-shrink-0">✕</button>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <select
+                        value={r.statut}
+                        onChange={(e) => changerStatutRecommandation(r.id, e.target.value)}
+                        className=""
+                      >
+                        {STATUTS_REX_RECOMMANDATION.map((s) => (
+                          <option key={s.valeur} value={s.valeur}>{s.libelle}</option>
+                        ))}
+                      </select>
+                      <button type="button" onClick={() => retirerRecommandation(r.id)} className="text-sourdine hover:text-chaud">✕</button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -722,21 +962,21 @@ function FormulaireRecommandation({ evaluationCriseId, contacts = [], onValider,
   }
 
   return (
-    <form onSubmit={soumettre} className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 mb-2 space-y-2">
-      <input required value={constat} onChange={(e) => setConstat(e.target.value)} placeholder="Constat" className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
-      <input required value={recommandation} onChange={(e) => setRecommandation(e.target.value)} placeholder="Recommandation" className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
-      <input type="date" value={echeance} onChange={(e) => setEcheance(e.target.value)} className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
+    <form onSubmit={soumettre} className="bg-fond border border-trait rounded p-2.5 mb-2 space-y-2">
+      <input required value={constat} onChange={(e) => setConstat(e.target.value)} placeholder="Constat" className="w-full" />
+      <input required value={recommandation} onChange={(e) => setRecommandation(e.target.value)} placeholder="Recommandation" className="w-full" />
+      <input type="date" value={echeance} onChange={(e) => setEcheance(e.target.value)} className="w-full" />
       <select
         value={responsableContactId}
         onChange={(e) => setResponsableContactId(e.target.value)}
-        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs bg-white"
+        className="w-full"
       >
         <option value="">Responsable — aucun</option>
         {contacts.map((c) => (
           <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
         ))}
       </select>
-      {erreur && <p className="text-xs text-red-600">{erreur}</p>}
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
       <div className="flex gap-2">
         <BoutonDiscret type="submit" disabled={enCours}>{enCours ? 'Ajout…' : 'Ajouter'}</BoutonDiscret>
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
@@ -751,12 +991,14 @@ function SectionSitReps({ incidentId, contexteId }) {
   const [enAjout, setEnAjout] = useState(false)
   const [erreur, setErreur] = useState(null)
   const { lignes: niveaux } = useTableContexte('niveaux_escalade', contexteId, { tri: 'ordre' })
+  const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
+  const { lignes: centresAccueil } = useTableContexte('centres_accueil', contexteId, { tri: 'nom' })
 
   const rafraichir = useCallback(async () => {
     setChargement(true)
     const { data, error } = await supabase
       .from('sitreps')
-      .select('*')
+      .select('*, contacts(id, nom, prenom), centres_accueil(id, nom)')
       .eq('incident_id', incidentId)
       .order('numero', { ascending: false })
     if (error) setErreur(error.message)
@@ -771,16 +1013,18 @@ function SectionSitReps({ incidentId, contexteId }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <h2 className="font-medium text-slate-900">SitRep</h2>
+        <h2 className="font-medium text-encre">SitRep</h2>
         {!enAjout && <BoutonPrincipal onClick={() => setEnAjout(true)}>Nouveau SitRep</BoutonPrincipal>}
       </div>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulaireSitRep
           incidentId={incidentId}
           niveaux={niveaux}
+          contacts={contacts}
+          centresAccueil={centresAccueil}
           prochainNumero={sitreps.length > 0 ? Math.max(...sitreps.map((s) => s.numero)) + 1 : 1}
           onAnnuler={() => setEnAjout(false)}
           onValider={async () => {
@@ -791,29 +1035,35 @@ function SectionSitReps({ incidentId, contexteId }) {
       )}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : sitreps.length === 0 && !enAjout ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-4 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-4 text-center">
           Aucun SitRep pour cet incident.
         </p>
       ) : (
         <ul className="space-y-2">
           {sitreps.map((s) => (
-            <li key={s.id} className="bg-white border border-slate-200 rounded-lg p-3">
-              <p className="text-sm font-medium text-slate-900">
+            <li key={s.id} className="bg-surface border border-trait rounded p-3">
+              <p className="text-sm font-medium text-encre">
                 SitRep n°{s.numero}
-                <span className="ml-2 text-xs text-slate-400">
+                <span className="ml-2 text-xs text-sourdine">
                   {new Date(s.horodatage).toLocaleString('fr-BE')}
                 </span>
               </p>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-sourdine mt-1">
                 U0:{s.victimes_u0 ?? 0} · U1:{s.victimes_u1 ?? 0} · U2:{s.victimes_u2 ?? 0} · U3:{s.victimes_u3 ?? 0}
               </p>
               {s.localisation_incident && (
-                <p className="text-xs text-slate-500">lieu : {s.localisation_incident}</p>
+                <p className="text-xs text-sourdine">lieu : {s.localisation_incident}</p>
+              )}
+              {s.contacts && (
+                <p className="text-xs text-sourdine">Dir. PC-Ops : {s.contacts.prenom} {s.contacts.nom}</p>
+              )}
+              {s.centres_accueil && (
+                <p className="text-xs text-sourdine">centre d'accueil : {s.centres_accueil.nom}</p>
               )}
               {s.mesures_reflexes && (
-                <p className="text-xs text-slate-400 italic mt-1">{s.mesures_reflexes}</p>
+                <p className="text-xs text-sourdine italic mt-1">{s.mesures_reflexes}</p>
               )}
 
               <SectionDisciplinesSitrep sitrepId={s.id} contexteId={contexteId} />
@@ -854,17 +1104,17 @@ function SectionDisciplinesSitrep({ sitrepId, contexteId }) {
   }
 
   return (
-    <div className="mt-2 pt-2 border-t border-slate-100">
+    <div className="mt-2 pt-2 border-t border-trait">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-slate-500">Point par discipline</p>
+        <p className="text-xs font-medium text-sourdine">Point par discipline</p>
         {!enAjout && (
-          <button type="button" onClick={() => setEnAjout(true)} className="text-xs text-institution-700 hover:underline">
+          <button type="button" onClick={() => setEnAjout(true)} className="text-xs text-info hover:underline">
             + ajouter
           </button>
         )}
       </div>
 
-      {erreur && <p className="text-xs text-red-600 mt-1">{erreur}</p>}
+      {erreur && <p className="text-xs text-chaud mt-1">{erreur}</p>}
 
       {enAjout && (
         <FormulaireDisciplineSitrep
@@ -879,27 +1129,27 @@ function SectionDisciplinesSitrep({ sitrepId, contexteId }) {
       )}
 
       {chargement ? (
-        <p className="text-xs text-slate-400 mt-1">Chargement…</p>
+        <p className="text-xs text-sourdine mt-1">Chargement…</p>
       ) : lignesDisciplines.length === 0 ? (
-        !enAjout && <p className="text-xs text-slate-400 mt-1">Aucun point par discipline.</p>
+        !enAjout && <p className="text-xs text-sourdine mt-1">Aucun point par discipline.</p>
       ) : (
         <ul className="mt-1 space-y-1">
           {lignesDisciplines.map((d) => (
-            <li key={d.id} className="bg-slate-50 rounded px-2 py-1.5 text-xs">
+            <li key={d.id} className="bg-fond rounded px-2 py-1.5 text-xs">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-medium text-slate-700">{d.disciplines?.libelle ?? '—'}</p>
+                  <p className="font-medium text-sourdine">{d.disciplines?.libelle ?? '—'}</p>
                   {Array.isArray(d.personnes_presentes) && d.personnes_presentes.length > 0 && (
-                    <p className="text-slate-400">présents : {d.personnes_presentes.join(', ')}</p>
+                    <p className="text-sourdine">présents : {d.personnes_presentes.join(', ')}</p>
                   )}
-                  {d.actions_en_cours && <p className="text-slate-500">actions : {d.actions_en_cours}</p>}
-                  {d.besoins_internes && <p className="text-slate-500">besoins : {d.besoins_internes}</p>}
+                  {d.actions_en_cours && <p className="text-sourdine">actions : {d.actions_en_cours}</p>}
+                  {d.besoins_internes && <p className="text-sourdine">besoins : {d.besoins_internes}</p>}
                   {d.demandes_vers_autres_disciplines && (
-                    <p className="text-slate-500">demandes vers autres disciplines : {d.demandes_vers_autres_disciplines}</p>
+                    <p className="text-sourdine">demandes vers autres disciplines : {d.demandes_vers_autres_disciplines}</p>
                   )}
-                  {d.remarques && <p className="text-slate-400 italic">{d.remarques}</p>}
+                  {d.remarques && <p className="text-sourdine italic">{d.remarques}</p>}
                 </div>
-                <button type="button" onClick={() => retirer(d.id)} className="text-slate-400 hover:text-red-600 flex-shrink-0">✕</button>
+                <button type="button" onClick={() => retirer(d.id)} className="text-sourdine hover:text-chaud flex-shrink-0">✕</button>
               </div>
             </li>
           ))}
@@ -939,12 +1189,12 @@ function FormulaireDisciplineSitrep({ sitrepId, disciplines = [], onValider, onA
   }
 
   return (
-    <form onSubmit={soumettre} className="bg-white border border-slate-200 rounded-lg p-2.5 mt-1 space-y-2">
+    <form onSubmit={soumettre} className="bg-surface border border-trait rounded p-2.5 mt-1 space-y-2">
       <select
         required
         value={disciplineId}
         onChange={(e) => setDisciplineId(e.target.value)}
-        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs bg-white"
+        className="w-full"
       >
         <option value="">Discipline — choisir</option>
         {disciplines.map((d) => (
@@ -955,37 +1205,37 @@ function FormulaireDisciplineSitrep({ sitrepId, disciplines = [], onValider, onA
         value={personnesPresentes}
         onChange={(e) => setPersonnesPresentes(e.target.value)}
         placeholder="Personnes présentes (séparées par des virgules)"
-        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+        className="w-full"
       />
       <textarea
         value={actionsEnCours}
         onChange={(e) => setActionsEnCours(e.target.value)}
         placeholder="Actions en cours"
         rows={2}
-        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+        className="w-full"
       />
       <textarea
         value={besoinsInternes}
         onChange={(e) => setBesoinsInternes(e.target.value)}
         placeholder="Besoins internes"
         rows={2}
-        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+        className="w-full"
       />
       <textarea
         value={demandesVersAutresDisciplines}
         onChange={(e) => setDemandesVersAutresDisciplines(e.target.value)}
         placeholder="Demandes vers autres disciplines"
         rows={2}
-        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+        className="w-full"
       />
       <textarea
         value={remarques}
         onChange={(e) => setRemarques(e.target.value)}
         placeholder="Remarques"
         rows={2}
-        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+        className="w-full"
       />
-      {erreur && <p className="text-xs text-red-600">{erreur}</p>}
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
       <div className="flex gap-2">
         <BoutonDiscret type="submit" disabled={enCours}>{enCours ? 'Ajout…' : 'Ajouter'}</BoutonDiscret>
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
@@ -994,7 +1244,7 @@ function FormulaireDisciplineSitrep({ sitrepId, disciplines = [], onValider, onA
   )
 }
 
-function FormulaireSitRep({ incidentId, niveaux, prochainNumero, onValider, onAnnuler }) {
+function FormulaireSitRep({ incidentId, niveaux, contacts = [], centresAccueil = [], prochainNumero, onValider, onAnnuler }) {
   const [niveauId, setNiveauId] = useState('')
   const [typeIncident, setTypeIncident] = useState('')
   const [u0, setU0] = useState(0)
@@ -1003,6 +1253,8 @@ function FormulaireSitRep({ incidentId, niveaux, prochainNumero, onValider, onAn
   const [u3, setU3] = useState(0)
   const [localisationIncident, setLocalisationIncident] = useState('')
   const [localisationPcOps, setLocalisationPcOps] = useState('')
+  const [dirPcOpsContactId, setDirPcOpsContactId] = useState('')
+  const [localisationCentreAccueilId, setLocalisationCentreAccueilId] = useState('')
   const [mesuresReflexes, setMesuresReflexes] = useState('')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
@@ -1021,6 +1273,8 @@ function FormulaireSitRep({ incidentId, niveaux, prochainNumero, onValider, onAn
       victimes_u3: Number(u3) || 0,
       localisation_incident: localisationIncident.trim() || null,
       localisation_pc_ops: localisationPcOps.trim() || null,
+      dir_pc_ops_contact_id: dirPcOpsContactId || null,
+      localisation_centre_accueil_id: localisationCentreAccueilId || null,
       mesures_reflexes: mesuresReflexes.trim() || null,
     })
     setEnCours(false)
@@ -1029,17 +1283,17 @@ function FormulaireSitRep({ incidentId, niveaux, prochainNumero, onValider, onAn
   }
 
   return (
-    <form onSubmit={soumettre} className="border border-slate-200 rounded-lg p-4 mb-3 bg-slate-50 space-y-3">
-      <p className="text-xs text-slate-500">SitRep n°{prochainNumero}</p>
+    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-3 bg-fond space-y-3">
+      <p className="text-xs text-sourdine">SitRep n°{prochainNumero}</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Type</label>
-          <input value={typeIncident} onChange={(e) => setTypeIncident(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Type</label>
+          <input value={typeIncident} onChange={(e) => setTypeIncident(e.target.value)} className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Niveau</label>
-          <select value={niveauId} onChange={(e) => setNiveauId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Niveau</label>
+          <select value={niveauId} onChange={(e) => setNiveauId(e.target.value)} className="w-full">
             <option value="">—</option>
             {niveaux.map((n) => (
               <option key={n.id} value={n.id}>{n.libelle}</option>
@@ -1049,33 +1303,54 @@ function FormulaireSitRep({ incidentId, niveaux, prochainNumero, onValider, onAn
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Victimes par catégorie de tri</label>
+        <label className="block text-xs font-medium text-sourdine mb-1">Victimes par catégorie de tri</label>
         <div className="grid grid-cols-4 gap-2">
           {[['U0', u0, setU0], ['U1', u1, setU1], ['U2', u2, setU2], ['U3', u3, setU3]].map(([label, val, setVal]) => (
             <div key={label}>
-              <span className="text-xs text-slate-500">{label}</span>
-              <input type="number" min="0" value={val} onChange={(e) => setVal(e.target.value)} className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm" />
+              <span className="text-xs text-sourdine">{label}</span>
+              <input type="number" min="0" value={val} onChange={(e) => setVal(e.target.value)} className="w-full" />
             </div>
           ))}
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Localisation incident</label>
-        <input value={localisationIncident} onChange={(e) => setLocalisationIncident(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Localisation incident</label>
+        <input value={localisationIncident} onChange={(e) => setLocalisationIncident(e.target.value)} className="w-full" />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Localisation PC-Ops</label>
-        <input value={localisationPcOps} onChange={(e) => setLocalisationPcOps(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Localisation PC-Ops</label>
+        <input value={localisationPcOps} onChange={(e) => setLocalisationPcOps(e.target.value)} className="w-full" />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Dir. PC-Ops</label>
+          <select value={dirPcOpsContactId} onChange={(e) => setDirPcOpsContactId(e.target.value)} className="w-full">
+            <option value="">—</option>
+            {contacts.map((c) => (
+              <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Centre d'accueil concerné</label>
+          <select value={localisationCentreAccueilId} onChange={(e) => setLocalisationCentreAccueilId(e.target.value)} className="w-full">
+            <option value="">—</option>
+            {centresAccueil.map((c) => (
+              <option key={c.id} value={c.id}>{c.nom}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Mesures réflexes</label>
-        <textarea value={mesuresReflexes} onChange={(e) => setMesuresReflexes(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">Mesures réflexes</label>
+        <textarea value={mesuresReflexes} onChange={(e) => setMesuresReflexes(e.target.value)} rows={2} className="w-full" />
       </div>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>
@@ -1162,19 +1437,19 @@ function SectionChecklist({ incidentId, contexteId }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <h2 className="font-medium text-slate-900">Checklist</h2>
+        <h2 className="font-medium text-encre">Checklist</h2>
         {total > 0 && (
-          <span className="text-xs text-slate-500">{faits} / {total} actions faites</span>
+          <span className="text-xs text-sourdine">{faits} / {total} actions faites</span>
         )}
       </div>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       <div className="mb-3">
         <select
           value={filtreRole}
           onChange={(e) => setFiltreRole(e.target.value)}
-          className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white"
+          className=""
         >
           <option value="">Tous les rôles</option>
           {roles.map((r) => (
@@ -1184,17 +1459,17 @@ function SectionChecklist({ incidentId, contexteId }) {
       </div>
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : groupes.length === 0 ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-4 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-4 text-center">
           Aucune checklist type définie pour ce contexte (à créer dans l'app Admin).
         </p>
       ) : (
         <div className="space-y-4">
           {groupes.map((g) => (
             <div key={g.declencheur}>
-              <h3 className="text-xs font-semibold text-slate-500 mb-1.5">{g.declencheur}</h3>
-              <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden bg-white">
+              <h3 className="text-xs font-semibold text-sourdine mb-1.5">{g.declencheur}</h3>
+              <ul className="divide-y divide-trait border border-trait rounded overflow-hidden bg-surface">
                 {g.items.map((t) => {
                   const exec = executionParTemplate[t.id]
                   const fait = exec?.execute ?? false
@@ -1207,15 +1482,15 @@ function SectionChecklist({ incidentId, contexteId }) {
                           onChange={() => basculerExecution(t)}
                           className="w-4 h-4"
                         />
-                        <span className={`text-sm ${fait ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
+                        <span className={`text-sm ${fait ? 'text-sourdine line-through' : 'text-encre'}`}>
                           {t.libelle}
                         </span>
                         {t.roles?.libelle && (
-                          <span className="text-xs text-slate-400 flex-shrink-0">({t.roles.libelle})</span>
+                          <span className="text-xs text-sourdine flex-shrink-0">({t.roles.libelle})</span>
                         )}
                       </label>
                       {fait && exec.horodatage_execution && (
-                        <span className="text-xs text-slate-400 flex-shrink-0 ml-2">
+                        <span className="text-xs text-sourdine flex-shrink-0 ml-2">
                           {new Date(exec.horodatage_execution).toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       )}
@@ -1231,11 +1506,14 @@ function SectionChecklist({ incidentId, contexteId }) {
   )
 }
 
-function SectionLivreDeBord({ incidentId }) {
+function SectionLivreDeBord({ incidentId, contexteId }) {
+  const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
   const [entrees, setEntrees] = useState([])
   const [chargement, setChargement] = useState(true)
   const [message, setMessage] = useState('')
   const [decision, setDecision] = useState('')
+  const [expediteurContactId, setExpediteurContactId] = useState('')
+  const [destinataireContactId, setDestinataireContactId] = useState('')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -1243,7 +1521,7 @@ function SectionLivreDeBord({ incidentId }) {
     setChargement(true)
     const { data, error } = await supabase
       .from('livre_de_bord')
-      .select('*')
+      .select('*, expediteur:expediteur_contact_id(id, nom, prenom), destinataire:destinataire_contact_id(id, nom, prenom)')
       .eq('incident_id', incidentId)
       .order('numero_ordre', { ascending: false })
     if (error) setErreur(error.message)
@@ -1265,6 +1543,8 @@ function SectionLivreDeBord({ incidentId }) {
       numero_ordre: prochainNumero,
       message: message.trim(),
       decision: decision.trim() || null,
+      expediteur_contact_id: expediteurContactId || null,
+      destinataire_contact_id: destinataireContactId || null,
     })
     setEnCours(false)
     if (error) {
@@ -1272,50 +1552,81 @@ function SectionLivreDeBord({ incidentId }) {
     } else {
       setMessage('')
       setDecision('')
+      setExpediteurContactId('')
+      setDestinataireContactId('')
       await rafraichir()
     }
   }
 
   return (
     <div>
-      <h2 className="font-medium text-slate-900 mb-2">Livre de bord</h2>
+      <h2 className="font-medium text-encre mb-2">Livre de bord</h2>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
-      <form onSubmit={ajouterEntree} className="border border-slate-200 rounded-lg p-3 mb-3 bg-slate-50 space-y-2">
+      <form onSubmit={ajouterEntree} className="border border-trait rounded p-3 mb-3 bg-fond space-y-2">
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Message / événement…"
           rows={2}
-          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+          className="w-full"
         />
         <input
           value={decision}
           onChange={(e) => setDecision(e.target.value)}
           placeholder="Décision associée (optionnel)"
-          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+          className="w-full"
         />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <select
+            value={expediteurContactId}
+            onChange={(e) => setExpediteurContactId(e.target.value)}
+            className="w-full"
+          >
+            <option value="">Expéditeur — aucun</option>
+            {contacts.map((c) => (
+              <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+            ))}
+          </select>
+          <select
+            value={destinataireContactId}
+            onChange={(e) => setDestinataireContactId(e.target.value)}
+            className="w-full"
+          >
+            <option value="">Destinataire — aucun</option>
+            {contacts.map((c) => (
+              <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+            ))}
+          </select>
+        </div>
         <BoutonPrincipal type="submit" disabled={enCours || !message.trim()}>
           {enCours ? 'Ajout…' : 'Ajouter au livre de bord'}
         </BoutonPrincipal>
       </form>
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : entrees.length === 0 ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-4 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-4 text-center">
           Aucune entrée pour l'instant.
         </p>
       ) : (
         <ul className="space-y-2">
           {entrees.map((e) => (
-            <li key={e.id} className="bg-white border border-slate-200 rounded-lg p-3">
-              <p className="text-xs text-slate-400">
+            <li key={e.id} className="bg-surface border border-trait rounded p-3">
+              <p className="text-xs text-sourdine">
                 #{e.numero_ordre} · {new Date(e.horodatage).toLocaleString('fr-BE')}
               </p>
-              <p className="text-sm text-slate-900 mt-0.5">{e.message}</p>
-              {e.decision && <p className="text-xs text-slate-500 mt-1">décision : {e.decision}</p>}
+              <p className="text-sm text-encre mt-0.5">{e.message}</p>
+              {e.decision && <p className="text-xs text-sourdine mt-1">décision : {e.decision}</p>}
+              {(e.expediteur || e.destinataire) && (
+                <p className="text-xs text-sourdine mt-0.5">
+                  {e.expediteur && <>de {e.expediteur.prenom} {e.expediteur.nom}</>}
+                  {e.expediteur && e.destinataire && <> → </>}
+                  {e.destinataire && <>à {e.destinataire.prenom} {e.destinataire.nom}</>}
+                </p>
+              )}
             </li>
           ))}
         </ul>

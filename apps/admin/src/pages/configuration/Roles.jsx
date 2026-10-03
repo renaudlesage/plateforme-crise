@@ -18,8 +18,8 @@ export default function Roles() {
     <section>
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h2 className="font-medium text-slate-900">Rôles</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="font-medium text-encre">Rôles</h2>
+          <p className="text-sm text-sourdine">
             Les fonctions qui portent une responsabilité dans la gestion de crise
             (ex. autorité compétente, PlanU, responsable logistique).
           </p>
@@ -29,7 +29,7 @@ export default function Roles() {
         )}
       </div>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulaireRole
@@ -43,16 +43,16 @@ export default function Roles() {
       )}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : roles.length === 0 && !enAjout ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
           Aucun rôle défini pour ce contexte.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
           {roles.map((r) =>
             ligneEnEdition === r.id ? (
-              <li key={r.id} className="bg-slate-50 p-3">
+              <li key={r.id} className="bg-fond p-3">
                 <FormulaireRole
                   valeursInitiales={r}
                   onAnnuler={() => setLigneEnEdition(null)}
@@ -64,13 +64,13 @@ export default function Roles() {
                 />
               </li>
             ) : (
-              <li key={r.id} className="flex items-center justify-between px-4 py-2.5 bg-white">
+              <li key={r.id} className="flex items-center justify-between px-4 py-2.5 bg-surface">
                 <div>
-                  <p className="text-sm font-medium text-slate-900">{r.libelle}</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-sm font-medium text-encre">{r.libelle}</p>
+                  <p className="text-xs text-sourdine">
                     code : {r.code}
                     {r.peut_declencher_escalade && (
-                      <span className="ml-2 inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
+                      <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-veille">
                         peut déclencher une escalade
                       </span>
                     )}
@@ -124,32 +124,32 @@ function FormulaireRole({ valeursInitiales = {}, onValider, onAnnuler }) {
   }
 
   return (
-    <form onSubmit={soumettre} className="border border-slate-200 rounded-lg p-4 mb-3 bg-slate-50 space-y-3">
+    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-3 bg-fond space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Libellé</label>
+          <label className="block text-xs font-medium text-sourdine mb-1">Libellé</label>
           <input
             required
             value={libelle}
             onChange={(e) => setLibelle(e.target.value)}
             placeholder="ex. Bourgmestre"
-            className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+            className="w-full"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">
-            Code interne <span className="text-slate-400">(généré si vide)</span>
+          <label className="block text-xs font-medium text-sourdine mb-1">
+            Code interne <span className="text-sourdine">(généré si vide)</span>
           </label>
           <input
             value={code}
             onChange={(e) => setCode(e.target.value)}
             placeholder="ex. AUTORITE_COMPETENTE"
-            className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm font-mono"
+            className="w-full font-mono"
           />
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-sourdine">
         <input
           type="checkbox"
           checked={peutDeclencher}
@@ -158,7 +158,7 @@ function FormulaireRole({ valeursInitiales = {}, onValider, onAnnuler }) {
         Peut déclencher une escalade de niveau
       </label>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>

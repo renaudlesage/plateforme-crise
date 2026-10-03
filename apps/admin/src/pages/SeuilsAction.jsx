@@ -28,17 +28,17 @@ export default function SeuilsAction() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-display text-xl font-semibold text-slate-900">Seuils d'action</h1>
+        <h1 className="text-xl font-semibold text-encre">Seuils d'action</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter un seuil</BoutonPrincipal>
         )}
       </div>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-sourdine mb-4">
         Seuil → action → responsable, formalisés à l'avance pour ne pas décider dans l'urgence
         ce qui peut l'être à froid. Rattachables à un objet à risque précis, ou génériques.
       </p>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulaireSeuil
@@ -56,16 +56,16 @@ export default function SeuilsAction() {
       )}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : seuilsTries.length === 0 && !enAjout ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
           Aucun seuil d'action défini.
         </p>
       ) : (
         <ol className="space-y-2">
           {seuilsTries.map((s) =>
             ligneEnEdition === s.id ? (
-              <li key={s.id} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+              <li key={s.id} className="bg-fond rounded p-3 border border-trait">
                 <FormulaireSeuil
                   objetsRisque={objetsRisque}
                   roles={roles}
@@ -80,25 +80,25 @@ export default function SeuilsAction() {
                 />
               </li>
             ) : (
-              <li key={s.id} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+              <li key={s.id} className="bg-surface border border-trait rounded p-4 shadow-sm">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">
+                    <p className="text-sm font-medium text-encre">
                       {s.libelle}
-                      {!s.actif && <span className="ml-2 text-xs text-slate-400">(inactif)</span>}
+                      {!s.actif && <span className="ml-2 text-xs text-sourdine">(inactif)</span>}
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-sourdine mt-1">
                       <strong>Seuil :</strong> {s.seuil_description}
                     </p>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-xs text-sourdine mt-0.5">
                       <strong>Action :</strong> {s.action}
                     </p>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-sourdine mt-1">
                       {s.roles?.libelle && <>responsable : {s.roles.libelle}</>}
                       {s.objets_a_risque?.identification && <> · objet : {s.objets_a_risque.identification}</>}
                     </p>
                     {s.action_degradee && (
-                      <p className="text-xs text-amber-700 mt-0.5">
+                      <p className="text-xs text-veille mt-0.5">
                         <strong>si ressource indisponible :</strong> {s.action_degradee}
                       </p>
                     )}
@@ -157,43 +157,43 @@ function FormulaireSeuil({ objetsRisque, roles, ressources = [], valeursInitiale
   return (
     <form onSubmit={soumettre} className="space-y-3">
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Libellé</label>
+        <label className="block text-xs font-medium text-sourdine mb-1">Libellé</label>
         <input
           required
           value={libelle}
           onChange={(e) => setLibelle(e.target.value)}
           placeholder="ex. Fermeture préventive du pont"
-          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+          className="w-full"
         />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Description du seuil</label>
+        <label className="block text-xs font-medium text-sourdine mb-1">Description du seuil</label>
         <textarea
           required
           value={seuilDescription}
           onChange={(e) => setSeuilDescription(e.target.value)}
           rows={2}
           placeholder="ex. Niveau de la rivière > 2,5m à la station de mesure X"
-          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+          className="w-full"
         />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Action à déclencher</label>
+        <label className="block text-xs font-medium text-sourdine mb-1">Action à déclencher</label>
         <textarea
           required
           value={action}
           onChange={(e) => setAction(e.target.value)}
           rows={2}
-          className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+          className="w-full"
         />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Responsable</label>
-          <select value={responsableRoleId} onChange={(e) => setResponsableRoleId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Responsable</label>
+          <select value={responsableRoleId} onChange={(e) => setResponsableRoleId(e.target.value)} className="w-full">
             <option value="">—</option>
             {roles.map((r) => (
               <option key={r.id} value={r.id}>{r.libelle}</option>
@@ -201,8 +201,8 @@ function FormulaireSeuil({ objetsRisque, roles, ressources = [], valeursInitiale
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Objet à risque lié</label>
-          <select value={objetRisqueId} onChange={(e) => setObjetRisqueId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Objet à risque lié</label>
+          <select value={objetRisqueId} onChange={(e) => setObjetRisqueId(e.target.value)} className="w-full">
             <option value="">— générique —</option>
             {objetsRisque.map((o) => (
               <option key={o.id} value={o.id}>{o.identification}</option>
@@ -210,22 +210,22 @@ function FormulaireSeuil({ objetsRisque, roles, ressources = [], valeursInitiale
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Ordre</label>
-          <input type="number" min="1" value={ordre} onChange={(e) => setOrdre(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Ordre</label>
+          <input type="number" min="1" value={ordre} onChange={(e) => setOrdre(e.target.value)} className="w-full" />
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-sourdine">
         <input type="checkbox" checked={actif} onChange={(e) => setActif(e.target.checked)} />
         Actif
       </label>
 
-      <div className="space-y-2 bg-amber-50/40 border border-amber-100 rounded-lg p-3">
-        <p className="text-xs font-medium text-slate-600">Repli en cascade si la ressource principale est indisponible</p>
+      <div className="space-y-2 border border-trait rounded p-3">
+        <p className="text-xs font-medium text-sourdine">Repli en cascade si la ressource principale est indisponible</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Ressource de substitution</label>
-            <select value={ressourceSubstitutionId} onChange={(e) => setRessourceSubstitutionId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+            <label className="block text-xs font-medium text-sourdine mb-1">Ressource de substitution</label>
+            <select value={ressourceSubstitutionId} onChange={(e) => setRessourceSubstitutionId(e.target.value)} className="w-full">
               <option value="">—</option>
               {ressources.map((r) => (
                 <option key={r.id} value={r.id}>{r.nom}</option>
@@ -233,13 +233,13 @@ function FormulaireSeuil({ objetsRisque, roles, ressources = [], valeursInitiale
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Action dégradée</label>
-            <input value={actionDegradee} onChange={(e) => setActionDegradee(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+            <label className="block text-xs font-medium text-sourdine mb-1">Action dégradée</label>
+            <input value={actionDegradee} onChange={(e) => setActionDegradee(e.target.value)} className="w-full" />
           </div>
         </div>
       </div>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>

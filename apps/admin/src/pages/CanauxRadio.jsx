@@ -25,16 +25,16 @@ export default function CanauxRadio() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-display text-xl font-semibold text-slate-900">Canaux radio</h1>
+        <h1 className="text-xl font-semibold text-encre">Canaux radio</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter un canal</BoutonPrincipal>
         )}
       </div>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-sourdine mb-4">
         Plan des groupes de communication, par niveau et par discipline.
       </p>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulaireCanal
@@ -50,16 +50,16 @@ export default function CanauxRadio() {
       )}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : canaux.length === 0 && !enAjout ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
           Aucun canal radio enregistré.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
           {canaux.map((c) =>
             ligneEnEdition === c.id ? (
-              <li key={c.id} className="bg-slate-50 p-3">
+              <li key={c.id} className="bg-fond p-3">
                 <FormulaireCanal
                   niveaux={niveaux}
                   disciplines={disciplines}
@@ -73,13 +73,13 @@ export default function CanauxRadio() {
                 />
               </li>
             ) : (
-              <li key={c.id} className="flex items-start justify-between px-4 py-2.5 bg-white">
+              <li key={c.id} className="flex items-start justify-between px-4 py-2.5 bg-surface">
                 <div>
-                  <p className="text-sm font-medium text-slate-900 font-mono">{c.code}</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-sm font-medium text-encre font-mono">{c.code}</p>
+                  <p className="text-xs text-sourdine">
                     {c.description}
                   </p>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className="text-xs text-sourdine mt-0.5">
                     {c.niveaux_escalade?.libelle && <span>{c.niveaux_escalade.libelle}</span>}
                     {c.disciplines?.code && <span> · {c.disciplines.code}</span>}
                   </p>
@@ -125,28 +125,28 @@ function FormulaireCanal({ niveaux, disciplines, valeursInitiales = {}, onValide
   }
 
   return (
-    <form onSubmit={soumettre} className="border border-slate-200 rounded-lg p-4 mb-4 bg-slate-50 space-y-3">
+    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-4 bg-fond space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Code</label>
+          <label className="block text-xs font-medium text-sourdine mb-1">Code</label>
           <input
             required
             value={code}
             onChange={(e) => setCode(e.target.value)}
             placeholder="ex. M LUX C"
-            className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm font-mono"
+            className="w-full font-mono"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Description</label>
-          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="ex. Canal PC-Ops principal" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Description</label>
+          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="ex. Canal PC-Ops principal" className="w-full" />
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Niveau</label>
-          <select value={niveauId} onChange={(e) => setNiveauId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Niveau</label>
+          <select value={niveauId} onChange={(e) => setNiveauId(e.target.value)} className="w-full">
             <option value="">—</option>
             {niveaux.map((n) => (
               <option key={n.id} value={n.id}>{n.libelle}</option>
@@ -154,8 +154,8 @@ function FormulaireCanal({ niveaux, disciplines, valeursInitiales = {}, onValide
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Discipline</label>
-          <select value={disciplineId} onChange={(e) => setDisciplineId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Discipline</label>
+          <select value={disciplineId} onChange={(e) => setDisciplineId(e.target.value)} className="w-full">
             <option value="">—</option>
             {disciplines.map((d) => (
               <option key={d.id} value={d.id}>{d.code} — {d.libelle}</option>
@@ -164,7 +164,7 @@ function FormulaireCanal({ niveaux, disciplines, valeursInitiales = {}, onValide
         </div>
       </div>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>

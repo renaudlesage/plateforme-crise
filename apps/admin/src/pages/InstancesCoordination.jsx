@@ -33,16 +33,16 @@ export default function InstancesCoordination() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-display text-xl font-semibold text-slate-900">Instances de coordination</h1>
+        <h1 className="text-xl font-semibold text-encre">Instances de coordination</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter une instance</BoutonPrincipal>
         )}
       </div>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-sourdine mb-4">
         Cellule de sécurité, comité de coordination, PC-Ops — avec leur composition.
       </p>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulaireInstance
@@ -58,16 +58,16 @@ export default function InstancesCoordination() {
       )}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : instances.length === 0 && !enAjout ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
           Aucune instance de coordination enregistrée.
         </p>
       ) : (
         <ul className="space-y-2">
           {instances.map((i) =>
             ligneEnEdition === i.id ? (
-              <li key={i.id} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+              <li key={i.id} className="bg-fond rounded p-3 border border-trait">
                 <FormulaireInstance
                   roles={roles}
                   niveaux={niveaux}
@@ -81,13 +81,13 @@ export default function InstancesCoordination() {
                 />
               </li>
             ) : (
-              <li key={i.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+              <li key={i.id} className="bg-surface border border-trait rounded overflow-hidden shadow-sm">
                 <div className="flex items-start justify-between px-4 py-3">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">
+                    <p className="text-sm font-medium text-encre">
                       {TYPES.find((t) => t.valeur === i.type)?.libelle ?? i.type}
                     </p>
-                    <p className="text-xs text-slate-500 flex flex-wrap gap-x-3 mt-0.5">
+                    <p className="text-xs text-sourdine flex flex-wrap gap-x-3 mt-0.5">
                       {i.frequence_reunion && <span>fréquence : {i.frequence_reunion}</span>}
                       {i.roles?.libelle && <span>présidée par : {i.roles.libelle}</span>}
                       {i.mode_deliberation && <span>mode : {i.mode_deliberation}</span>}
@@ -95,7 +95,7 @@ export default function InstancesCoordination() {
                         <span>s'active à partir du degré {i.active_depuis_degre_criticite}</span>
                       )}
                       {i.statut_activation && i.statut_activation !== 'veille' && (
-                        <span className={i.statut_activation === 'active' ? 'text-emerald-700 font-medium' : 'text-slate-400'}>
+                        <span className={i.statut_activation === 'active' ? 'text-ok font-medium' : 'text-sourdine'}>
                           {i.statut_activation === 'active' ? 'actuellement active' : 'désactivée'}
                         </span>
                       )}
@@ -156,16 +156,16 @@ function FormulaireInstance({ roles, niveaux, valeursInitiales = {}, onValider, 
     <form onSubmit={soumettre} className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Type d'instance</label>
-          <select value={type} onChange={(e) => setType(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Type d'instance</label>
+          <select value={type} onChange={(e) => setType(e.target.value)} className="w-full">
             {TYPES.map((t) => (
               <option key={t.valeur} value={t.valeur}>{t.libelle}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Niveau associé</label>
-          <select value={niveauId} onChange={(e) => setNiveauId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Niveau associé</label>
+          <select value={niveauId} onChange={(e) => setNiveauId(e.target.value)} className="w-full">
             <option value="">—</option>
             {niveaux.map((n) => (
               <option key={n.id} value={n.id}>{n.libelle}</option>
@@ -176,8 +176,8 @@ function FormulaireInstance({ roles, niveaux, valeursInitiales = {}, onValider, 
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Président (rôle)</label>
-          <select value={presidentRoleId} onChange={(e) => setPresidentRoleId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Président (rôle)</label>
+          <select value={presidentRoleId} onChange={(e) => setPresidentRoleId(e.target.value)} className="w-full">
             <option value="">—</option>
             {roles.map((r) => (
               <option key={r.id} value={r.id}>{r.libelle}</option>
@@ -185,29 +185,29 @@ function FormulaireInstance({ roles, niveaux, valeursInitiales = {}, onValider, 
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Fréquence de réunion</label>
-          <input value={frequenceReunion} onChange={(e) => setFrequenceReunion(e.target.value)} placeholder="ex. 2x/an" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Fréquence de réunion</label>
+          <input value={frequenceReunion} onChange={(e) => setFrequenceReunion(e.target.value)} placeholder="ex. 2x/an" className="w-full" />
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Mode de délibération</label>
-          <input value={modeDeliberation} onChange={(e) => setModeDeliberation(e.target.value)} placeholder="ex. consensuel" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Mode de délibération</label>
+          <input value={modeDeliberation} onChange={(e) => setModeDeliberation(e.target.value)} placeholder="ex. consensuel" className="w-full" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Règle de quorum</label>
-          <input value={quorumRegle} onChange={(e) => setQuorumRegle(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+          <label className="block text-xs font-medium text-sourdine mb-1">Règle de quorum</label>
+          <input value={quorumRegle} onChange={(e) => setQuorumRegle(e.target.value)} className="w-full" />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">S'active à partir du degré de criticité (1-4)</label>
-        <p className="text-xs text-slate-400 mb-1">Cascade d'activation des organes de crise selon le degré PRGC — laisser vide si l'activation n'est pas liée à la criticité.</p>
-        <input type="number" min="1" max="4" value={activeDepuisDegre} onChange={(e) => setActiveDepuisDegre(e.target.value)} className="w-full sm:w-32 rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+        <label className="block text-xs font-medium text-sourdine mb-1">S'active à partir du degré de criticité (1-4)</label>
+        <p className="text-xs text-sourdine mb-1">Cascade d'activation des organes de crise selon le degré PRGC — laisser vide si l'activation n'est pas liée à la criticité.</p>
+        <input type="number" min="1" max="4" value={activeDepuisDegre} onChange={(e) => setActiveDepuisDegre(e.target.value)} className="w-full sm:w-32" />
       </div>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>
@@ -274,23 +274,23 @@ function GestionMembres({ instanceId }) {
   )
 
   return (
-    <div className="border-t border-slate-100 px-4 py-3 bg-slate-50">
-      <p className="text-xs font-medium text-slate-600 mb-2">Membres</p>
+    <div className="border-t border-trait px-4 py-3 bg-fond">
+      <p className="text-xs font-medium text-sourdine mb-2">Membres</p>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : membres.length === 0 ? (
-        <p className="text-sm text-slate-400 mb-3">Aucun membre pour l'instant.</p>
+        <p className="text-sm text-sourdine mb-3">Aucun membre pour l'instant.</p>
       ) : (
         <ul className="space-y-1 mb-3">
           {membres.map((m) => (
-            <li key={m.contact_id} className="flex items-center justify-between text-sm bg-white rounded px-3 py-1.5 border border-slate-200">
+            <li key={m.contact_id} className="flex items-center justify-between text-sm bg-surface rounded px-3 py-1.5 border border-trait">
               <span>
                 {m.contacts?.prenom} {m.contacts?.nom}
-                {m.contacts?.fonction && <span className="text-slate-400"> — {m.contacts.fonction}</span>}
-                {!m.voix_deliberative && <span className="ml-2 text-xs text-slate-400">(sans voix délibérative)</span>}
+                {m.contacts?.fonction && <span className="text-sourdine"> — {m.contacts.fonction}</span>}
+                {!m.voix_deliberative && <span className="ml-2 text-xs text-sourdine">(sans voix délibérative)</span>}
               </span>
               <BoutonDiscret onClick={() => retirerMembre(m.contact_id)}>Retirer</BoutonDiscret>
             </li>
@@ -302,14 +302,14 @@ function GestionMembres({ instanceId }) {
         <select
           value={contactASelectionner}
           onChange={(e) => setContactASelectionner(e.target.value)}
-          className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white flex-1 min-w-[180px]"
+          className="flex-1 min-w-[180px]"
         >
           <option value="">Ajouter un contact…</option>
           {contactsDisponibles.map((c) => (
             <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
           ))}
         </select>
-        <label className="flex items-center gap-1.5 text-xs text-slate-600">
+        <label className="flex items-center gap-1.5 text-xs text-sourdine">
           <input type="checkbox" checked={voixDeliberative} onChange={(e) => setVoixDeliberative(e.target.checked)} />
           voix délibérative
         </label>

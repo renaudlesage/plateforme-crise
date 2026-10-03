@@ -22,13 +22,13 @@ export default function Ressources() {
 
   return (
     <div>
-      <div className="flex gap-1 border-b border-slate-200 mb-5">
+      <div className="flex gap-1 border-b border-trait mb-5">
         <button
           onClick={() => setOnglet('ressources')}
           className={`px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
             onglet === 'ressources'
-              ? 'border-institution-600 text-institution-700 font-medium'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              ? 'border-info text-info font-medium'
+              : 'border-transparent text-sourdine hover:text-encre'
           }`}
         >
           Ressources
@@ -37,8 +37,8 @@ export default function Ressources() {
           onClick={() => setOnglet('benevoles')}
           className={`px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
             onglet === 'benevoles'
-              ? 'border-institution-600 text-institution-700 font-medium'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              ? 'border-info text-info font-medium'
+              : 'border-transparent text-sourdine hover:text-encre'
           }`}
         >
           Bénévoles (réseau citoyen)
@@ -80,16 +80,16 @@ function ListeRessources() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="font-display text-xl font-semibold text-slate-900">Ressources</h1>
+        <h1 className="text-xl font-semibold text-encre">Ressources</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter une ressource</BoutonPrincipal>
         )}
       </div>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-sourdine mb-4">
         Moyens matériels et humains mobilisables — publics ou privés sous convention.
       </p>
 
-      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       {enAjout && (
         <FormulaireRessource
@@ -108,7 +108,7 @@ function ListeRessources() {
         <select
           value={filtreCategorie}
           onChange={(e) => setFiltreCategorie(e.target.value)}
-          className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white"
+          className=""
         >
           <option value="">Toutes catégories</option>
           {CATEGORIES.map((c) => (
@@ -118,7 +118,7 @@ function ListeRessources() {
         <select
           value={filtreType}
           onChange={(e) => setFiltreType(e.target.value)}
-          className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white"
+          className=""
         >
           <option value="">Public + privé</option>
           <option value="public">Public</option>
@@ -127,16 +127,16 @@ function ListeRessources() {
       </div>
 
       {chargement ? (
-        <p className="text-sm text-slate-400">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       ) : ressourcesFiltrees.length === 0 ? (
-        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-6 text-center">
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
           Aucune ressource ne correspond.
         </p>
       ) : (
-        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
           {ressourcesFiltrees.map((r) =>
             ligneEnEdition === r.id ? (
-              <li key={r.id} className="bg-slate-50 p-3">
+              <li key={r.id} className="bg-fond p-3">
                 <FormulaireRessource
                   contacts={contacts}
                   conventions={conventions}
@@ -150,34 +150,34 @@ function ListeRessources() {
                 />
               </li>
             ) : (
-              <li key={r.id} className="flex items-start justify-between px-4 py-3 bg-white">
+              <li key={r.id} className="flex items-start justify-between px-4 py-3 bg-surface">
                 <div>
-                  <p className="text-sm font-medium text-slate-900">
+                  <p className="text-sm font-medium text-encre">
                     {r.nom}
-                    <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${r.type_public_prive === 'public' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'}`}>
+                    <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${r.type_public_prive === 'public' ? 'text-info' : 'text-veille'}`}>
                       {r.type_public_prive}
                     </span>
                   </p>
-                  <p className="text-xs text-slate-500">{r.categorie.replace(/_/g, ' ')}</p>
+                  <p className="text-xs text-sourdine">{r.categorie.replace(/_/g, ' ')}</p>
                   {r.attributs && Object.keys(r.attributs).length > 0 && (
-                    <p className="text-xs text-slate-400 mt-0.5 flex flex-wrap gap-x-3">
+                    <p className="text-xs text-sourdine mt-0.5 flex flex-wrap gap-x-3">
                       {Object.entries(r.attributs).map(([cle, valeur]) => (
                         <span key={cle}>{cle} : {String(valeur)}</span>
                       ))}
                     </p>
                   )}
                   {r.contacts && (
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-sourdine mt-0.5">
                       contact : {r.contacts.prenom} {r.contacts.nom}
                     </p>
                   )}
                   {r.conventions && (
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-sourdine mt-0.5">
                       convention : {r.conventions.partenaire}
                     </p>
                   )}
                   {r.disponible_hors_contexte && (
-                    <p className="text-xs text-institution-700 mt-0.5">
+                    <p className="text-xs text-info mt-0.5">
                       partageable hors contexte{r.rayon_partage_km ? ` (rayon ${r.rayon_partage_km} km)` : ''}
                     </p>
                   )}
@@ -252,21 +252,21 @@ function FormulaireRessource({ contacts, conventions = [], valeursInitiales = {}
   }
 
   return (
-    <form onSubmit={soumettre} className="border border-slate-200 rounded-lg p-4 mb-4 bg-slate-50 space-y-3">
+    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-4 bg-fond space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Nom</label>
+          <label className="block text-xs font-medium text-sourdine mb-1">Nom</label>
           <input
             required
             value={nom}
             onChange={(e) => setNom(e.target.value)}
             placeholder="ex. Camion-citerne 5000L"
-            className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+            className="w-full"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Catégorie</label>
-          <select value={categorie} onChange={(e) => setCategorie(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Catégorie</label>
+          <select value={categorie} onChange={(e) => setCategorie(e.target.value)} className="w-full">
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>
             ))}
@@ -276,21 +276,21 @@ function FormulaireRessource({ contacts, conventions = [], valeursInitiales = {}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Type</label>
+          <label className="block text-xs font-medium text-sourdine mb-1">Type</label>
           <div className="flex gap-4 pt-1.5">
-            <label className="flex items-center gap-1.5 text-sm text-slate-700">
+            <label className="flex items-center gap-1.5 text-sm text-sourdine">
               <input type="radio" checked={typePublicPrive === 'public'} onChange={() => setTypePublicPrive('public')} />
               Public
             </label>
-            <label className="flex items-center gap-1.5 text-sm text-slate-700">
+            <label className="flex items-center gap-1.5 text-sm text-sourdine">
               <input type="radio" checked={typePublicPrive === 'prive'} onChange={() => setTypePublicPrive('prive')} />
               Privé
             </label>
           </div>
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Contact associé</label>
-          <select value={contactId} onChange={(e) => setContactId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <label className="block text-xs font-medium text-sourdine mb-1">Contact associé</label>
+          <select value={contactId} onChange={(e) => setContactId(e.target.value)} className="w-full">
             <option value="">—</option>
             {contacts.map((c) => (
               <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
@@ -300,8 +300,8 @@ function FormulaireRessource({ contacts, conventions = [], valeursInitiales = {}
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Convention associée</label>
-        <select value={conventionId} onChange={(e) => setConventionId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+        <label className="block text-xs font-medium text-sourdine mb-1">Convention associée</label>
+        <select value={conventionId} onChange={(e) => setConventionId(e.target.value)} className="w-full">
           <option value="">—</option>
           {conventions.map((c) => (
             <option key={c.id} value={c.id}>{c.partenaire}</option>
@@ -310,8 +310,8 @@ function FormulaireRessource({ contacts, conventions = [], valeursInitiales = {}
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">
-          Attributs <span className="text-slate-400">(libres selon la catégorie : capacité, immatriculation, permis…)</span>
+        <label className="block text-xs font-medium text-sourdine mb-1">
+          Attributs <span className="text-sourdine">(libres selon la catégorie : capacité, immatriculation, permis…)</span>
         </label>
         <div className="space-y-2">
           {attributs.map((a, i) => (
@@ -320,43 +320,43 @@ function FormulaireRessource({ contacts, conventions = [], valeursInitiales = {}
                 value={a.cle}
                 onChange={(e) => majAttribut(i, 'cle', e.target.value)}
                 placeholder="clé (ex. capacité)"
-                className="flex-1 rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+                className="flex-1"
               />
               <input
                 value={a.valeur}
                 onChange={(e) => majAttribut(i, 'valeur', e.target.value)}
                 placeholder="valeur (ex. 9 places)"
-                className="flex-1 rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+                className="flex-1"
               />
               <BoutonDiscret type="button" onClick={() => retirerAttribut(i)}>✕</BoutonDiscret>
             </div>
           ))}
         </div>
-        <button type="button" onClick={ajouterAttribut} className="mt-2 text-xs text-slate-500 hover:text-slate-800 underline">
+        <button type="button" onClick={ajouterAttribut} className="mt-2 text-xs text-sourdine hover:text-encre underline">
           + ajouter un attribut
         </button>
       </div>
 
-      <div className="space-y-2 bg-institution-50/40 border border-institution-100 rounded-lg p-3">
-        <label className="flex items-center gap-2 text-sm text-slate-700">
+      <div className="space-y-2 border border-trait rounded p-3">
+        <label className="flex items-center gap-2 text-sm text-sourdine">
           <input type="checkbox" checked={disponibleHorsContexte} onChange={(e) => setDisponibleHorsContexte(e.target.checked)} />
           Partageable avec les contextes voisins (coordination inter-zone)
         </label>
         {disponibleHorsContexte && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Rayon de partage (km)</label>
-              <input type="number" value={rayonPartageKm} onChange={(e) => setRayonPartageKm(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+              <label className="block text-xs font-medium text-sourdine mb-1">Rayon de partage (km)</label>
+              <input type="number" value={rayonPartageKm} onChange={(e) => setRayonPartageKm(e.target.value)} className="w-full" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Conditions de partage</label>
-              <input value={conditionsPartage} onChange={(e) => setConditionsPartage(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+              <label className="block text-xs font-medium text-sourdine mb-1">Conditions de partage</label>
+              <input value={conditionsPartage} onChange={(e) => setConditionsPartage(e.target.value)} className="w-full" />
             </div>
           </div>
         )}
       </div>
 
-      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>

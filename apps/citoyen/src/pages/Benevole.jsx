@@ -94,7 +94,7 @@ export default function Benevole() {
   }
 
   if (chargementContexte) {
-    return <p className="text-sm text-slate-400 text-center mt-10">Chargement…</p>
+    return <p className="text-sm text-sourdine text-center mt-10">Chargement…</p>
   }
 
   if (!contexteId) {
@@ -103,67 +103,64 @@ export default function Benevole() {
 
   if (envoye) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <div className="max-w-sm text-center">
-          <p className="text-3xl mb-3">🙏</p>
-          <h1 className="text-lg font-semibold text-slate-900 mb-2">Merci !</h1>
-          <p className="text-sm text-slate-600">
-            Votre inscription a bien été enregistrée pour {contexteNom}. La commune vous
-            recontactera si votre profil correspond à un besoin.
-          </p>
-          <Link to="/" className="inline-block mt-6 text-sm text-slate-500 underline">
-            Retour à l'accueil
-          </Link>
-        </div>
+      <div className="participant text-center">
+        <p className="text-3xl mb-3">🙏</p>
+        <h1 className="text-lg font-semibold text-encre mb-2">Merci !</h1>
+        <p className="text-sm text-sourdine">
+          Votre inscription a bien été enregistrée pour {contexteNom}. La commune vous
+          recontactera si votre profil correspond à un besoin.
+        </p>
+        <Link to="/" className="lien" style={{ display: 'inline-block', marginTop: 24 }}>
+          Retour à l'accueil
+        </Link>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-4 py-3 sticky top-0 z-10">
-        <Link to="/" className="text-sm text-slate-500">← retour</Link>
-      </header>
+    <div className="participant">
+      <div className="bandeau">
+        <Link to="/" className="lien">← retour</Link>
+      </div>
 
-      <main className="max-w-lg mx-auto px-4 py-6">
-        <h1 className="text-lg font-semibold text-slate-900 mb-1">Devenir bénévole</h1>
-        <p className="text-sm text-slate-500 mb-5">
-          Rejoignez le réseau d'entraide citoyenne de {contexteNom}. Vos coordonnées ne
-          seront utilisées que par la commune, en cas de besoin réel.
-        </p>
+      <h1 className="text-lg font-semibold text-encre mb-1">Devenir bénévole</h1>
+      <p className="text-sm text-sourdine mb-5">
+        Rejoignez le réseau d'entraide citoyenne de {contexteNom}. Vos coordonnées ne
+        seront utilisées que par la commune, en cas de besoin réel.
+      </p>
 
-        <form onSubmit={soumettre} className="space-y-4">
+      <form onSubmit={soumettre} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Prénom</label>
-              <input required value={prenom} onChange={(e) => setPrenom(e.target.value)} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
+              <label className="block text-xs font-medium text-sourdine mb-1">Prénom</label>
+              <input required value={prenom} onChange={(e) => setPrenom(e.target.value)} className="w-full" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Nom</label>
-              <input required value={nom} onChange={(e) => setNom(e.target.value)} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
+              <label className="block text-xs font-medium text-sourdine mb-1">Nom</label>
+              <input required value={nom} onChange={(e) => setNom(e.target.value)} className="w-full" />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Email</label>
-            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
+            <label className="block text-xs font-medium text-sourdine mb-1">Email</label>
+            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full" />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Téléphone</label>
-            <input value={telephone} onChange={(e) => setTelephone(e.target.value)} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
+            <label className="block text-xs font-medium text-sourdine mb-1">Téléphone</label>
+            <input value={telephone} onChange={(e) => setTelephone(e.target.value)} className="w-full" />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Adresse (optionnel)</label>
-            <input value={adresse} onChange={(e) => setAdresse(e.target.value)} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
+            <label className="block text-xs font-medium text-sourdine mb-1">Adresse (optionnel)</label>
+            <input value={adresse} onChange={(e) => setAdresse(e.target.value)} className="w-full" />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-2">Compétences / moyens que vous pouvez mettre à disposition</label>
+            <label className="block text-xs font-medium text-sourdine mb-2">Compétences / moyens que vous pouvez mettre à disposition</label>
             <div className="space-y-2">
               {COMPETENCES_DISPONIBLES.map((c) => (
-                <label key={c} className="flex items-center gap-2 text-sm text-slate-700">
+                <label key={c} className="flex items-center gap-2 text-sm text-sourdine">
                   <input type="checkbox" checked={competences.includes(c)} onChange={() => basculerCompetence(c)} />
                   {c}
                 </label>
@@ -173,15 +170,15 @@ export default function Benevole() {
               value={competencesAutre}
               onChange={(e) => setCompetencesAutre(e.target.value)}
               placeholder="Autre (précisez)"
-              className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="mt-2 w-full"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-2">Missions que vous seriez prêt·e à assurer</label>
+            <label className="block text-xs font-medium text-sourdine mb-2">Missions que vous seriez prêt·e à assurer</label>
             <div className="space-y-2">
               {MISSIONS_DISPONIBLES.map((m) => (
-                <label key={m.valeur} className="flex items-center gap-2 text-sm text-slate-700">
+                <label key={m.valeur} className="flex items-center gap-2 text-sm text-sourdine">
                   <input type="checkbox" checked={missionsPossibles.includes(m.valeur)} onChange={() => basculerMission(m.valeur)} />
                   {m.libelle}
                 </label>
@@ -190,16 +187,16 @@ export default function Benevole() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Disponibilité</label>
+            <label className="block text-xs font-medium text-sourdine mb-1">Disponibilité</label>
             <input
               value={disponibilite}
               onChange={(e) => setDisponibilite(e.target.value)}
               placeholder="ex. week-ends, soirées, sur demande…"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="w-full"
             />
           </div>
 
-          <label className="flex items-start gap-2 text-xs text-slate-600">
+          <label className="flex items-start gap-2 text-xs text-sourdine">
             <input type="checkbox" checked={consentement} onChange={(e) => setConsentement(e.target.checked)} className="mt-0.5" />
             <span>
               J'accepte que mes coordonnées soient conservées par la commune dans le seul but
@@ -207,17 +204,12 @@ export default function Benevole() {
             </span>
           </label>
 
-          {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+          {erreur && <p className="message erreur">{erreur}</p>}
 
-          <button
-            type="submit"
-            disabled={enCours || !consentement}
-            className="w-full rounded-md bg-slate-900 text-white text-sm font-medium py-2.5 disabled:opacity-50"
-          >
+          <button type="submit" disabled={enCours || !consentement} className="principal bouton-terrain">
             {enCours ? 'Envoi…' : "S'inscrire"}
           </button>
         </form>
-      </main>
     </div>
   )
 }

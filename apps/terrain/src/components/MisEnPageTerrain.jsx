@@ -1,5 +1,6 @@
 import { Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import BasculeTheme from './BasculeTheme'
 
 export default function MisEnPageTerrain() {
   const { contexteActuel, deconnexion, selectionnerContexte } = useAuth()
@@ -11,17 +12,21 @@ export default function MisEnPageTerrain() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
-        <button onClick={changerDeContexte} className="text-sm font-medium text-slate-900">
-          {contexteActuel?.contextes?.nom ?? 'Aucun contexte'}
-        </button>
-        <button onClick={deconnexion} className="text-xs text-slate-500">
-          Déconnexion
-        </button>
+    <div className="poste" style={{ maxWidth: 520 }}>
+      <header className="tete">
+        <div className="barre-haut">
+          <button type="button" className="lien" onClick={changerDeContexte}>
+            {contexteActuel?.contextes?.nom ?? 'Aucun contexte'}
+          </button>
+          <div className="pousse" />
+          <BasculeTheme />
+          <button type="button" className="sortie discret" onClick={deconnexion}>
+            Déconnexion
+          </button>
+        </div>
       </header>
 
-      <main className="flex-1 px-4 py-4 max-w-lg w-full mx-auto">
+      <main>
         <Outlet />
       </main>
     </div>
