@@ -13,7 +13,10 @@ const SECTIONS = [
   },
   {
     titre: 'Plan légal',
-    liens: [{ to: '/plans-urgence', libelle: "Plans d'urgence (PGUI/PPUI)" }],
+    liens: [
+      { to: '/plans-urgence', libelle: "Plans d'urgence (PGUI/PPUI)" },
+      { to: '/hopitaux', libelle: 'Hôpitaux (PUH)' },
+    ],
   },
   {
     titre: 'Référentiels',

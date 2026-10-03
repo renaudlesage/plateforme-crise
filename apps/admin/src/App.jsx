@@ -27,6 +27,7 @@ import RegistreExpertises from './pages/RegistreExpertises'
 import Conventions from './pages/Conventions'
 import PlansUrgence from './pages/PlansUrgence'
 import PlanUrgenceDetail from './pages/PlanUrgenceDetail'
+import Hopitaux from './pages/Hopitaux'
 
 export default function App() {
   return (
@@ -75,6 +76,7 @@ export default function App() {
             <Route path="conventions" element={<Conventions />} />
             <Route path="plans-urgence" element={<PlansUrgence />} />
             <Route path="plans-urgence/:id" element={<PlanUrgenceDetail />} />
+            <Route path="hopitaux" element={<Hopitaux />} />
           </Route>
         </Routes>
       </AuthProvider>

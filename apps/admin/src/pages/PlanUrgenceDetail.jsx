@@ -17,6 +17,19 @@ const MODES_TRAITEMENT = [
   { valeur: 'ppui_requis', libelle: 'PPUI requis' },
 ]
 
+const TYPES_MODIFICATION = [
+  { valeur: 'manuel', libelle: 'Manuel' },
+  { valeur: 'plan', libelle: 'Plan' },
+  { valeur: 'annexe', libelle: 'Annexe' },
+]
+
+const STATUTS_PROPOSITION = [
+  { valeur: 'soumis', libelle: 'Soumis' },
+  { valeur: 'en_revision', libelle: 'En révision' },
+  { valeur: 'approuve', libelle: 'Approuvé' },
+  { valeur: 'rejete', libelle: 'Rejeté' },
+]
+
 export default function PlanUrgenceDetail() {
   const { id } = useParams()
   const { contexteId } = useAuth()
@@ -60,6 +73,10 @@ export default function PlanUrgenceDetail() {
 
       <div className="mb-6">
         <SectionFichesPlan planId={plan.id} />
+      </div>
+
+      <div className="mb-6">
+        <SectionPropositionsModification planId={plan.id} contexteId={contexteId} />
       </div>
 
       <div>
@@ -270,6 +287,241 @@ function FormulaireFiche({ valeursInitiales = {}, prioriteParDefaut = 1, onValid
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>
           {enCours ? 'Enregistrement…' : 'Enregistrer'}
+        </BoutonPrincipal>
+        <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
+      </div>
+    </form>
+  )
+}
+
+function SectionPropositionsModification({ planId, contexteId }) {
+  const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
+  const [fiches, setFiches] = useState([])
+  const [propositions, setPropositions] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [erreur, setErreur] = useState(null)
+  const [enAjout, setEnAjout] = useState(false)
+  const [reviseurParProposition, setReviseurParProposition] = useState({})
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const [fichesRes, propRes] = await Promise.all([
+      supabase.from('fiches_plan').select('id, code_fiche, titre').eq('plan_id', planId).order('ordre'),
+      supabase
+        .from('propositions_modification_plan')
+        .select('*, fiches_plan(id, code_fiche, titre), proposant:contacts!propositions_modification_plan_proposant_contact_id_fkey(id, nom, prenom), reviseur:contacts!propositions_modification_plan_revise_par_contact_id_fkey(id, nom, prenom)')
+        .eq('plan_id', planId)
+        .order('date_soumission', { ascending: false }),
+    ])
+    if (fichesRes.error) setErreur(fichesRes.error.message)
+    else setFiches(fichesRes.data ?? [])
+    if (propRes.error) setErreur(propRes.error.message)
+    else setPropositions(propRes.data ?? [])
+    setChargement(false)
+  }, [planId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function creer(valeurs) {
+    const { error } = await supabase.from('propositions_modification_plan').insert({ ...valeurs, plan_id: planId })
+    if (error) return { error }
+    await rafraichir()
+    return { error: null }
+  }
+
+  async function changerStatut(proposition, statut) {
+    const { error } = await supabase
+      .from('propositions_modification_plan')
+      .update({
+        statut,
+        date_revision: new Date().toISOString(),
+        revise_par_contact_id: reviseurParProposition[proposition.id] || null,
+      })
+      .eq('id', proposition.id)
+    if (error) setErreur(error.message)
+    else await rafraichir()
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="font-medium text-encre">Propositions de modification</h2>
+        {!enAjout && <BoutonPrincipal onClick={() => setEnAjout(true)}>Proposer une modification</BoutonPrincipal>}
+      </div>
+      <p className="text-xs text-sourdine mb-3">
+        Circuit d'approbation digitalisé (texte actuel vs proposé + justification) — remplace le
+        formulaire envoyé par email décrit dans le guide PUH.
+      </p>
+
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
+
+      {enAjout && (
+        <div className="border border-trait rounded p-3 mb-3 bg-fond">
+          <FormulaireProposition
+            fiches={fiches}
+            contacts={contacts}
+            onAnnuler={() => setEnAjout(false)}
+            onValider={async (valeurs) => {
+              const { error } = await creer(valeurs)
+              if (!error) setEnAjout(false)
+              return { error }
+            }}
+          />
+        </div>
+      )}
+
+      {chargement ? (
+        <p className="text-sm text-sourdine">Chargement…</p>
+      ) : propositions.length === 0 && !enAjout ? (
+        <p className="vide border border-dashed border-trait text-center p-4">Aucune proposition en cours.</p>
+      ) : (
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden bg-surface">
+          {propositions.map((p) => (
+            <li key={p.id} className="px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-encre">
+                    {TYPES_MODIFICATION.find((t) => t.valeur === p.type_modification)?.libelle ?? p.type_modification}
+                    {p.fiches_plan?.code_fiche && <span className="text-xs text-sourdine ml-2">→ {p.fiches_plan.code_fiche} {p.fiches_plan.titre}</span>}
+                    {p.page_reference && <span className="text-xs text-sourdine ml-2">({p.page_reference})</span>}
+                    <span
+                      className={`jeton ml-2 ${
+                        p.statut === 'approuve' ? 'text-chaud' : p.statut === 'rejete' ? 'text-sourdine' : 'text-info'
+                      }`}
+                    >
+                      {STATUTS_PROPOSITION.find((s) => s.valeur === p.statut)?.libelle ?? p.statut}
+                    </span>
+                  </p>
+                  {p.texte_actuel && <p className="text-xs text-sourdine mt-1"><strong>Actuel :</strong> {p.texte_actuel}</p>}
+                  <p className="text-xs text-sourdine mt-0.5"><strong>Proposé :</strong> {p.texte_propose}</p>
+                  <p className="text-xs text-sourdine mt-0.5"><strong>Justification :</strong> {p.justification}</p>
+                  <p className="text-xs text-sourdine mt-1">
+                    Soumis le {new Date(p.date_soumission).toLocaleDateString('fr-BE')}
+                    {p.proposant && <> par {p.proposant.prenom} {p.proposant.nom}</>}
+                    {p.date_revision && (
+                      <>
+                        {' · '}révisé le {new Date(p.date_revision).toLocaleDateString('fr-BE')}
+                        {p.reviseur && <> par {p.reviseur.prenom} {p.reviseur.nom}</>}
+                      </>
+                    )}
+                  </p>
+                  {p.commentaire_revision && <p className="text-xs text-sourdine mt-0.5">commentaire : {p.commentaire_revision}</p>}
+                </div>
+                {(p.statut === 'soumis' || p.statut === 'en_revision') && (
+                  <div className="flex-shrink-0 text-right">
+                    <select
+                      value={reviseurParProposition[p.id] ?? ''}
+                      onChange={(e) => setReviseurParProposition((r) => ({ ...r, [p.id]: e.target.value }))}
+                      className="block mb-1.5 text-xs"
+                    >
+                      <option value="">Révisé par —</option>
+                      {contacts.map((c) => (
+                        <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+                      ))}
+                    </select>
+                    <div className="flex gap-1.5">
+                      {p.statut === 'soumis' && (
+                        <BoutonDiscret onClick={() => changerStatut(p, 'en_revision')}>En révision</BoutonDiscret>
+                      )}
+                      <BoutonPrincipal onClick={() => changerStatut(p, 'approuve')}>Approuver</BoutonPrincipal>
+                      <BoutonDiscret onClick={() => changerStatut(p, 'rejete')}>Rejeter</BoutonDiscret>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function FormulaireProposition({ fiches, contacts, onValider, onAnnuler }) {
+  const [typeModification, setTypeModification] = useState('plan')
+  const [ficheId, setFicheId] = useState('')
+  const [pageReference, setPageReference] = useState('')
+  const [texteActuel, setTexteActuel] = useState('')
+  const [textePropose, setTextePropose] = useState('')
+  const [justification, setJustification] = useState('')
+  const [proposantContactId, setProposantContactId] = useState('')
+  const [erreur, setErreur] = useState(null)
+  const [enCours, setEnCours] = useState(false)
+
+  async function soumettre(e) {
+    e.preventDefault()
+    setEnCours(true)
+    const { error } = await onValider({
+      type_modification: typeModification,
+      fiche_id: ficheId || null,
+      page_reference: pageReference.trim() || null,
+      texte_actuel: texteActuel.trim() || null,
+      texte_propose: textePropose.trim(),
+      justification: justification.trim(),
+      proposant_contact_id: proposantContactId || null,
+    })
+    setEnCours(false)
+    if (error) setErreur(error.message)
+  }
+
+  return (
+    <form onSubmit={soumettre} className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Type de modification</label>
+          <select value={typeModification} onChange={(e) => setTypeModification(e.target.value)} className="w-full">
+            {TYPES_MODIFICATION.map((t) => (
+              <option key={t.valeur} value={t.valeur}>{t.libelle}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Fiche concernée</label>
+          <select value={ficheId} onChange={(e) => setFicheId(e.target.value)} className="w-full">
+            <option value="">—</option>
+            {fiches.map((f) => (
+              <option key={f.id} value={f.id}>{f.code_fiche} — {f.titre}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Page / référence</label>
+          <input value={pageReference} onChange={(e) => setPageReference(e.target.value)} className="w-full" />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Texte actuel</label>
+        <textarea value={texteActuel} onChange={(e) => setTexteActuel(e.target.value)} rows={2} className="w-full" />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Texte proposé</label>
+        <textarea required value={textePropose} onChange={(e) => setTextePropose(e.target.value)} rows={2} className="w-full" />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Justification</label>
+        <textarea required value={justification} onChange={(e) => setJustification(e.target.value)} rows={2} className="w-full" />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Proposé par</label>
+        <select value={proposantContactId} onChange={(e) => setProposantContactId(e.target.value)} className="w-full sm:w-64">
+          <option value="">—</option>
+          {contacts.map((c) => (
+            <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+          ))}
+        </select>
+      </div>
+
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
+
+      <div className="flex gap-2">
+        <BoutonPrincipal type="submit" disabled={enCours}>
+          {enCours ? 'Envoi…' : 'Soumettre'}
         </BoutonPrincipal>
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
       </div>
