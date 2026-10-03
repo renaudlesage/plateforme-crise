@@ -16,6 +16,7 @@ const SECTIONS = [
       { to: '/annuaire', libelle: 'Annuaire' },
       { to: '/risques', libelle: 'Objets à risque' },
       { to: '/ressources', libelle: 'Ressources' },
+      { to: '/conventions', libelle: 'Conventions' },
       { to: '/sites-qg', libelle: 'Sites QG' },
       { to: '/centres-accueil', libelle: "Centres d'accueil" },
       { to: '/canaux-radio', libelle: 'Canaux radio' },

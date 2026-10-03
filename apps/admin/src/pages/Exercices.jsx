@@ -238,9 +238,11 @@ function FormulaireExercice({ valeursInitiales = {}, onValider, onAnnuler }) {
 function GestionRolesExercice({ exerciceId }) {
   const { contexteId } = useAuth()
   const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
+  const { lignes: rolesDisponibles } = useTableContexte('roles', contexteId, { tri: 'libelle' })
   const [roles, setRoles] = useState([])
   const [chargement, setChargement] = useState(true)
   const [contactId, setContactId] = useState('')
+  const [roleId, setRoleId] = useState('')
   const [fonctionJouee, setFonctionJouee] = useState('')
   const [estEvaluateur, setEstEvaluateur] = useState(false)
   const [erreur, setErreur] = useState(null)
@@ -249,7 +251,7 @@ function GestionRolesExercice({ exerciceId }) {
     setChargement(true)
     const { data, error } = await supabase
       .from('exercice_roles')
-      .select('*, contacts(id, nom, prenom)')
+      .select('*, contacts(id, nom, prenom), roles(id, libelle)')
       .eq('exercice_id', exerciceId)
     if (error) setErreur(error.message)
     else setRoles(data ?? [])
@@ -265,12 +267,14 @@ function GestionRolesExercice({ exerciceId }) {
     const { error } = await supabase.from('exercice_roles').insert({
       exercice_id: exerciceId,
       contact_id: contactId,
+      role_id: roleId || null,
       fonction_jouee: fonctionJouee.trim(),
       est_evaluateur: estEvaluateur,
     })
     if (error) setErreur(error.message)
     else {
       setContactId('')
+      setRoleId('')
       setFonctionJouee('')
       setEstEvaluateur(false)
       await rafraichir()
@@ -296,6 +300,7 @@ function GestionRolesExercice({ exerciceId }) {
                 <li key={r.id} className="flex items-center justify-between text-xs bg-white rounded px-2.5 py-1.5 border border-slate-200">
                   <span>
                     {r.contacts?.prenom} {r.contacts?.nom} — {r.fonction_jouee}
+                    {r.roles?.libelle && <span className="ml-1 text-slate-400">({r.roles.libelle})</span>}
                     {r.est_evaluateur && <span className="ml-1 text-slate-400">(évaluateur)</span>}
                   </span>
                   <button type="button" onClick={() => retirer(r.id)} className="text-slate-400 hover:text-red-600">✕</button>
@@ -308,6 +313,12 @@ function GestionRolesExercice({ exerciceId }) {
               <option value="">Participant…</option>
               {contacts.map((c) => (
                 <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+              ))}
+            </select>
+            <select value={roleId} onChange={(e) => setRoleId(e.target.value)} className="rounded-md border border-slate-300 px-2 py-1 text-xs bg-white">
+              <option value="">Rôle formel —</option>
+              {rolesDisponibles.map((r) => (
+                <option key={r.id} value={r.id}>{r.libelle}</option>
               ))}
             </select>
             <input
@@ -336,6 +347,8 @@ const NIVEAUX_ATTEINTE = [
 ]
 
 function GestionEvaluationsExercice({ exerciceId }) {
+  const { contexteId } = useAuth()
+  const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
   const [evaluations, setEvaluations] = useState([])
   const [chargement, setChargement] = useState(true)
   const [enAjout, setEnAjout] = useState(false)
@@ -345,7 +358,7 @@ function GestionEvaluationsExercice({ exerciceId }) {
     setChargement(true)
     const { data, error } = await supabase
       .from('exercice_evaluations')
-      .select('*')
+      .select('*, contacts(id, nom, prenom)')
       .eq('exercice_id', exerciceId)
     if (error) setErreur(error.message)
     else setEvaluations(data ?? [])
@@ -377,6 +390,7 @@ function GestionEvaluationsExercice({ exerciceId }) {
       {enAjout && (
         <FormulaireEvaluationExercice
           exerciceId={exerciceId}
+          contacts={contacts}
           onAnnuler={() => setEnAjout(false)}
           onValider={async () => {
             setEnAjout(false)
@@ -403,6 +417,9 @@ function GestionEvaluationsExercice({ exerciceId }) {
                   </p>
                   {ev.constat && <p className="text-slate-400">constat : {ev.constat}</p>}
                   {ev.recommandation && <p className="text-slate-400">recommandation : {ev.recommandation}</p>}
+                  {ev.contacts && (
+                    <p className="text-slate-400">évaluateur : {ev.contacts.prenom} {ev.contacts.nom}</p>
+                  )}
                 </div>
                 <button type="button" onClick={() => retirer(ev.id)} className="text-slate-400 hover:text-red-600 flex-shrink-0">✕</button>
               </div>
@@ -414,11 +431,12 @@ function GestionEvaluationsExercice({ exerciceId }) {
   )
 }
 
-function FormulaireEvaluationExercice({ exerciceId, onValider, onAnnuler }) {
+function FormulaireEvaluationExercice({ exerciceId, contacts = [], onValider, onAnnuler }) {
   const [objectifEvalue, setObjectifEvalue] = useState('')
   const [niveauAtteinte, setNiveauAtteinte] = useState(NIVEAUX_ATTEINTE[2].valeur)
   const [constat, setConstat] = useState('')
   const [recommandation, setRecommandation] = useState('')
+  const [evaluateurContactId, setEvaluateurContactId] = useState('')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -431,6 +449,7 @@ function FormulaireEvaluationExercice({ exerciceId, onValider, onAnnuler }) {
       niveau_atteinte: niveauAtteinte,
       constat: constat.trim() || null,
       recommandation: recommandation.trim() || null,
+      evaluateur_contact_id: evaluateurContactId || null,
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -453,6 +472,16 @@ function FormulaireEvaluationExercice({ exerciceId, onValider, onAnnuler }) {
       </select>
       <textarea value={constat} onChange={(e) => setConstat(e.target.value)} placeholder="Constat" rows={2} className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
       <textarea value={recommandation} onChange={(e) => setRecommandation(e.target.value)} placeholder="Recommandation" rows={2} className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
+      <select
+        value={evaluateurContactId}
+        onChange={(e) => setEvaluateurContactId(e.target.value)}
+        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs bg-white"
+      >
+        <option value="">Évaluateur — aucun</option>
+        {contacts.map((c) => (
+          <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+        ))}
+      </select>
       {erreur && <p className="text-xs text-red-600">{erreur}</p>}
       <div className="flex gap-2">
         <BoutonDiscret type="submit" disabled={enCours}>{enCours ? 'Ajout…' : 'Ajouter'}</BoutonDiscret>

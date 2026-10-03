@@ -21,7 +21,11 @@ export default function PopulationNonResidente() {
     creer,
     modifier,
     supprimer,
-  } = useTableContexte('population_non_residente', contexteId, { tri: 'lieu' })
+  } = useTableContexte('population_non_residente', contexteId, {
+    colonnes: '*, contacts(id, nom, prenom)',
+    tri: 'lieu',
+  })
+  const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
 
   const [enAjout, setEnAjout] = useState(false)
   const [ligneEnEdition, setLigneEnEdition] = useState(null)
@@ -43,6 +47,7 @@ export default function PopulationNonResidente() {
 
       {enAjout && (
         <FormulairePopulation
+          contacts={contacts}
           onAnnuler={() => setEnAjout(false)}
           onValider={async (valeurs) => {
             const { error } = await creer(valeurs)
@@ -64,6 +69,7 @@ export default function PopulationNonResidente() {
             ligneEnEdition === p.id ? (
               <li key={p.id} className="bg-slate-50 p-3">
                 <FormulairePopulation
+                  contacts={contacts}
                   valeursInitiales={p}
                   onAnnuler={() => setLigneEnEdition(null)}
                   onValider={async (valeurs) => {
@@ -89,6 +95,9 @@ export default function PopulationNonResidente() {
                       période : {p.periode_debut ?? '?'} → {p.periode_fin ?? '?'}
                     </p>
                   )}
+                  {p.contacts && (
+                    <p className="text-xs text-slate-400 mt-0.5">gestionnaire : {p.contacts.prenom} {p.contacts.nom}</p>
+                  )}
                 </div>
                 <div className="flex gap-2 flex-shrink-0 ml-3">
                   <BoutonDiscret onClick={() => setLigneEnEdition(p.id)}>Modifier</BoutonDiscret>
@@ -109,7 +118,7 @@ export default function PopulationNonResidente() {
   )
 }
 
-function FormulairePopulation({ valeursInitiales = {}, onValider, onAnnuler }) {
+function FormulairePopulation({ contacts = [], valeursInitiales = {}, onValider, onAnnuler }) {
   const [typePopulation, setTypePopulation] = useState(valeursInitiales.type_population ?? TYPES[0].valeur)
   const [lieu, setLieu] = useState(valeursInitiales.lieu ?? '')
   const [latitude, setLatitude] = useState(valeursInitiales.latitude ?? '')
@@ -117,6 +126,7 @@ function FormulairePopulation({ valeursInitiales = {}, onValider, onAnnuler }) {
   const [capaciteMax, setCapaciteMax] = useState(valeursInitiales.capacite_max ?? '')
   const [periodeDebut, setPeriodeDebut] = useState(valeursInitiales.periode_debut ?? '')
   const [periodeFin, setPeriodeFin] = useState(valeursInitiales.periode_fin ?? '')
+  const [contactGestionnaireId, setContactGestionnaireId] = useState(valeursInitiales.contact_gestionnaire_id ?? '')
   const [actif, setActif] = useState(valeursInitiales.actif ?? true)
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
@@ -132,6 +142,7 @@ function FormulairePopulation({ valeursInitiales = {}, onValider, onAnnuler }) {
       capacite_max: capaciteMax === '' ? null : Number(capaciteMax),
       periode_debut: periodeDebut || null,
       periode_fin: periodeFin || null,
+      contact_gestionnaire_id: contactGestionnaireId || null,
       actif,
     })
     setEnCours(false)
@@ -185,6 +196,16 @@ function FormulairePopulation({ valeursInitiales = {}, onValider, onAnnuler }) {
           <label className="block text-xs font-medium text-slate-600 mb-1">Période — fin</label>
           <input type="date" value={periodeFin} onChange={(e) => setPeriodeFin(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
         </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1">Gestionnaire</label>
+        <select value={contactGestionnaireId} onChange={(e) => setContactGestionnaireId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <option value="">—</option>
+          {contacts.map((c) => (
+            <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+          ))}
+        </select>
       </div>
 
       <label className="flex items-center gap-2 text-sm text-slate-700">

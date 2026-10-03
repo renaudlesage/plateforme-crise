@@ -75,6 +75,10 @@ export default function IncidentDetail() {
         <SectionChecklist incidentId={id} contexteId={contexteId} />
       </div>
 
+      <div className="mb-6">
+        <SectionOrganesCrise incidentId={id} contexteId={contexteId} degreCriticiteIncident={incident.degre_criticite} />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <SectionSitReps incidentId={id} contexteId={contexteId} />
         <SectionLivreDeBord incidentId={id} contexteId={contexteId} />
@@ -85,11 +89,11 @@ export default function IncidentDetail() {
       </div>
 
       <div className="mb-6">
-        <SectionPhaseTransitoire incidentId={id} />
+        <SectionPhaseTransitoire incidentId={id} contexteId={contexteId} />
       </div>
 
       <div>
-        <SectionRex incidentId={id} />
+        <SectionRex incidentId={id} contexteId={contexteId} />
       </div>
     </div>
   )
@@ -104,8 +108,163 @@ const INDICATEURS_INTERVENANT = [
   { valeur: 'autre', libelle: 'Autre' },
 ]
 
+const STATUTS_ORGANE_LOG = [
+  { valeur: 'active', libelle: 'Activé' },
+  { valeur: 'desactivee', libelle: 'Désactivé' },
+]
+
+function SectionOrganesCrise({ incidentId, contexteId, degreCriticiteIncident }) {
+  const { lignes: instances } = useTableContexte('instances_coordination', contexteId, { tri: 'type' })
+  const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
+  const [historique, setHistorique] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [enAjout, setEnAjout] = useState(false)
+  const [erreur, setErreur] = useState(null)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('organes_crise_log')
+      .select('*, instances_coordination(id, type), contacts(id, nom, prenom)')
+      .eq('incident_id', incidentId)
+      .order('horodatage', { ascending: false })
+    if (error) setErreur(error.message)
+    else setHistorique(data ?? [])
+    setChargement(false)
+  }, [incidentId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="font-medium text-slate-900">Organes de crise activés/désactivés</h2>
+        {!enAjout && <BoutonPrincipal onClick={() => setEnAjout(true)}>Consigner un changement</BoutonPrincipal>}
+      </div>
+
+      {erreur && <p className="text-sm text-red-600 mb-2">{erreur}</p>}
+
+      {enAjout && (
+        <FormulaireOrganeCrise
+          incidentId={incidentId}
+          instances={instances}
+          contacts={contacts}
+          degreCriticiteIncident={degreCriticiteIncident}
+          onAnnuler={() => setEnAjout(false)}
+          onValider={async () => {
+            setEnAjout(false)
+            await rafraichir()
+          }}
+        />
+      )}
+
+      {chargement ? (
+        <p className="text-sm text-slate-400">Chargement…</p>
+      ) : historique.length === 0 && !enAjout ? (
+        <p className="text-sm text-slate-400 border border-dashed border-slate-300 rounded-lg p-4 text-center">
+          Aucune activation/désactivation consignée pour cet incident.
+        </p>
+      ) : (
+        <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden bg-white">
+          {historique.map((h) => (
+            <li key={h.id} className="px-4 py-2.5">
+              <p className="text-sm text-slate-900">
+                {h.instances_coordination?.type} —{' '}
+                <span className={h.statut === 'active' ? 'text-emerald-700' : 'text-slate-500'}>
+                  {STATUTS_ORGANE_LOG.find((s) => s.valeur === h.statut)?.libelle ?? h.statut}
+                </span>
+              </p>
+              <p className="text-xs text-slate-500">
+                {new Date(h.horodatage).toLocaleString('fr-BE')}
+                {h.contacts && <> · déclenché par {h.contacts.prenom} {h.contacts.nom}</>}
+                {h.degre_criticite != null && <> · criticité {h.degre_criticite}</>}
+              </p>
+              {h.motif && <p className="text-xs text-slate-400 italic mt-0.5">{h.motif}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function FormulaireOrganeCrise({ incidentId, instances, contacts, degreCriticiteIncident, onValider, onAnnuler }) {
+  const [instanceId, setInstanceId] = useState('')
+  const [statut, setStatut] = useState('active')
+  const [declenchePar, setDeclenchePar] = useState('')
+  const [motif, setMotif] = useState('')
+  const [erreur, setErreur] = useState(null)
+  const [enCours, setEnCours] = useState(false)
+
+  async function soumettre(e) {
+    e.preventDefault()
+    if (!instanceId) return
+    setEnCours(true)
+    const { error } = await supabase.from('organes_crise_log').insert({
+      incident_id: incidentId,
+      instance_id: instanceId,
+      statut,
+      degre_criticite: degreCriticiteIncident ?? null,
+      declenche_par_contact_id: declenchePar || null,
+      motif: motif.trim() || null,
+    })
+    setEnCours(false)
+    if (error) setErreur(error.message)
+    else onValider()
+  }
+
+  return (
+    <form onSubmit={soumettre} className="border border-slate-200 rounded-lg p-4 mb-3 bg-slate-50 space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">Organe</label>
+          <select required value={instanceId} onChange={(e) => setInstanceId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+            <option value="">—</option>
+            {instances.map((i) => (
+              <option key={i.id} value={i.id}>{i.type}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">Statut</label>
+          <select value={statut} onChange={(e) => setStatut(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+            {STATUTS_ORGANE_LOG.map((s) => (
+              <option key={s.valeur} value={s.valeur}>{s.libelle}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1">Déclenché par</label>
+        <select value={declenchePar} onChange={(e) => setDeclenchePar(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <option value="">—</option>
+          {contacts.map((c) => (
+            <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1">Motif</label>
+        <textarea value={motif} onChange={(e) => setMotif(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+      </div>
+
+      {erreur && <p className="text-sm text-red-600">{erreur}</p>}
+
+      <div className="flex gap-2">
+        <BoutonPrincipal type="submit" disabled={enCours || !instanceId}>{enCours ? 'Enregistrement…' : 'Enregistrer'}</BoutonPrincipal>
+        <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
+      </div>
+    </form>
+  )
+}
+
 function SectionSuiviIntervenants({ incidentId, contexteId }) {
   const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
+  const { lignes: disciplines } = useTableContexte('disciplines', contexteId, { tri: 'libelle' })
   const [suivis, setSuivis] = useState([])
   const [chargement, setChargement] = useState(true)
   const [enAjout, setEnAjout] = useState(false)
@@ -115,7 +274,7 @@ function SectionSuiviIntervenants({ incidentId, contexteId }) {
     setChargement(true)
     const { data, error } = await supabase
       .from('suivi_intervenants')
-      .select('*, contacts(id, nom, prenom)')
+      .select('*, contacts(id, nom, prenom), disciplines(id, libelle)')
       .eq('incident_id', incidentId)
       .order('horodatage', { ascending: false })
     if (error) setErreur(error.message)
@@ -140,6 +299,7 @@ function SectionSuiviIntervenants({ incidentId, contexteId }) {
         <FormulaireSuiviIntervenant
           incidentId={incidentId}
           contacts={contacts}
+          disciplines={disciplines}
           onAnnuler={() => setEnAjout(false)}
           onValider={async () => {
             setEnAjout(false)
@@ -164,6 +324,7 @@ function SectionSuiviIntervenants({ incidentId, contexteId }) {
               </p>
               <p className="text-xs text-slate-500 mt-0.5">
                 {s.contacts && <>{s.contacts.prenom} {s.contacts.nom} · </>}
+                {s.disciplines?.libelle && <>{s.disciplines.libelle} · </>}
                 {new Date(s.horodatage).toLocaleString('fr-BE')}
               </p>
               {s.valeur && <p className="text-xs text-slate-500 mt-0.5">valeur : {s.valeur}</p>}
@@ -176,8 +337,9 @@ function SectionSuiviIntervenants({ incidentId, contexteId }) {
   )
 }
 
-function FormulaireSuiviIntervenant({ incidentId, contacts, onValider, onAnnuler }) {
+function FormulaireSuiviIntervenant({ incidentId, contacts, disciplines = [], onValider, onAnnuler }) {
   const [contactId, setContactId] = useState('')
+  const [disciplineId, setDisciplineId] = useState('')
   const [indicateur, setIndicateur] = useState(INDICATEURS_INTERVENANT[0].valeur)
   const [valeur, setValeur] = useState('')
   const [necessiteRelai, setNecessiteRelai] = useState(false)
@@ -191,6 +353,7 @@ function FormulaireSuiviIntervenant({ incidentId, contacts, onValider, onAnnuler
     const { error } = await supabase.from('suivi_intervenants').insert({
       incident_id: incidentId,
       contact_id: contactId || null,
+      discipline_id: disciplineId || null,
       indicateur,
       valeur: valeur.trim() || null,
       necessite_relai: necessiteRelai,
@@ -221,6 +384,16 @@ function FormulaireSuiviIntervenant({ incidentId, contacts, onValider, onAnnuler
             ))}
           </select>
         </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1">Discipline</label>
+        <select value={disciplineId} onChange={(e) => setDisciplineId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <option value="">—</option>
+          {disciplines.map((d) => (
+            <option key={d.id} value={d.id}>{d.libelle}</option>
+          ))}
+        </select>
       </div>
 
       <div>
@@ -264,7 +437,8 @@ const STATUTS_SECTEUR = [
   { valeur: 'termine', libelle: 'Terminé' },
 ]
 
-function SectionPhaseTransitoire({ incidentId }) {
+function SectionPhaseTransitoire({ incidentId, contexteId }) {
+  const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
   const [secteurs, setSecteurs] = useState([])
   const [chargement, setChargement] = useState(true)
   const [erreur, setErreur] = useState(null)
@@ -273,7 +447,7 @@ function SectionPhaseTransitoire({ incidentId }) {
     setChargement(true)
     const { data, error } = await supabase
       .from('phase_transitoire_secteurs')
-      .select('*')
+      .select('*, contacts(id, nom, prenom)')
       .eq('incident_id', incidentId)
     if (error) setErreur(error.message)
     else setSecteurs(data ?? [])
@@ -320,19 +494,36 @@ function SectionPhaseTransitoire({ incidentId }) {
       ) : (
         <ul className="divide-y divide-slate-200 border border-slate-200 rounded-lg overflow-hidden bg-white">
           {secteurs.map((s) => (
-            <li key={s.id} className="flex items-center justify-between px-4 py-2.5">
-              <span className="text-sm text-slate-900">
-                {SECTEURS_TRANSITOIRES.find((x) => x.valeur === s.secteur)?.libelle ?? s.secteur}
-              </span>
-              <select
-                value={s.statut}
-                onChange={(e) => maj(s.id, { statut: e.target.value })}
-                className="rounded-md border border-slate-300 px-2 py-1 text-xs bg-white"
-              >
-                {STATUTS_SECTEUR.map((st) => (
-                  <option key={st.valeur} value={st.valeur}>{st.libelle}</option>
-                ))}
-              </select>
+            <li key={s.id} className="flex items-center justify-between px-4 py-2.5 gap-2">
+              <div>
+                <span className="text-sm text-slate-900">
+                  {SECTEURS_TRANSITOIRES.find((x) => x.valeur === s.secteur)?.libelle ?? s.secteur}
+                </span>
+                {s.contacts && (
+                  <p className="text-xs text-slate-400">responsable : {s.contacts.prenom} {s.contacts.nom}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <select
+                  value={s.responsable_contact_id ?? ''}
+                  onChange={(e) => maj(s.id, { responsable_contact_id: e.target.value || null })}
+                  className="rounded-md border border-slate-300 px-2 py-1 text-xs bg-white"
+                >
+                  <option value="">responsable —</option>
+                  {contacts.map((c) => (
+                    <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+                  ))}
+                </select>
+                <select
+                  value={s.statut}
+                  onChange={(e) => maj(s.id, { statut: e.target.value })}
+                  className="rounded-md border border-slate-300 px-2 py-1 text-xs bg-white"
+                >
+                  {STATUTS_SECTEUR.map((st) => (
+                    <option key={st.valeur} value={st.valeur}>{st.libelle}</option>
+                  ))}
+                </select>
+              </div>
             </li>
           ))}
         </ul>
@@ -348,7 +539,8 @@ const STATUTS_EVALUATION_CRISE = [
   { valeur: 'en_retard', libelle: 'En retard' },
 ]
 
-function SectionRex({ incidentId }) {
+function SectionRex({ incidentId, contexteId }) {
+  const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
   const [evaluation, setEvaluation] = useState(null)
   const [recommandations, setRecommandations] = useState([])
   const [chargement, setChargement] = useState(true)
@@ -359,7 +551,7 @@ function SectionRex({ incidentId }) {
     setChargement(true)
     const { data: evalData, error: evalError } = await supabase
       .from('evaluations_crise')
-      .select('*')
+      .select('*, contacts(id, nom, prenom)')
       .eq('incident_id', incidentId)
       .maybeSingle()
     if (evalError) setErreur(evalError.message)
@@ -368,7 +560,7 @@ function SectionRex({ incidentId }) {
     if (evalData) {
       const { data: recoData, error: recoError } = await supabase
         .from('rex_recommandations')
-        .select('*')
+        .select('*, contacts(id, nom, prenom)')
         .eq('evaluation_crise_id', evalData.id)
       if (recoError) setErreur(recoError.message)
       else setRecommandations(recoData ?? [])
@@ -418,20 +610,35 @@ function SectionRex({ incidentId }) {
         </div>
       ) : (
         <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <p className="text-sm text-slate-700">
               Échéance : <strong>{evaluation.echeance_rex}</strong>
             </p>
-            <select
-              value={evaluation.statut}
-              onChange={(e) => majEvaluation({ statut: e.target.value })}
-              className="rounded-md border border-slate-300 px-2 py-1 text-xs bg-white"
-            >
-              {STATUTS_EVALUATION_CRISE.map((s) => (
-                <option key={s.valeur} value={s.valeur}>{s.libelle}</option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2">
+              <select
+                value={evaluation.responsable_contact_id ?? ''}
+                onChange={(e) => majEvaluation({ responsable_contact_id: e.target.value || null })}
+                className="rounded-md border border-slate-300 px-2 py-1 text-xs bg-white"
+              >
+                <option value="">responsable —</option>
+                {contacts.map((c) => (
+                  <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+                ))}
+              </select>
+              <select
+                value={evaluation.statut}
+                onChange={(e) => majEvaluation({ statut: e.target.value })}
+                className="rounded-md border border-slate-300 px-2 py-1 text-xs bg-white"
+              >
+                {STATUTS_EVALUATION_CRISE.map((s) => (
+                  <option key={s.valeur} value={s.valeur}>{s.libelle}</option>
+                ))}
+              </select>
+            </div>
           </div>
+          {evaluation.contacts && (
+            <p className="text-xs text-slate-400">responsable REX : {evaluation.contacts.prenom} {evaluation.contacts.nom}</p>
+          )}
 
           <textarea
             value={evaluation.synthese ?? ''}
@@ -455,6 +662,7 @@ function SectionRex({ incidentId }) {
             {enAjoutRecommandation && (
               <FormulaireRecommandation
                 evaluationCriseId={evaluation.id}
+                contacts={contacts}
                 onAnnuler={() => setEnAjoutRecommandation(false)}
                 onValider={async () => {
                   setEnAjoutRecommandation(false)
@@ -474,6 +682,9 @@ function SectionRex({ incidentId }) {
                       <p className="text-slate-400">
                         constat : {r.constat}{r.echeance && <> · échéance : {r.echeance}</>} · {r.statut}
                       </p>
+                      {r.contacts && (
+                        <p className="text-slate-400">responsable : {r.contacts.prenom} {r.contacts.nom}</p>
+                      )}
                     </div>
                     <button type="button" onClick={() => retirerRecommandation(r.id)} className="text-slate-400 hover:text-red-600 flex-shrink-0">✕</button>
                   </li>
@@ -487,10 +698,11 @@ function SectionRex({ incidentId }) {
   )
 }
 
-function FormulaireRecommandation({ evaluationCriseId, onValider, onAnnuler }) {
+function FormulaireRecommandation({ evaluationCriseId, contacts = [], onValider, onAnnuler }) {
   const [constat, setConstat] = useState('')
   const [recommandation, setRecommandation] = useState('')
   const [echeance, setEcheance] = useState('')
+  const [responsableContactId, setResponsableContactId] = useState('')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -502,6 +714,7 @@ function FormulaireRecommandation({ evaluationCriseId, onValider, onAnnuler }) {
       constat: constat.trim(),
       recommandation: recommandation.trim(),
       echeance: echeance || null,
+      responsable_contact_id: responsableContactId || null,
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -513,6 +726,16 @@ function FormulaireRecommandation({ evaluationCriseId, onValider, onAnnuler }) {
       <input required value={constat} onChange={(e) => setConstat(e.target.value)} placeholder="Constat" className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
       <input required value={recommandation} onChange={(e) => setRecommandation(e.target.value)} placeholder="Recommandation" className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
       <input type="date" value={echeance} onChange={(e) => setEcheance(e.target.value)} className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
+      <select
+        value={responsableContactId}
+        onChange={(e) => setResponsableContactId(e.target.value)}
+        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs bg-white"
+      >
+        <option value="">Responsable — aucun</option>
+        {contacts.map((c) => (
+          <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+        ))}
+      </select>
       {erreur && <p className="text-xs text-red-600">{erreur}</p>}
       <div className="flex gap-2">
         <BoutonDiscret type="submit" disabled={enCours}>{enCours ? 'Ajout…' : 'Ajouter'}</BoutonDiscret>
@@ -592,11 +815,182 @@ function SectionSitReps({ incidentId, contexteId }) {
               {s.mesures_reflexes && (
                 <p className="text-xs text-slate-400 italic mt-1">{s.mesures_reflexes}</p>
               )}
+
+              <SectionDisciplinesSitrep sitrepId={s.id} contexteId={contexteId} />
             </li>
           ))}
         </ul>
       )}
     </div>
+  )
+}
+
+function SectionDisciplinesSitrep({ sitrepId, contexteId }) {
+  const { lignes: disciplines } = useTableContexte('disciplines', contexteId, { tri: 'libelle' })
+  const [lignesDisciplines, setLignesDisciplines] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [enAjout, setEnAjout] = useState(false)
+  const [erreur, setErreur] = useState(null)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('sitrep_disciplines')
+      .select('*, disciplines(id, libelle)')
+      .eq('sitrep_id', sitrepId)
+    if (error) setErreur(error.message)
+    else setLignesDisciplines(data ?? [])
+    setChargement(false)
+  }, [sitrepId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function retirer(id) {
+    if (!confirm('Supprimer ce point de situation par discipline ?')) return
+    await supabase.from('sitrep_disciplines').delete().eq('id', id)
+    await rafraichir()
+  }
+
+  return (
+    <div className="mt-2 pt-2 border-t border-slate-100">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-slate-500">Point par discipline</p>
+        {!enAjout && (
+          <button type="button" onClick={() => setEnAjout(true)} className="text-xs text-institution-700 hover:underline">
+            + ajouter
+          </button>
+        )}
+      </div>
+
+      {erreur && <p className="text-xs text-red-600 mt-1">{erreur}</p>}
+
+      {enAjout && (
+        <FormulaireDisciplineSitrep
+          sitrepId={sitrepId}
+          disciplines={disciplines}
+          onAnnuler={() => setEnAjout(false)}
+          onValider={async () => {
+            setEnAjout(false)
+            await rafraichir()
+          }}
+        />
+      )}
+
+      {chargement ? (
+        <p className="text-xs text-slate-400 mt-1">Chargement…</p>
+      ) : lignesDisciplines.length === 0 ? (
+        !enAjout && <p className="text-xs text-slate-400 mt-1">Aucun point par discipline.</p>
+      ) : (
+        <ul className="mt-1 space-y-1">
+          {lignesDisciplines.map((d) => (
+            <li key={d.id} className="bg-slate-50 rounded px-2 py-1.5 text-xs">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-medium text-slate-700">{d.disciplines?.libelle ?? '—'}</p>
+                  {Array.isArray(d.personnes_presentes) && d.personnes_presentes.length > 0 && (
+                    <p className="text-slate-400">présents : {d.personnes_presentes.join(', ')}</p>
+                  )}
+                  {d.actions_en_cours && <p className="text-slate-500">actions : {d.actions_en_cours}</p>}
+                  {d.besoins_internes && <p className="text-slate-500">besoins : {d.besoins_internes}</p>}
+                  {d.demandes_vers_autres_disciplines && (
+                    <p className="text-slate-500">demandes vers autres disciplines : {d.demandes_vers_autres_disciplines}</p>
+                  )}
+                  {d.remarques && <p className="text-slate-400 italic">{d.remarques}</p>}
+                </div>
+                <button type="button" onClick={() => retirer(d.id)} className="text-slate-400 hover:text-red-600 flex-shrink-0">✕</button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function FormulaireDisciplineSitrep({ sitrepId, disciplines = [], onValider, onAnnuler }) {
+  const [disciplineId, setDisciplineId] = useState('')
+  const [personnesPresentes, setPersonnesPresentes] = useState('')
+  const [actionsEnCours, setActionsEnCours] = useState('')
+  const [besoinsInternes, setBesoinsInternes] = useState('')
+  const [demandesVersAutresDisciplines, setDemandesVersAutresDisciplines] = useState('')
+  const [remarques, setRemarques] = useState('')
+  const [erreur, setErreur] = useState(null)
+  const [enCours, setEnCours] = useState(false)
+
+  async function soumettre(e) {
+    e.preventDefault()
+    setEnCours(true)
+    const { error } = await supabase.from('sitrep_disciplines').insert({
+      sitrep_id: sitrepId,
+      discipline_id: disciplineId,
+      personnes_presentes: personnesPresentes.trim()
+        ? personnesPresentes.split(',').map((p) => p.trim()).filter(Boolean)
+        : [],
+      actions_en_cours: actionsEnCours.trim() || null,
+      besoins_internes: besoinsInternes.trim() || null,
+      demandes_vers_autres_disciplines: demandesVersAutresDisciplines.trim() || null,
+      remarques: remarques.trim() || null,
+    })
+    setEnCours(false)
+    if (error) setErreur(error.message)
+    else onValider()
+  }
+
+  return (
+    <form onSubmit={soumettre} className="bg-white border border-slate-200 rounded-lg p-2.5 mt-1 space-y-2">
+      <select
+        required
+        value={disciplineId}
+        onChange={(e) => setDisciplineId(e.target.value)}
+        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs bg-white"
+      >
+        <option value="">Discipline — choisir</option>
+        {disciplines.map((d) => (
+          <option key={d.id} value={d.id}>{d.libelle}</option>
+        ))}
+      </select>
+      <input
+        value={personnesPresentes}
+        onChange={(e) => setPersonnesPresentes(e.target.value)}
+        placeholder="Personnes présentes (séparées par des virgules)"
+        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+      />
+      <textarea
+        value={actionsEnCours}
+        onChange={(e) => setActionsEnCours(e.target.value)}
+        placeholder="Actions en cours"
+        rows={2}
+        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+      />
+      <textarea
+        value={besoinsInternes}
+        onChange={(e) => setBesoinsInternes(e.target.value)}
+        placeholder="Besoins internes"
+        rows={2}
+        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+      />
+      <textarea
+        value={demandesVersAutresDisciplines}
+        onChange={(e) => setDemandesVersAutresDisciplines(e.target.value)}
+        placeholder="Demandes vers autres disciplines"
+        rows={2}
+        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+      />
+      <textarea
+        value={remarques}
+        onChange={(e) => setRemarques(e.target.value)}
+        placeholder="Remarques"
+        rows={2}
+        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+      />
+      {erreur && <p className="text-xs text-red-600">{erreur}</p>}
+      <div className="flex gap-2">
+        <BoutonDiscret type="submit" disabled={enCours}>{enCours ? 'Ajout…' : 'Ajouter'}</BoutonDiscret>
+        <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
+      </div>
+    </form>
   )
 }
 

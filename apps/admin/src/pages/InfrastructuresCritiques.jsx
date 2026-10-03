@@ -12,7 +12,11 @@ export default function InfrastructuresCritiques() {
     creer,
     modifier,
     supprimer,
-  } = useTableContexte('infrastructures_critiques', contexteId, { tri: 'nom' })
+  } = useTableContexte('infrastructures_critiques', contexteId, {
+    colonnes: '*, contacts(id, nom, prenom)',
+    tri: 'nom',
+  })
+  const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
 
   const [enAjout, setEnAjout] = useState(false)
   const [ligneEnEdition, setLigneEnEdition] = useState(null)
@@ -34,6 +38,7 @@ export default function InfrastructuresCritiques() {
 
       {enAjout && (
         <FormulaireInfrastructure
+          contacts={contacts}
           onAnnuler={() => setEnAjout(false)}
           onValider={async (valeurs) => {
             const { error } = await creer(valeurs)
@@ -55,6 +60,7 @@ export default function InfrastructuresCritiques() {
             ligneEnEdition === i.id ? (
               <li key={i.id} className="bg-slate-50 p-3">
                 <FormulaireInfrastructure
+                  contacts={contacts}
                   valeursInitiales={i}
                   onAnnuler={() => setLigneEnEdition(null)}
                   onValider={async (valeurs) => {
@@ -83,6 +89,9 @@ export default function InfrastructuresCritiques() {
                   {i.expositions_risques?.length > 0 && (
                     <p className="text-xs text-slate-400 mt-0.5">exposée à : {i.expositions_risques.join(', ')}</p>
                   )}
+                  {i.contacts && (
+                    <p className="text-xs text-slate-400 mt-0.5">gestionnaire : {i.contacts.prenom} {i.contacts.nom}</p>
+                  )}
                 </div>
                 <div className="flex gap-2 flex-shrink-0 ml-3">
                   <BoutonDiscret onClick={() => setLigneEnEdition(i.id)}>Modifier</BoutonDiscret>
@@ -103,7 +112,7 @@ export default function InfrastructuresCritiques() {
   )
 }
 
-function FormulaireInfrastructure({ valeursInitiales = {}, onValider, onAnnuler }) {
+function FormulaireInfrastructure({ contacts = [], valeursInitiales = {}, onValider, onAnnuler }) {
   const [nom, setNom] = useState(valeursInitiales.nom ?? '')
   const [type, setType] = useState(valeursInitiales.type ?? '')
   const [adresse, setAdresse] = useState(valeursInitiales.adresse ?? '')
@@ -111,6 +120,7 @@ function FormulaireInfrastructure({ valeursInitiales = {}, onValider, onAnnuler 
   const [longitude, setLongitude] = useState(valeursInitiales.longitude ?? '')
   const [expositions, setExpositions] = useState((valeursInitiales.expositions_risques ?? []).join(', '))
   const [niveauCriticite, setNiveauCriticite] = useState(valeursInitiales.niveau_criticite ?? '')
+  const [gestionnaireContactId, setGestionnaireContactId] = useState(valeursInitiales.gestionnaire_contact_id ?? '')
   const [actif, setActif] = useState(valeursInitiales.actif ?? true)
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
@@ -126,6 +136,7 @@ function FormulaireInfrastructure({ valeursInitiales = {}, onValider, onAnnuler 
       longitude: longitude === '' ? null : Number(longitude),
       expositions_risques: expositions.split(',').map((s) => s.trim()).filter(Boolean),
       niveau_criticite: niveauCriticite === '' ? null : Number(niveauCriticite),
+      gestionnaire_contact_id: gestionnaireContactId || null,
       actif,
     })
     setEnCours(false)
@@ -174,6 +185,16 @@ function FormulaireInfrastructure({ valeursInitiales = {}, onValider, onAnnuler 
       <div>
         <label className="block text-xs font-medium text-slate-600 mb-1">Expositions aux risques (séparées par des virgules)</label>
         <input value={expositions} onChange={(e) => setExpositions(e.target.value)} placeholder="ex. inondation, feu de forêt" className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm" />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1">Gestionnaire</label>
+        <select value={gestionnaireContactId} onChange={(e) => setGestionnaireContactId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <option value="">—</option>
+          {contacts.map((c) => (
+            <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+          ))}
+        </select>
       </div>
 
       <label className="flex items-center gap-2 text-sm text-slate-700">

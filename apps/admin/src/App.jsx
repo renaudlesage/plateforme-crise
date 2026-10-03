@@ -24,6 +24,7 @@ import SeuilsMeteoDeclencheurs from './pages/SeuilsMeteoDeclencheurs'
 import InfrastructuresCritiques from './pages/InfrastructuresCritiques'
 import PopulationNonResidente from './pages/PopulationNonResidente'
 import RegistreExpertises from './pages/RegistreExpertises'
+import Conventions from './pages/Conventions'
 
 export default function App() {
   return (
@@ -69,6 +70,7 @@ export default function App() {
             <Route path="infrastructures-critiques" element={<InfrastructuresCritiques />} />
             <Route path="population-non-residente" element={<PopulationNonResidente />} />
             <Route path="registre-expertises" element={<RegistreExpertises />} />
+            <Route path="conventions" element={<Conventions />} />
           </Route>
         </Routes>
       </AuthProvider>

@@ -60,10 +60,11 @@ function ListeRessources() {
     modifier,
     supprimer,
   } = useTableContexte('ressources', contexteId, {
-    colonnes: '*, contacts(id, nom, prenom)',
+    colonnes: '*, contacts(id, nom, prenom), conventions(id, partenaire)',
     tri: 'nom',
   })
   const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
+  const { lignes: conventions } = useTableContexte('conventions', contexteId, { tri: 'partenaire' })
 
   const [enAjout, setEnAjout] = useState(false)
   const [ligneEnEdition, setLigneEnEdition] = useState(null)
@@ -93,6 +94,7 @@ function ListeRessources() {
       {enAjout && (
         <FormulaireRessource
           contacts={contacts}
+          conventions={conventions}
           onAnnuler={() => setEnAjout(false)}
           onValider={async (valeurs) => {
             const { error } = await creer(valeurs)
@@ -137,6 +139,7 @@ function ListeRessources() {
               <li key={r.id} className="bg-slate-50 p-3">
                 <FormulaireRessource
                   contacts={contacts}
+                  conventions={conventions}
                   valeursInitiales={r}
                   onAnnuler={() => setLigneEnEdition(null)}
                   onValider={async (valeurs) => {
@@ -168,6 +171,11 @@ function ListeRessources() {
                       contact : {r.contacts.prenom} {r.contacts.nom}
                     </p>
                   )}
+                  {r.conventions && (
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      convention : {r.conventions.partenaire}
+                    </p>
+                  )}
                   {r.disponible_hors_contexte && (
                     <p className="text-xs text-institution-700 mt-0.5">
                       partageable hors contexte{r.rayon_partage_km ? ` (rayon ${r.rayon_partage_km} km)` : ''}
@@ -193,11 +201,12 @@ function ListeRessources() {
   )
 }
 
-function FormulaireRessource({ contacts, valeursInitiales = {}, onValider, onAnnuler }) {
+function FormulaireRessource({ contacts, conventions = [], valeursInitiales = {}, onValider, onAnnuler }) {
   const [categorie, setCategorie] = useState(valeursInitiales.categorie ?? CATEGORIES[0])
   const [typePublicPrive, setTypePublicPrive] = useState(valeursInitiales.type_public_prive ?? 'public')
   const [nom, setNom] = useState(valeursInitiales.nom ?? '')
   const [contactId, setContactId] = useState(valeursInitiales.contact_id ?? '')
+  const [conventionId, setConventionId] = useState(valeursInitiales.convention_id ?? '')
   const [attributs, setAttributs] = useState(() => {
     const initial = valeursInitiales.attributs ?? {}
     const entries = Object.entries(initial)
@@ -232,6 +241,7 @@ function FormulaireRessource({ contacts, valeursInitiales = {}, onValider, onAnn
       type_public_prive: typePublicPrive,
       nom: nom.trim(),
       contact_id: contactId || null,
+      convention_id: conventionId || null,
       attributs: attributsObjet,
       disponible_hors_contexte: disponibleHorsContexte,
       rayon_partage_km: rayonPartageKm === '' ? null : Number(rayonPartageKm),
@@ -287,6 +297,16 @@ function FormulaireRessource({ contacts, valeursInitiales = {}, onValider, onAnn
             ))}
           </select>
         </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1">Convention associée</label>
+        <select value={conventionId} onChange={(e) => setConventionId(e.target.value)} className="w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm bg-white">
+          <option value="">—</option>
+          {conventions.map((c) => (
+            <option key={c.id} value={c.id}>{c.partenaire}</option>
+          ))}
+        </select>
       </div>
 
       <div>
