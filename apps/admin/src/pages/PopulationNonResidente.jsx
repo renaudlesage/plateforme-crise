@@ -126,7 +126,7 @@ function FormulairePopulation({ contacts = [], valeursInitiales = {}, onValider,
   const [capaciteMax, setCapaciteMax] = useState(valeursInitiales.capacite_max ?? '')
   const [periodeDebut, setPeriodeDebut] = useState(valeursInitiales.periode_debut ?? '')
   const [periodeFin, setPeriodeFin] = useState(valeursInitiales.periode_fin ?? '')
-  const [contactGestionnaireId, setContactGestionnaireId] = useState(valeursInitiales.contact_gestionnaire_id ?? '')
+  const [contactGestionnaireId, setContactGestionnaireId] = useState(valeursInitiales.gestionnaire_contact_id ?? '')
   const [actif, setActif] = useState(valeursInitiales.actif ?? true)
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
@@ -142,7 +142,7 @@ function FormulairePopulation({ contacts = [], valeursInitiales = {}, onValider,
       capacite_max: capaciteMax === '' ? null : Number(capaciteMax),
       periode_debut: periodeDebut || null,
       periode_fin: periodeFin || null,
-      contact_gestionnaire_id: contactGestionnaireId || null,
+      gestionnaire_contact_id: contactGestionnaireId || null,
       actif,
     })
     setEnCours(false)

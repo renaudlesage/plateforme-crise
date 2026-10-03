@@ -76,9 +76,9 @@ export default function InfrastructuresCritiques() {
                   <p className="text-sm font-medium text-slate-900">
                     {i.nom}
                     {!i.actif && <span className="ml-2 text-xs text-slate-400">(inactif)</span>}
-                    {i.niveau_criticite != null && (
+                    {i.degre_criticite != null && (
                       <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-slate-900 text-white">
-                        criticité {i.niveau_criticite}
+                        criticité {i.degre_criticite}
                       </span>
                     )}
                   </p>
@@ -119,7 +119,7 @@ function FormulaireInfrastructure({ contacts = [], valeursInitiales = {}, onVali
   const [latitude, setLatitude] = useState(valeursInitiales.latitude ?? '')
   const [longitude, setLongitude] = useState(valeursInitiales.longitude ?? '')
   const [expositions, setExpositions] = useState((valeursInitiales.expositions_risques ?? []).join(', '))
-  const [niveauCriticite, setNiveauCriticite] = useState(valeursInitiales.niveau_criticite ?? '')
+  const [niveauCriticite, setNiveauCriticite] = useState(valeursInitiales.degre_criticite ?? '')
   const [gestionnaireContactId, setGestionnaireContactId] = useState(valeursInitiales.gestionnaire_contact_id ?? '')
   const [actif, setActif] = useState(valeursInitiales.actif ?? true)
   const [erreur, setErreur] = useState(null)
@@ -135,7 +135,7 @@ function FormulaireInfrastructure({ contacts = [], valeursInitiales = {}, onVali
       latitude: latitude === '' ? null : Number(latitude),
       longitude: longitude === '' ? null : Number(longitude),
       expositions_risques: expositions.split(',').map((s) => s.trim()).filter(Boolean),
-      niveau_criticite: niveauCriticite === '' ? null : Number(niveauCriticite),
+      degre_criticite: niveauCriticite === '' ? null : Number(niveauCriticite),
       gestionnaire_contact_id: gestionnaireContactId || null,
       actif,
     })

@@ -454,7 +454,7 @@ function GestionPlansAction({ objetId }) {
     const { data, error } = await supabase
       .from('plans_action_risque')
       .select('*, contacts(id, nom, prenom)')
-      .eq('objet_id', objetId)
+      .eq('objet_risque_id', objetId)
       .order('ordre', { ascending: true })
     if (error) setErreur(error.message)
     else setEtapes(data ?? [])
@@ -553,7 +553,7 @@ function FormulaireEtapePlanAction({ objetId, contacts = [], ordreSuivant, onVal
     e.preventDefault()
     setEnCours(true)
     const { error } = await supabase.from('plans_action_risque').insert({
-      objet_id: objetId,
+      objet_risque_id: objetId,
       ordre: Number(ordre),
       libelle: libelle.trim(),
       responsable_contact_id: responsableContactId || null,
@@ -626,7 +626,7 @@ function GestionEvaluationsRisque({ objetId }) {
     const { data, error } = await supabase
       .from('evaluations_risque')
       .select('*')
-      .eq('objet_id', objetId)
+      .eq('objet_risque_id', objetId)
       .order('date_evaluation', { ascending: false })
     if (error) setErreur(error.message)
     else setEvaluations(data ?? [])
@@ -747,7 +747,7 @@ function FormulaireEvaluationRisque({ objetId, onValider, onAnnuler }) {
       })
     )
     const { error } = await supabase.from('evaluations_risque').insert({
-      objet_id: objetId,
+      objet_risque_id: objetId,
       date_evaluation: dateEvaluation,
       ...scoresEtProbas,
       duree_situation: dureeSituation.trim() || null,
@@ -863,7 +863,7 @@ function GestionMesuresCompensatoires({ objetId }) {
     const { data, error } = await supabase
       .from('mesures_compensatoires_suivi')
       .select('*, contacts(id, nom, prenom)')
-      .eq('objet_id', objetId)
+      .eq('objet_risque_id', objetId)
       .order('created_at', { ascending: false })
     if (error) setErreur(error.message)
     else setMesures(data ?? [])
@@ -966,7 +966,7 @@ function FormulaireMesureCompensatoire({ objetId, contacts = [], onValider, onAn
     e.preventDefault()
     setEnCours(true)
     const { error } = await supabase.from('mesures_compensatoires_suivi').insert({
-      objet_id: objetId,
+      objet_risque_id: objetId,
       mesure: mesure.trim(),
       quantification: quantification.trim() || null,
       date_cible: dateCible || null,
