@@ -64,7 +64,7 @@ export default function PopulationNonResidente() {
           Aucun lieu enregistré.
         </p>
       ) : (
-        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow">
           {populations.map((p) =>
             ligneEnEdition === p.id ? (
               <li key={p.id} className="bg-fond p-3">

@@ -113,7 +113,7 @@ export default function ObjetsARisque() {
           Aucun objet à risque enregistré.
         </p>
       ) : (
-        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow">
           {objetsFiltres.map((o) =>
             ligneEnEdition === o.id ? (
               <li key={o.id} className="bg-fond p-3">

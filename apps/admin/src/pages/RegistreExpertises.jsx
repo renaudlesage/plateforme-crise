@@ -55,7 +55,7 @@ export default function RegistreExpertises() {
           Aucune expertise enregistrée.
         </p>
       ) : (
-        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow">
           {expertises.map((e) =>
             ligneEnEdition === e.id ? (
               <li key={e.id} className="bg-fond p-3">

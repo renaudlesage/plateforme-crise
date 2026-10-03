@@ -49,7 +49,7 @@ export default function Disciplines() {
           Aucune discipline définie pour ce contexte.
         </p>
       ) : (
-        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow">
           {disciplines.map((d) =>
             ligneEnEdition === d.id ? (
               <li key={d.id} className="bg-fond p-3">

@@ -73,7 +73,7 @@ export default function Exercices() {
           Aucun exercice enregistré.
         </p>
       ) : (
-        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow">
           {exercices.map((ex) =>
             ligneEnEdition === ex.id ? (
               <li key={ex.id} className="bg-fond p-3">

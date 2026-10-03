@@ -22,24 +22,16 @@ export default function Ressources() {
 
   return (
     <div>
-      <div className="flex gap-1 border-b border-trait mb-5">
+      <div className="onglets">
         <button
           onClick={() => setOnglet('ressources')}
-          className={`px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
-            onglet === 'ressources'
-              ? 'border-info text-info font-medium'
-              : 'border-transparent text-sourdine hover:text-encre'
-          }`}
+          className={`module${onglet === 'ressources' ? ' actif' : ''}`}
         >
           Ressources
         </button>
         <button
           onClick={() => setOnglet('benevoles')}
-          className={`px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
-            onglet === 'benevoles'
-              ? 'border-info text-info font-medium'
-              : 'border-transparent text-sourdine hover:text-encre'
-          }`}
+          className={`module${onglet === 'benevoles' ? ' actif' : ''}`}
         >
           Bénévoles (réseau citoyen)
         </button>
@@ -133,7 +125,7 @@ function ListeRessources() {
           Aucune ressource ne correspond.
         </p>
       ) : (
-        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow">
           {ressourcesFiltrees.map((r) =>
             ligneEnEdition === r.id ? (
               <li key={r.id} className="bg-fond p-3">
@@ -154,7 +146,7 @@ function ListeRessources() {
                 <div>
                   <p className="text-sm font-medium text-encre">
                     {r.nom}
-                    <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${r.type_public_prive === 'public' ? 'text-info' : 'text-veille'}`}>
+                    <span className={`jeton ml-2 ${r.type_public_prive === 'public' ? 'text-info' : 'text-veille'}`}>
                       {r.type_public_prive}
                     </span>
                   </p>

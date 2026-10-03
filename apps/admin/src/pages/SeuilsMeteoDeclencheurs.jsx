@@ -67,7 +67,7 @@ export default function SeuilsMeteoDeclencheurs() {
           Aucun seuil météo défini.
         </p>
       ) : (
-        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow">
           {seuils.map((s) =>
             ligneEnEdition === s.id ? (
               <li key={s.id} className="bg-fond p-3">

@@ -55,7 +55,7 @@ export default function InfrastructuresCritiques() {
           Aucune infrastructure critique enregistrée.
         </p>
       ) : (
-        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow">
           {infrastructures.map((i) =>
             ligneEnEdition === i.id ? (
               <li key={i.id} className="bg-fond p-3">

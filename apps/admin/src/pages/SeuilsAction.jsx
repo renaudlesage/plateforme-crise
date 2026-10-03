@@ -80,7 +80,7 @@ export default function SeuilsAction() {
                 />
               </li>
             ) : (
-              <li key={s.id} className="bg-surface border border-trait rounded p-4 shadow-sm">
+              <li key={s.id} className="bg-surface border border-trait rounded p-4 shadow">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm font-medium text-encre">

@@ -74,12 +74,12 @@ export default function AlertesPubliques() {
                 />
               </li>
             ) : (
-              <li key={a.id} className="bg-surface border border-trait rounded p-4 shadow-sm">
+              <li key={a.id} className="bg-surface border border-trait rounded p-4 shadow">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm font-medium text-encre">
                       {a.titre}
-                      <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${NIVEAUX.find((n) => n.valeur === a.niveau_alerte)?.classe}`}>
+                      <span className={`jeton ml-2 ${NIVEAUX.find((n) => n.valeur === a.niveau_alerte)?.classe}`}>
                         {NIVEAUX.find((n) => n.valeur === a.niveau_alerte)?.libelle}
                       </span>
                       {!a.actif && <span className="ml-2 text-xs text-sourdine">(inactive)</span>}

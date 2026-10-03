@@ -60,14 +60,12 @@ export default function BenevolesEntraide() {
 
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
-      <div className="flex gap-2 mb-3">
+      <div className="pastilles-filtre mb-3">
         {STATUTS.map((s) => (
           <button
             key={s.valeur}
             onClick={() => setFiltreStatut(filtreStatut === s.valeur ? '' : s.valeur)}
-            className={`text-xs px-2.5 py-1 rounded border ${
-              filtreStatut === s.valeur ? 'border-trait-fort' : 'border-transparent'
-            } ${s.classe}`}
+            className={`pastille ${s.classe} ${filtreStatut === s.valeur ? 'actif' : ''}`}
           >
             {s.libelle} ({benevolesTries.filter((b) => b.statut === s.valeur).length})
           </button>
@@ -97,12 +95,12 @@ export default function BenevolesEntraide() {
       ) : (
         <ul className="space-y-2">
           {benevolesFiltres.map((b) => (
-            <li key={b.id} className="bg-surface border border-trait rounded p-4 shadow-sm">
+            <li key={b.id} className="bg-surface border border-trait rounded p-4 shadow">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-medium text-encre">
                     {b.prenom} {b.nom}
-                    <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${STATUTS.find((s) => s.valeur === b.statut)?.classe}`}>
+                    <span className={`jeton ml-2 ${STATUTS.find((s) => s.valeur === b.statut)?.classe}`}>
                       {STATUTS.find((s) => s.valeur === b.statut)?.libelle}
                     </span>
                   </p>

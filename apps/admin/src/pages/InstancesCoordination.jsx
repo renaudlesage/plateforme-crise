@@ -81,7 +81,7 @@ export default function InstancesCoordination() {
                 />
               </li>
             ) : (
-              <li key={i.id} className="bg-surface border border-trait rounded overflow-hidden shadow-sm">
+              <li key={i.id} className="bg-surface border border-trait rounded overflow-hidden shadow">
                 <div className="flex items-start justify-between px-4 py-3">
                   <div>
                     <p className="text-sm font-medium text-encre">

@@ -7,7 +7,7 @@ export function RoutePrivee({ children, exigeContexte = true }) {
   if (chargementSession || (session && chargementAcces)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-sm text-slate-500">Chargement…</p>
+        <p className="text-sm text-sourdine">Chargement…</p>
       </div>
     )
   }

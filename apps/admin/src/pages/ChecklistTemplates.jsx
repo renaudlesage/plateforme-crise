@@ -89,7 +89,7 @@ export default function ChecklistTemplates() {
           {groupes.map((groupe) => (
             <div key={groupe.declencheur}>
               <h2 className="text-sm font-semibold text-sourdine mb-2">{groupe.declencheur}</h2>
-              <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
+              <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow">
                 {groupe.items.map((item) =>
                   ligneEnEdition === item.id ? (
                     <li key={item.id} className="bg-fond p-3">

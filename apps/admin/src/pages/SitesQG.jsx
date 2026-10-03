@@ -66,7 +66,7 @@ export default function SitesQG() {
                 />
               </li>
             ) : (
-              <li key={s.id} className="flex items-start justify-between px-4 py-3 bg-surface border border-trait rounded shadow-sm">
+              <li key={s.id} className="flex items-start justify-between px-4 py-3 bg-surface border border-trait rounded shadow">
                 <div className="flex gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded bg-encre text-fond text-xs flex items-center justify-center mt-0.5">
                     {s.priorite}

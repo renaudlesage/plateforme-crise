@@ -36,14 +36,14 @@ export default function SelectionContexte() {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="max-w-sm text-center">
-          <h1 className="text-lg font-semibold text-fond">Aucun accès configuré</h1>
+          <h1 className="text-lg font-semibold text-encre">Aucun accès configuré</h1>
           <p className="mt-2 text-sm text-sourdine">
             Ce compte n'est rattaché à aucun contexte pour l'instant. Contactez l'administrateur
             de la plateforme pour qu'il vous ajoute à une commune ou un événement.
           </p>
           <button
             onClick={deconnexion}
-            className="mt-6 text-sm text-sourdine underline hover:text-fond"
+            className="mt-6 text-sm text-sourdine underline hover:text-encre"
           >
             Se déconnecter
           </button>
@@ -55,7 +55,7 @@ export default function SelectionContexte() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <h1 className="text-xl font-semibold text-fond mb-1">Choisir un contexte</h1>
+        <h1 className="text-xl font-semibold text-encre mb-1">Choisir un contexte</h1>
         <p className="text-sm text-sourdine mb-6">
           Sélectionnez la commune, province ou l'événement sur lequel vous voulez travailler.
         </p>
@@ -65,7 +65,7 @@ export default function SelectionContexte() {
             <li key={a.contexte_id}>
               <button
                 onClick={() => choisir(a.contexte_id)}
-                className="w-full text-left bg-fond rounded px-4 py-3.5 hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-between shadow-md"
+                className="w-full text-left bg-surface border border-trait rounded px-4 py-3 hover:border-trait-fort transition-colors flex items-center justify-between"
               >
                 <div>
                   <p className="font-medium text-encre">{a.contextes?.nom ?? 'Contexte sans nom'}</p>
@@ -83,7 +83,7 @@ export default function SelectionContexte() {
 
         <button
           onClick={deconnexion}
-          className="mt-6 text-sm text-sourdine underline hover:text-fond"
+          className="mt-6 text-sm text-sourdine underline hover:text-encre"
         >
           Se déconnecter
         </button>

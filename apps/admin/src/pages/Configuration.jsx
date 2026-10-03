@@ -20,16 +20,12 @@ export default function Configuration() {
         La base sur laquelle reposent les référentiels, checklists et instances de coordination.
       </p>
 
-      <div className="flex gap-1 border-b border-trait mb-5">
+      <div className="onglets">
         {ONGLETS.map((o) => (
           <button
             key={o.id}
             onClick={() => setOngletActif(o.id)}
-            className={`px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
-              ongletActif === o.id
-                ? 'border-info text-info font-medium'
-                : 'border-transparent text-sourdine hover:text-encre'
-            }`}
+            className={`module${ongletActif === o.id ? ' actif' : ''}`}
           >
             {o.label}
           </button>

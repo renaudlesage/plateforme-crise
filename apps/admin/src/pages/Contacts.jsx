@@ -103,7 +103,7 @@ export default function Contacts() {
           Aucun contact ne correspond.
         </p>
       ) : (
-        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow">
           {contactsFiltres.map((c) =>
             ligneEnEdition === c.id ? (
               <li key={c.id} className="bg-fond p-3">

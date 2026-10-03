@@ -54,7 +54,7 @@ export default function CentresAccueil() {
           Aucun centre d'accueil enregistré.
         </p>
       ) : (
-        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow">
           {centres.map((c) =>
             ligneEnEdition === c.id ? (
               <li key={c.id} className="bg-fond p-3">

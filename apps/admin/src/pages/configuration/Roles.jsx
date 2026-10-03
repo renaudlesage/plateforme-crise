@@ -49,7 +49,7 @@ export default function Roles() {
           Aucun rôle défini pour ce contexte.
         </p>
       ) : (
-        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow-sm">
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow">
           {roles.map((r) =>
             ligneEnEdition === r.id ? (
               <li key={r.id} className="bg-fond p-3">
