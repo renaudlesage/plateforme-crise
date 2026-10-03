@@ -10,6 +10,16 @@ const LIBELLE_STATUT = {
   cloture: 'Clôturé',
 }
 
+const PHASES_CYCLE_VIE = [
+  { valeur: 'veille', libelle: 'Veille' },
+  { valeur: 'vigilance', libelle: 'Vigilance' },
+  { valeur: 'pre_alerte', libelle: 'Pré-alerte' },
+  { valeur: 'alerte', libelle: 'Alerte' },
+  { valeur: 'phase_active', libelle: 'Phase active' },
+  { valeur: 'levee', libelle: 'Levée' },
+  { valeur: 'post_crise', libelle: 'Post-crise / REX' },
+]
+
 export default function Incidents() {
   const { contexteId } = useAuth()
   const {
@@ -86,6 +96,9 @@ export default function Incidents() {
                         degré {i.degre_criticite}
                       </span>
                     )}
+                    <span className="jeton ml-2 text-info">
+                      {PHASES_CYCLE_VIE.find((p) => p.valeur === i.phase_cycle_vie)?.libelle ?? i.phase_cycle_vie}
+                    </span>
                   </p>
                   <p className="text-xs text-sourdine">
                     {i.type_evenement && <>{i.type_evenement} · </>}
@@ -109,6 +122,7 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
   const [typeEvenement, setTypeEvenement] = useState('')
   const [niveauId, setNiveauId] = useState('')
   const [degreCriticite, setDegreCriticite] = useState('')
+  const [phaseCycleVie, setPhaseCycleVie] = useState('alerte')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -121,6 +135,7 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
       statut: 'en_cours',
       niveau_actuel_id: niveauId || null,
       degre_criticite: degreCriticite === '' ? null : Number(degreCriticite),
+      phase_cycle_vie: phaseCycleVie,
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -155,16 +170,27 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
         </div>
       </div>
 
-      <div>
-        <label className="block text-xs font-medium text-sourdine mb-1">Degré de criticité (1-4, PRGC)</label>
-        <p className="text-xs text-sourdine mb-1">Axe indépendant du niveau d'escalade — à ajuster au fil de l'incident.</p>
-        <select value={degreCriticite} onChange={(e) => setDegreCriticite(e.target.value)} className="w-full sm:w-48">
-          <option value="">—</option>
-          <option value="1">1 — faible</option>
-          <option value="2">2 — modéré</option>
-          <option value="3">3 — sérieux</option>
-          <option value="4">4 — majeur</option>
-        </select>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Degré de criticité (1-4, PRGC)</label>
+          <p className="text-xs text-sourdine mb-1">Axe indépendant du niveau d'escalade — à ajuster au fil de l'incident.</p>
+          <select value={degreCriticite} onChange={(e) => setDegreCriticite(e.target.value)} className="w-full">
+            <option value="">—</option>
+            <option value="1">1 — faible</option>
+            <option value="2">2 — modéré</option>
+            <option value="3">3 — sérieux</option>
+            <option value="4">4 — majeur</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Phase du cycle de vie</label>
+          <p className="text-xs text-sourdine mb-1">Où en est l'incident — ajustable ensuite depuis sa fiche.</p>
+          <select value={phaseCycleVie} onChange={(e) => setPhaseCycleVie(e.target.value)} className="w-full">
+            {PHASES_CYCLE_VIE.map((p) => (
+              <option key={p.valeur} value={p.valeur}>{p.libelle}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {erreur && <p className="text-sm text-chaud">{erreur}</p>}

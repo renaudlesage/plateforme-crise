@@ -6,6 +6,16 @@ import { supabase } from '../lib/supabase'
 
 const STORAGE_KEY_ROLE = 'terrain_role_id_selectionne'
 
+const LIBELLE_PHASE_CYCLE_VIE = {
+  veille: 'Veille',
+  vigilance: 'Vigilance',
+  pre_alerte: 'Pré-alerte',
+  alerte: 'Alerte',
+  phase_active: 'Phase active',
+  levee: 'Levée',
+  post_crise: 'Post-crise',
+}
+
 export default function Terrain() {
   const { contexteId } = useAuth()
   const { lignes: roles, chargement: chargementRoles } = useTableContexte('roles', contexteId, { tri: 'libelle' })
@@ -73,7 +83,7 @@ function IncidentActif({ contexteId, roleId }) {
     setChargement(true)
     const { data } = await supabase
       .from('incidents')
-      .select('id, nom, type_evenement, statut, degre_criticite')
+      .select('id, nom, type_evenement, statut, degre_criticite, phase_cycle_vie')
       .eq('contexte_id', contexteId)
       .eq('statut', 'en_cours')
       .order('date_debut', { ascending: false })
@@ -106,6 +116,9 @@ function IncidentActif({ contexteId, roleId }) {
             {incident.nom}
             {incident.degre_criticite != null && (
               <span className="jeton text-chaud ml-2">degré {incident.degre_criticite}</span>
+            )}
+            {incident.phase_cycle_vie && (
+              <span className="jeton ml-2">{LIBELLE_PHASE_CYCLE_VIE[incident.phase_cycle_vie] ?? incident.phase_cycle_vie}</span>
             )}
           </p>
           {incident.type_evenement && <p className="msg">{incident.type_evenement}</p>}

@@ -56,6 +56,7 @@ export default function IncidentDetail() {
           <p className="text-sm text-sourdine">
             {incident.type_evenement && <>{incident.type_evenement} · </>}
             {incident.niveaux_escalade?.libelle} · statut : {incident.statut}
+            {' · '}phase : {PHASES_CYCLE_VIE.find((p) => p.valeur === incident.phase_cycle_vie)?.libelle ?? incident.phase_cycle_vie}
           </p>
           <div className="flex items-center gap-2 mt-1.5">
             <label className="text-xs text-sourdine">Degré de criticité :</label>
@@ -91,35 +92,77 @@ export default function IncidentDetail() {
       </div>
 
       <div className="mb-6">
-        <SectionPhasesEscalade incidentId={id} contexteId={contexteId} niveauActuelId={incident.niveau_actuel_id} onChangement={chargerIncident} />
+        <SectionPhaseCycleVie
+          incidentId={id}
+          contexteId={contexteId}
+          phaseActuelle={incident.phase_cycle_vie}
+          onChangement={chargerIncident}
+        />
       </div>
 
-      <div className="mb-6">
-        <SectionChecklist incidentId={id} contexteId={contexteId} />
-      </div>
+      {PHASES_MODULES[incident.phase_cycle_vie]?.escalade !== false && (
+        <div className="mb-6">
+          <SectionPhasesEscalade incidentId={id} contexteId={contexteId} niveauActuelId={incident.niveau_actuel_id} onChangement={chargerIncident} />
+        </div>
+      )}
 
-      <div className="mb-6">
-        <SectionOrganesCrise incidentId={id} contexteId={contexteId} degreCriticiteIncident={incident.degre_criticite} />
-      </div>
+      {PHASES_MODULES[incident.phase_cycle_vie]?.checklist !== false && (
+        <div className="mb-6">
+          <SectionChecklist incidentId={id} contexteId={contexteId} />
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <SectionSitReps incidentId={id} contexteId={contexteId} />
-        <SectionLivreDeBord incidentId={id} contexteId={contexteId} />
-      </div>
+      {PHASES_MODULES[incident.phase_cycle_vie]?.organes !== false && (
+        <div className="mb-6">
+          <SectionOrganesCrise incidentId={id} contexteId={contexteId} degreCriticiteIncident={incident.degre_criticite} />
+        </div>
+      )}
 
-      <div className="mb-6">
-        <SectionSuiviIntervenants incidentId={id} contexteId={contexteId} />
-      </div>
+      {PHASES_MODULES[incident.phase_cycle_vie]?.suivi_operationnel !== false && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <SectionSitReps incidentId={id} contexteId={contexteId} />
+          <SectionLivreDeBord incidentId={id} contexteId={contexteId} />
+        </div>
+      )}
 
-      <div className="mb-6">
-        <SectionPhaseTransitoire incidentId={id} contexteId={contexteId} />
-      </div>
+      {PHASES_MODULES[incident.phase_cycle_vie]?.suivi_intervenants !== false && (
+        <div className="mb-6">
+          <SectionSuiviIntervenants incidentId={id} contexteId={contexteId} />
+        </div>
+      )}
 
-      <div>
-        <SectionRex incidentId={id} contexteId={contexteId} />
-      </div>
+      {PHASES_MODULES[incident.phase_cycle_vie]?.phase_transitoire !== false && (
+        <div className="mb-6">
+          <SectionPhaseTransitoire incidentId={id} contexteId={contexteId} />
+        </div>
+      )}
+
+      {PHASES_MODULES[incident.phase_cycle_vie]?.rex !== false && (
+        <div>
+          <SectionRex incidentId={id} contexteId={contexteId} />
+        </div>
+      )}
     </div>
   )
+}
+
+// Quelles sections de la fiche incident sont pertinentes selon la phase du
+// cycle de vie — une section non listée pour une phase est masquée plutôt
+// que simplement vide, pour réduire la charge cognitive ("chaque écran
+// doit réduire les décisions", cf. principes de design du produit).
+// Toutes les sections restent accessibles en 'phase_active' (le gros du
+// travail opérationnel) ; seules certaines sont retirées en amont
+// (veille/vigilance/pré-alerte, pas encore de gestion de crise active) ou
+// en aval (levée/post-crise, où le travail devient REX plutôt
+// qu'opérationnel).
+const PHASES_MODULES = {
+  veille: { checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false },
+  vigilance: { checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false },
+  pre_alerte: { suivi_intervenants: false, phase_transitoire: false, rex: false },
+  alerte: { phase_transitoire: false, rex: false },
+  phase_active: {},
+  levee: { checklist: false, rex: false },
+  post_crise: { escalade: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false },
 }
 
 const INDICATEURS_INTERVENANT = [
@@ -134,6 +177,16 @@ const INDICATEURS_INTERVENANT = [
 const STATUTS_ORGANE_LOG = [
   { valeur: 'active', libelle: 'Activé' },
   { valeur: 'desactivee', libelle: 'Désactivé' },
+]
+
+const PHASES_CYCLE_VIE = [
+  { valeur: 'veille', libelle: 'Veille' },
+  { valeur: 'vigilance', libelle: 'Vigilance' },
+  { valeur: 'pre_alerte', libelle: 'Pré-alerte' },
+  { valeur: 'alerte', libelle: 'Alerte' },
+  { valeur: 'phase_active', libelle: 'Phase active' },
+  { valeur: 'levee', libelle: 'Levée' },
+  { valeur: 'post_crise', libelle: 'Post-crise / REX' },
 ]
 
 const STATUTS_PHASE = [
@@ -326,6 +379,126 @@ function FormulairePhaseEscalade({ incidentId, niveaux, contacts, onValider, onA
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
       </div>
     </form>
+  )
+}
+
+function SectionPhaseCycleVie({ incidentId, contexteId, phaseActuelle, onChangement }) {
+  const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
+  const [historique, setHistorique] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [erreur, setErreur] = useState(null)
+  const [phase, setPhase] = useState(phaseActuelle)
+  const [contactId, setContactId] = useState('')
+  const [motif, setMotif] = useState('')
+  const [enCours, setEnCours] = useState(false)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('historique_phases_cycle_vie')
+      .select('*, contacts(id, nom, prenom)')
+      .eq('incident_id', incidentId)
+      .order('horodatage', { ascending: false })
+    if (error) setErreur(error.message)
+    else setHistorique(data ?? [])
+    setChargement(false)
+  }, [incidentId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  useEffect(() => {
+    setPhase(phaseActuelle)
+  }, [phaseActuelle])
+
+  async function changerPhase(e) {
+    e.preventDefault()
+    if (phase === phaseActuelle) return
+    setEnCours(true)
+    const { error: erreurIncident } = await supabase
+      .from('incidents')
+      .update({ phase_cycle_vie: phase })
+      .eq('id', incidentId)
+    const { error: erreurLog } = erreurIncident
+      ? { error: null }
+      : await supabase.from('historique_phases_cycle_vie').insert({
+          incident_id: incidentId,
+          phase,
+          declenche_par_contact_id: contactId || null,
+          motif: motif.trim() || null,
+        })
+    setEnCours(false)
+    const error = erreurIncident || erreurLog
+    if (error) {
+      setErreur(error.message)
+    } else {
+      setMotif('')
+      await rafraichir()
+      await onChangement?.()
+    }
+  }
+
+  return (
+    <div>
+      <h2 className="font-medium text-encre mb-1">Phase du cycle de vie</h2>
+      <p className="text-xs text-sourdine mb-3">
+        Où en est l'incident dans son cycle de vie — distinct du niveau d'escalade légal ci-dessous.
+        Les sections affichées plus bas s'adaptent à cette phase.
+      </p>
+
+      <form onSubmit={changerPhase} className="flex flex-wrap items-end gap-2 mb-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Phase actuelle</label>
+          <select value={phase} onChange={(e) => setPhase(e.target.value)}>
+            {PHASES_CYCLE_VIE.map((p) => (
+              <option key={p.valeur} value={p.valeur}>{p.libelle}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Déclenché par</label>
+          <select value={contactId} onChange={(e) => setContactId(e.target.value)}>
+            <option value="">—</option>
+            {contacts.map((c) => (
+              <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex-1 min-w-[180px]">
+          <label className="block text-xs font-medium text-sourdine mb-1">Motif (optionnel)</label>
+          <input value={motif} onChange={(e) => setMotif(e.target.value)} className="w-full" />
+        </div>
+        <BoutonPrincipal type="submit" disabled={enCours || phase === phaseActuelle}>
+          {enCours ? 'Enregistrement…' : 'Changer la phase'}
+        </BoutonPrincipal>
+      </form>
+
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
+
+      {chargement ? (
+        <p className="text-sm text-sourdine">Chargement…</p>
+      ) : historique.length === 0 ? (
+        <p className="text-sm text-sourdine border border-dashed border-trait rounded p-3 text-center">
+          Aucune transition consignée.
+        </p>
+      ) : (
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden bg-surface">
+          {historique.map((h) => (
+            <li key={h.id} className="px-4 py-2">
+              <p className="text-sm text-encre">
+                {PHASES_CYCLE_VIE.find((p) => p.valeur === h.phase)?.libelle ?? h.phase}
+              </p>
+              <p className="text-xs text-sourdine">
+                {new Date(h.horodatage).toLocaleString('fr-BE')}
+                {h.contacts && <> · {h.contacts.prenom} {h.contacts.nom}</>}
+              </p>
+              {h.motif && <p className="text-xs text-sourdine italic mt-0.5">{h.motif}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 
