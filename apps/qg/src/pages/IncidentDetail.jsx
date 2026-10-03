@@ -103,6 +103,12 @@ export default function IncidentDetail() {
         </div>
       )}
 
+      {PHASES_MODULES[incident.phase_cycle_vie]?.requisitions !== false && (
+        <div className="mb-6">
+          <SectionRequisitions incidentId={id} contexteId={contexteId} />
+        </div>
+      )}
+
       <div className="mb-6">
         <SectionPhaseCycleVie
           incidentId={id}
@@ -168,13 +174,13 @@ export default function IncidentDetail() {
 // en aval (levée/post-crise, où le travail devient REX plutôt
 // qu'opérationnel).
 const PHASES_MODULES = {
-  veille: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false },
-  vigilance: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false },
-  pre_alerte: { suivi_intervenants: false, phase_transitoire: false, rex: false },
+  veille: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false },
+  vigilance: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false },
+  pre_alerte: { suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false },
   alerte: { phase_transitoire: false, rex: false },
   phase_active: {},
   levee: { activation_30min: false, checklist: false, rex: false, seuils_action: false },
-  post_crise: { activation_30min: false, escalade: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, seuils_action: false },
+  post_crise: { activation_30min: false, escalade: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, seuils_action: false, requisitions: false },
 }
 
 const STATUTS_DECLENCHEMENT_SEUIL = [
@@ -183,6 +189,27 @@ const STATUTS_DECLENCHEMENT_SEUIL = [
   { valeur: 'refuse', libelle: 'Refusé' },
   { valeur: 'reporte', libelle: 'Reporté' },
 ]
+
+const TYPES_REQUISITION = [
+  { valeur: 'civile', libelle: 'Civile (art. 181, L. 15/05/2007)' },
+  { valeur: 'militaire', libelle: 'Militaire (AR 03/03/1934)' },
+]
+
+const AUTORITES_DECRETANTES = [
+  { valeur: 'bourgmestre', libelle: 'Bourgmestre' },
+  { valeur: 'gouverneur', libelle: 'Gouverneur' },
+]
+
+const STATUTS_REQUISITION = [
+  { valeur: 'actif', libelle: 'Active' },
+  { valeur: 'leve', libelle: 'Levée' },
+  { valeur: 'conteste', libelle: 'Contestée' },
+]
+
+const BASE_LEGALE_PAR_TYPE = {
+  civile: 'L. 15/05/2007 relative à la sécurité civile, art. 181',
+  militaire: 'AR du 03/03/1934',
+}
 
 const INDICATEURS_INTERVENANT = [
   { valeur: 'intoxication_co', libelle: 'Intoxication CO' },
@@ -828,6 +855,243 @@ function SectionSeuilsAction({ incidentId, contexteId }) {
         </ul>
       )}
     </div>
+  )
+}
+
+function SectionRequisitions({ incidentId, contexteId }) {
+  const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
+  const [requisitions, setRequisitions] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [erreur, setErreur] = useState(null)
+  const [enAjout, setEnAjout] = useState(false)
+  const [ligneEnEdition, setLigneEnEdition] = useState(null)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('requisitions')
+      .select('*, contacts(id, nom, prenom)')
+      .eq('incident_id', incidentId)
+      .order('date_decret', { ascending: false })
+    if (error) setErreur(error.message)
+    else setRequisitions(data ?? [])
+    setChargement(false)
+  }, [incidentId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function creer(valeurs) {
+    const { error } = await supabase.from('requisitions').insert({ ...valeurs, incident_id: incidentId })
+    if (error) return { error }
+    await rafraichir()
+    return { error: null }
+  }
+
+  async function modifier(idRequisition, valeurs) {
+    const { error } = await supabase.from('requisitions').update(valeurs).eq('id', idRequisition)
+    if (error) return { error }
+    await rafraichir()
+    return { error: null }
+  }
+
+  async function changerStatut(requisition, statut) {
+    const { error } = await supabase.from('requisitions').update({ statut }).eq('id', requisition.id)
+    if (error) setErreur(error.message)
+    else await rafraichir()
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="font-medium text-encre">Réquisitions</h2>
+        {!enAjout && <BoutonPrincipal onClick={() => setEnAjout(true)}>Décréter une réquisition</BoutonPrincipal>}
+      </div>
+      <p className="text-xs text-sourdine mb-3">
+        Réquisition civile (personnes/biens, décrétée par le bourgmestre ou le gouverneur) ou
+        militaire (compétence exclusive du gouverneur, subsidiarité — moyens publics insuffisants).
+      </p>
+
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
+
+      {enAjout && (
+        <div className="border border-trait rounded p-3 mb-3 bg-fond">
+          <FormulaireRequisition
+            contacts={contacts}
+            onAnnuler={() => setEnAjout(false)}
+            onValider={async (valeurs) => {
+              const { error } = await creer(valeurs)
+              if (!error) setEnAjout(false)
+              return { error }
+            }}
+          />
+        </div>
+      )}
+
+      {chargement ? (
+        <p className="text-sm text-sourdine">Chargement…</p>
+      ) : requisitions.length === 0 && !enAjout ? (
+        <p className="vide border border-dashed border-trait text-center p-4">Aucune réquisition décrétée pour cet incident.</p>
+      ) : (
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden bg-surface">
+          {requisitions.map((r) =>
+            ligneEnEdition === r.id ? (
+              <li key={r.id} className="p-3 bg-fond">
+                <FormulaireRequisition
+                  contacts={contacts}
+                  valeursInitiales={r}
+                  onAnnuler={() => setLigneEnEdition(null)}
+                  onValider={async (valeurs) => {
+                    const { error } = await modifier(r.id, valeurs)
+                    if (!error) setLigneEnEdition(null)
+                    return { error }
+                  }}
+                />
+              </li>
+            ) : (
+              <li key={r.id} className="px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-encre">
+                      {TYPES_REQUISITION.find((t) => t.valeur === r.type_requisition)?.libelle ?? r.type_requisition}
+                      <span
+                        className={`jeton ml-2 ${
+                          r.statut === 'actif' ? 'text-chaud' : r.statut === 'conteste' ? 'text-veille' : 'text-sourdine'
+                        }`}
+                      >
+                        {STATUTS_REQUISITION.find((s) => s.valeur === r.statut)?.libelle ?? r.statut}
+                      </span>
+                    </p>
+                    <p className="text-xs text-sourdine mt-0.5"><strong>Objet :</strong> {r.objet}</p>
+                    {r.beneficiaire && <p className="text-xs text-sourdine mt-0.5"><strong>Bénéficiaire :</strong> {r.beneficiaire}</p>}
+                    <p className="text-xs text-sourdine mt-0.5">{r.base_legale}</p>
+                    <p className="text-xs text-sourdine mt-1">
+                      Décrétée par {AUTORITES_DECRETANTES.find((a) => a.valeur === r.autorite_decretante)?.libelle ?? r.autorite_decretante}
+                      {r.contacts && <> ({r.contacts.prenom} {r.contacts.nom})</>}
+                      {' '}le {new Date(r.date_decret).toLocaleString('fr-BE')}
+                    </p>
+                    {r.document_decret_url && (
+                      <a href={r.document_decret_url} target="_blank" rel="noreferrer" className="text-xs text-info underline">
+                        document du décret
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0 ml-3">
+                    <BoutonDiscret onClick={() => setLigneEnEdition(r.id)}>Modifier</BoutonDiscret>
+                    {r.statut === 'actif' && (
+                      <BoutonDiscret onClick={() => changerStatut(r, 'leve')}>Lever</BoutonDiscret>
+                    )}
+                  </div>
+                </div>
+              </li>
+            )
+          )}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function FormulaireRequisition({ contacts, valeursInitiales = {}, onValider, onAnnuler }) {
+  const [typeRequisition, setTypeRequisition] = useState(valeursInitiales.type_requisition ?? 'civile')
+  const [autoriteDecretante, setAutoriteDecretante] = useState(valeursInitiales.autorite_decretante ?? 'bourgmestre')
+  const [baseLegale, setBaseLegale] = useState(valeursInitiales.base_legale ?? BASE_LEGALE_PAR_TYPE.civile)
+  const [objet, setObjet] = useState(valeursInitiales.objet ?? '')
+  const [beneficiaire, setBeneficiaire] = useState(valeursInitiales.beneficiaire ?? '')
+  const [contactDecideurId, setContactDecideurId] = useState(valeursInitiales.contact_decideur_id ?? '')
+  const [documentDecretUrl, setDocumentDecretUrl] = useState(valeursInitiales.document_decret_url ?? '')
+  const [erreur, setErreur] = useState(null)
+  const [enCours, setEnCours] = useState(false)
+
+  function changerType(valeur) {
+    setTypeRequisition(valeur)
+    if (valeur === 'militaire') setAutoriteDecretante('gouverneur')
+    if (!valeursInitiales.id) setBaseLegale(BASE_LEGALE_PAR_TYPE[valeur])
+  }
+
+  async function soumettre(e) {
+    e.preventDefault()
+    setEnCours(true)
+    const { error } = await onValider({
+      type_requisition: typeRequisition,
+      autorite_decretante: autoriteDecretante,
+      base_legale: baseLegale.trim(),
+      objet: objet.trim(),
+      beneficiaire: beneficiaire.trim() || null,
+      contact_decideur_id: contactDecideurId || null,
+      document_decret_url: documentDecretUrl.trim() || null,
+    })
+    setEnCours(false)
+    if (error) setErreur(error.message)
+  }
+
+  return (
+    <form onSubmit={soumettre} className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Type</label>
+          <select value={typeRequisition} onChange={(e) => changerType(e.target.value)} className="w-full">
+            {TYPES_REQUISITION.map((t) => (
+              <option key={t.valeur} value={t.valeur}>{t.libelle}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Autorité décrétante</label>
+          <select
+            value={autoriteDecretante}
+            onChange={(e) => setAutoriteDecretante(e.target.value)}
+            className="w-full"
+            disabled={typeRequisition === 'militaire'}
+          >
+            {AUTORITES_DECRETANTES.map((a) => (
+              <option key={a.valeur} value={a.valeur}>{a.libelle}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Base légale</label>
+        <input required value={baseLegale} onChange={(e) => setBaseLegale(e.target.value)} className="w-full" />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Objet (personne, bien ou service requis)</label>
+        <textarea required value={objet} onChange={(e) => setObjet(e.target.value)} rows={2} className="w-full" />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Bénéficiaire</label>
+          <input value={beneficiaire} onChange={(e) => setBeneficiaire(e.target.value)} placeholder="entité/service pour qui" className="w-full" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Décidée par</label>
+          <select value={contactDecideurId} onChange={(e) => setContactDecideurId(e.target.value)} className="w-full">
+            <option value="">—</option>
+            {contacts.map((c) => (
+              <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Lien vers le document du décret (URL)</label>
+        <input value={documentDecretUrl} onChange={(e) => setDocumentDecretUrl(e.target.value)} placeholder="https://…" className="w-full" />
+      </div>
+
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
+
+      <div className="flex gap-2">
+        <BoutonPrincipal type="submit" disabled={enCours}>
+          {enCours ? 'Enregistrement…' : 'Enregistrer'}
+        </BoutonPrincipal>
+        <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
+      </div>
+    </form>
   )
 }
 
