@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
+import { supabase } from '../lib/supabase'
 
 const TYPES_EXERCICE = [
   { valeur: 'visite_guidee', libelle: 'Visite guidée' },
@@ -219,12 +220,242 @@ function FormulaireExercice({ valeursInitiales = {}, onValider, onAnnuler }) {
         Validé par le niveau supérieur
       </label>
 
+      {valeursInitiales.id && <GestionRolesExercice exerciceId={valeursInitiales.id} />}
+      {valeursInitiales.id && <GestionEvaluationsExercice exerciceId={valeursInitiales.id} />}
+
       {erreur && <p className="text-sm text-red-600">{erreur}</p>}
 
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours}>
           {enCours ? 'Enregistrement…' : 'Enregistrer'}
         </BoutonPrincipal>
+        <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
+      </div>
+    </form>
+  )
+}
+
+function GestionRolesExercice({ exerciceId }) {
+  const { contexteId } = useAuth()
+  const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
+  const [roles, setRoles] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [contactId, setContactId] = useState('')
+  const [fonctionJouee, setFonctionJouee] = useState('')
+  const [estEvaluateur, setEstEvaluateur] = useState(false)
+  const [erreur, setErreur] = useState(null)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('exercice_roles')
+      .select('*, contacts(id, nom, prenom)')
+      .eq('exercice_id', exerciceId)
+    if (error) setErreur(error.message)
+    else setRoles(data ?? [])
+    setChargement(false)
+  }, [exerciceId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function ajouter() {
+    if (!contactId || !fonctionJouee.trim()) return
+    const { error } = await supabase.from('exercice_roles').insert({
+      exercice_id: exerciceId,
+      contact_id: contactId,
+      fonction_jouee: fonctionJouee.trim(),
+      est_evaluateur: estEvaluateur,
+    })
+    if (error) setErreur(error.message)
+    else {
+      setContactId('')
+      setFonctionJouee('')
+      setEstEvaluateur(false)
+      await rafraichir()
+    }
+  }
+
+  async function retirer(id) {
+    await supabase.from('exercice_roles').delete().eq('id', id)
+    await rafraichir()
+  }
+
+  return (
+    <div className="pt-2 border-t border-slate-200">
+      <p className="text-xs font-medium text-slate-600 mb-2">Rôles tenus durant l'exercice</p>
+      {erreur && <p className="text-xs text-red-600 mb-1">{erreur}</p>}
+      {chargement ? (
+        <p className="text-xs text-slate-400">Chargement…</p>
+      ) : (
+        <>
+          {roles.length > 0 && (
+            <ul className="space-y-1 mb-2">
+              {roles.map((r) => (
+                <li key={r.id} className="flex items-center justify-between text-xs bg-white rounded px-2.5 py-1.5 border border-slate-200">
+                  <span>
+                    {r.contacts?.prenom} {r.contacts?.nom} — {r.fonction_jouee}
+                    {r.est_evaluateur && <span className="ml-1 text-slate-400">(évaluateur)</span>}
+                  </span>
+                  <button type="button" onClick={() => retirer(r.id)} className="text-slate-400 hover:text-red-600">✕</button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="flex flex-wrap gap-2 items-center">
+            <select value={contactId} onChange={(e) => setContactId(e.target.value)} className="rounded-md border border-slate-300 px-2 py-1 text-xs bg-white">
+              <option value="">Participant…</option>
+              {contacts.map((c) => (
+                <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+              ))}
+            </select>
+            <input
+              value={fonctionJouee}
+              onChange={(e) => setFonctionJouee(e.target.value)}
+              placeholder="fonction jouée"
+              className="rounded-md border border-slate-300 px-2 py-1 text-xs flex-1 min-w-[140px]"
+            />
+            <label className="flex items-center gap-1 text-xs text-slate-600">
+              <input type="checkbox" checked={estEvaluateur} onChange={(e) => setEstEvaluateur(e.target.checked)} />
+              évaluateur
+            </label>
+            <BoutonDiscret type="button" onClick={ajouter} disabled={!contactId || !fonctionJouee.trim()}>Ajouter</BoutonDiscret>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+const NIVEAUX_ATTEINTE = [
+  { valeur: 'non_atteint', libelle: 'Non atteint' },
+  { valeur: 'partiellement_atteint', libelle: 'Partiellement atteint' },
+  { valeur: 'atteint', libelle: 'Atteint' },
+  { valeur: 'depasse', libelle: 'Dépassé' },
+]
+
+function GestionEvaluationsExercice({ exerciceId }) {
+  const [evaluations, setEvaluations] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [enAjout, setEnAjout] = useState(false)
+  const [erreur, setErreur] = useState(null)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('exercice_evaluations')
+      .select('*')
+      .eq('exercice_id', exerciceId)
+    if (error) setErreur(error.message)
+    else setEvaluations(data ?? [])
+    setChargement(false)
+  }, [exerciceId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function retirer(id) {
+    await supabase.from('exercice_evaluations').delete().eq('id', id)
+    await rafraichir()
+  }
+
+  return (
+    <div className="pt-2 border-t border-slate-200">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-medium text-slate-600">Évaluation par objectif (sur le dispositif, jamais nominatif)</p>
+        {!enAjout && (
+          <button type="button" onClick={() => setEnAjout(true)} className="text-xs text-institution-700 hover:underline">
+            + ajouter
+          </button>
+        )}
+      </div>
+
+      {erreur && <p className="text-xs text-red-600 mb-1">{erreur}</p>}
+
+      {enAjout && (
+        <FormulaireEvaluationExercice
+          exerciceId={exerciceId}
+          onAnnuler={() => setEnAjout(false)}
+          onValider={async () => {
+            setEnAjout(false)
+            await rafraichir()
+          }}
+        />
+      )}
+
+      {chargement ? (
+        <p className="text-xs text-slate-400">Chargement…</p>
+      ) : evaluations.length === 0 ? (
+        <p className="text-xs text-slate-400">Aucune évaluation pour l'instant.</p>
+      ) : (
+        <ul className="space-y-1">
+          {evaluations.map((ev) => (
+            <li key={ev.id} className="bg-white rounded px-2.5 py-1.5 border border-slate-200 text-xs">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-slate-800">
+                    {ev.objectif_evalue}
+                    <span className="ml-2 text-slate-400">
+                      ({NIVEAUX_ATTEINTE.find((n) => n.valeur === ev.niveau_atteinte)?.libelle ?? ev.niveau_atteinte})
+                    </span>
+                  </p>
+                  {ev.constat && <p className="text-slate-400">constat : {ev.constat}</p>}
+                  {ev.recommandation && <p className="text-slate-400">recommandation : {ev.recommandation}</p>}
+                </div>
+                <button type="button" onClick={() => retirer(ev.id)} className="text-slate-400 hover:text-red-600 flex-shrink-0">✕</button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function FormulaireEvaluationExercice({ exerciceId, onValider, onAnnuler }) {
+  const [objectifEvalue, setObjectifEvalue] = useState('')
+  const [niveauAtteinte, setNiveauAtteinte] = useState(NIVEAUX_ATTEINTE[2].valeur)
+  const [constat, setConstat] = useState('')
+  const [recommandation, setRecommandation] = useState('')
+  const [erreur, setErreur] = useState(null)
+  const [enCours, setEnCours] = useState(false)
+
+  async function soumettre(e) {
+    e.preventDefault()
+    setEnCours(true)
+    const { error } = await supabase.from('exercice_evaluations').insert({
+      exercice_id: exerciceId,
+      objectif_evalue: objectifEvalue.trim(),
+      niveau_atteinte: niveauAtteinte,
+      constat: constat.trim() || null,
+      recommandation: recommandation.trim() || null,
+    })
+    setEnCours(false)
+    if (error) setErreur(error.message)
+    else onValider()
+  }
+
+  return (
+    <form onSubmit={soumettre} className="bg-white border border-slate-200 rounded-lg p-2.5 mb-2 space-y-2">
+      <input
+        required
+        value={objectifEvalue}
+        onChange={(e) => setObjectifEvalue(e.target.value)}
+        placeholder="Objectif évalué"
+        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+      />
+      <select value={niveauAtteinte} onChange={(e) => setNiveauAtteinte(e.target.value)} className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs bg-white">
+        {NIVEAUX_ATTEINTE.map((n) => (
+          <option key={n.valeur} value={n.valeur}>{n.libelle}</option>
+        ))}
+      </select>
+      <textarea value={constat} onChange={(e) => setConstat(e.target.value)} placeholder="Constat" rows={2} className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
+      <textarea value={recommandation} onChange={(e) => setRecommandation(e.target.value)} placeholder="Recommandation" rows={2} className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
+      {erreur && <p className="text-xs text-red-600">{erreur}</p>}
+      <div className="flex gap-2">
+        <BoutonDiscret type="submit" disabled={enCours}>{enCours ? 'Ajout…' : 'Ajouter'}</BoutonDiscret>
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
       </div>
     </form>

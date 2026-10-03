@@ -409,6 +409,7 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
           </div>
 
           {valeursInitiales.id && <GestionFonctionsCritiques objetId={valeursInitiales.id} />}
+          {valeursInitiales.id && <GestionMesuresCompensatoires objetId={valeursInitiales.id} />}
         </div>
       )}
 
@@ -418,6 +419,159 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
         <BoutonPrincipal type="submit" disabled={enCours}>
           {enCours ? 'Enregistrement…' : 'Enregistrer'}
         </BoutonPrincipal>
+        <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
+      </div>
+    </form>
+  )
+}
+
+const STATUTS_MESURE = [
+  { valeur: 'planifiee', libelle: 'Planifiée' },
+  { valeur: 'en_cours', libelle: 'En cours' },
+  { valeur: 'realisee', libelle: 'Réalisée' },
+  { valeur: 'abandonnee', libelle: 'Abandonnée' },
+]
+
+function GestionMesuresCompensatoires({ objetId }) {
+  const [mesures, setMesures] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [enAjout, setEnAjout] = useState(false)
+  const [erreur, setErreur] = useState(null)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('mesures_compensatoires_suivi')
+      .select('*')
+      .eq('objet_id', objetId)
+      .order('created_at', { ascending: false })
+    if (error) setErreur(error.message)
+    else setMesures(data ?? [])
+    setChargement(false)
+  }, [objetId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function changerStatut(id, statut) {
+    const { error } = await supabase.from('mesures_compensatoires_suivi').update({ statut }).eq('id', id)
+    if (error) setErreur(error.message)
+    else await rafraichir()
+  }
+
+  async function retirer(id) {
+    if (!confirm('Supprimer ce suivi de mesure compensatoire ?')) return
+    await supabase.from('mesures_compensatoires_suivi').delete().eq('id', id)
+    await rafraichir()
+  }
+
+  return (
+    <div className="pt-2 border-t border-institution-100">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-medium text-slate-600">Suivi quantifié des mesures compensatoires</p>
+        {!enAjout && (
+          <button type="button" onClick={() => setEnAjout(true)} className="text-xs text-institution-700 hover:underline">
+            + ajouter
+          </button>
+        )}
+      </div>
+
+      {erreur && <p className="text-xs text-red-600 mb-1">{erreur}</p>}
+
+      {enAjout && (
+        <FormulaireMesureCompensatoire
+          objetId={objetId}
+          onAnnuler={() => setEnAjout(false)}
+          onValider={async () => {
+            setEnAjout(false)
+            await rafraichir()
+          }}
+        />
+      )}
+
+      {chargement ? (
+        <p className="text-xs text-slate-400">Chargement…</p>
+      ) : mesures.length === 0 ? (
+        <p className="text-xs text-slate-400">Aucune mesure suivie pour l'instant.</p>
+      ) : (
+        <ul className="space-y-1">
+          {mesures.map((m) => (
+            <li key={m.id} className="bg-white rounded px-2.5 py-1.5 border border-slate-200 text-xs">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-slate-800">{m.mesure}</p>
+                  {m.quantification && <p className="text-slate-400">{m.quantification}</p>}
+                  {(m.date_cible || m.date_realisation) && (
+                    <p className="text-slate-400">
+                      {m.date_cible && <>cible : {m.date_cible}</>}
+                      {m.date_realisation && <> · réalisée : {m.date_realisation}</>}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <select
+                    value={m.statut}
+                    onChange={(e) => changerStatut(m.id, e.target.value)}
+                    className="rounded border border-slate-300 px-1.5 py-1 text-xs bg-white"
+                  >
+                    {STATUTS_MESURE.map((s) => (
+                      <option key={s.valeur} value={s.valeur}>{s.libelle}</option>
+                    ))}
+                  </select>
+                  <button type="button" onClick={() => retirer(m.id)} className="text-slate-400 hover:text-red-600">✕</button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function FormulaireMesureCompensatoire({ objetId, onValider, onAnnuler }) {
+  const [mesure, setMesure] = useState('')
+  const [quantification, setQuantification] = useState('')
+  const [dateCible, setDateCible] = useState('')
+  const [erreur, setErreur] = useState(null)
+  const [enCours, setEnCours] = useState(false)
+
+  async function soumettre(e) {
+    e.preventDefault()
+    setEnCours(true)
+    const { error } = await supabase.from('mesures_compensatoires_suivi').insert({
+      objet_id: objetId,
+      mesure: mesure.trim(),
+      quantification: quantification.trim() || null,
+      date_cible: dateCible || null,
+    })
+    setEnCours(false)
+    if (error) setErreur(error.message)
+    else onValider()
+  }
+
+  return (
+    <form onSubmit={soumettre} className="bg-white border border-slate-200 rounded-lg p-2.5 mb-2 space-y-2">
+      <input
+        required
+        value={mesure}
+        onChange={(e) => setMesure(e.target.value)}
+        placeholder="ex. Installation de 2 pompes de secours supplémentaires"
+        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+      />
+      <div className="grid grid-cols-2 gap-2">
+        <input
+          value={quantification}
+          onChange={(e) => setQuantification(e.target.value)}
+          placeholder="Quantification (ex. 2/4 réalisées)"
+          className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs"
+        />
+        <input type="date" value={dateCible} onChange={(e) => setDateCible(e.target.value)} className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
+      </div>
+      {erreur && <p className="text-xs text-red-600">{erreur}</p>}
+      <div className="flex gap-2">
+        <BoutonDiscret type="submit" disabled={enCours}>{enCours ? 'Ajout…' : 'Ajouter'}</BoutonDiscret>
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
       </div>
     </form>
