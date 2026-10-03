@@ -25,6 +25,8 @@ import InfrastructuresCritiques from './pages/InfrastructuresCritiques'
 import PopulationNonResidente from './pages/PopulationNonResidente'
 import RegistreExpertises from './pages/RegistreExpertises'
 import Conventions from './pages/Conventions'
+import PlansUrgence from './pages/PlansUrgence'
+import PlanUrgenceDetail from './pages/PlanUrgenceDetail'
 
 export default function App() {
   return (
@@ -71,6 +73,8 @@ export default function App() {
             <Route path="population-non-residente" element={<PopulationNonResidente />} />
             <Route path="registre-expertises" element={<RegistreExpertises />} />
             <Route path="conventions" element={<Conventions />} />
+            <Route path="plans-urgence" element={<PlansUrgence />} />
+            <Route path="plans-urgence/:id" element={<PlanUrgenceDetail />} />
           </Route>
         </Routes>
       </AuthProvider>

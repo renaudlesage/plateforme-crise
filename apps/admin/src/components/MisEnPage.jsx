@@ -12,6 +12,10 @@ const SECTIONS = [
     liens: [{ to: '/configuration', libelle: 'Rôles, niveaux, disciplines' }],
   },
   {
+    titre: 'Plan légal',
+    liens: [{ to: '/plans-urgence', libelle: "Plans d'urgence (PGUI/PPUI)" }],
+  },
+  {
     titre: 'Référentiels',
     liens: [
       { to: '/annuaire', libelle: 'Annuaire' },
