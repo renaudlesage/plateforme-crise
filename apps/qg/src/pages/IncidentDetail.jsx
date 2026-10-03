@@ -97,6 +97,12 @@ export default function IncidentDetail() {
         </div>
       )}
 
+      {PHASES_MODULES[incident.phase_cycle_vie]?.seuils_action !== false && (
+        <div className="mb-6">
+          <SectionSeuilsAction incidentId={id} contexteId={contexteId} />
+        </div>
+      )}
+
       <div className="mb-6">
         <SectionPhaseCycleVie
           incidentId={id}
@@ -167,9 +173,16 @@ const PHASES_MODULES = {
   pre_alerte: { suivi_intervenants: false, phase_transitoire: false, rex: false },
   alerte: { phase_transitoire: false, rex: false },
   phase_active: {},
-  levee: { activation_30min: false, checklist: false, rex: false },
-  post_crise: { activation_30min: false, escalade: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false },
+  levee: { activation_30min: false, checklist: false, rex: false, seuils_action: false },
+  post_crise: { activation_30min: false, escalade: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, seuils_action: false },
 }
+
+const STATUTS_DECLENCHEMENT_SEUIL = [
+  { valeur: 'en_attente', libelle: 'En attente de décision' },
+  { valeur: 'confirme', libelle: 'Confirmé — action lancée' },
+  { valeur: 'refuse', libelle: 'Refusé' },
+  { valeur: 'reporte', libelle: 'Reporté' },
+]
 
 const INDICATEURS_INTERVENANT = [
   { valeur: 'intoxication_co', libelle: 'Intoxication CO' },
@@ -609,6 +622,211 @@ function SectionActivation30Minutes({ incidentId, contexteId }) {
           </label>
         </li>
       </ul>
+    </div>
+  )
+}
+
+function SectionSeuilsAction({ incidentId, contexteId }) {
+  const { lignes: seuilsBruts, chargement: chargementSeuils } = useTableContexte('seuils_action', contexteId, {
+    colonnes: '*, roles(id, libelle)',
+    tri: 'ordre',
+  })
+  const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
+  const [declenchements, setDeclenchements] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [erreur, setErreur] = useState(null)
+  const [contactParSeuil, setContactParSeuil] = useState({})
+  const [historiquesOuverts, setHistoriquesOuverts] = useState({})
+
+  const seuils = seuilsBruts.filter((s) => s.actif)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('declenchements_seuils_action')
+      .select('*, declenche_par:contacts!declenchements_seuils_action_declenche_par_contact_id_fkey(id, nom, prenom), repondu_par:contacts!declenchements_seuils_action_repondu_par_contact_id_fkey(id, nom, prenom)')
+      .eq('incident_id', incidentId)
+      .order('horodatage_declenchement', { ascending: false })
+    if (error) setErreur(error.message)
+    else setDeclenchements(data ?? [])
+    setChargement(false)
+  }, [incidentId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function declencher(seuil) {
+    const { error } = await supabase.from('declenchements_seuils_action').insert({
+      incident_id: incidentId,
+      seuil_action_id: seuil.id,
+      declenche_par_contact_id: contactParSeuil[seuil.id] || null,
+    })
+    if (error) setErreur(error.message)
+    else await rafraichir()
+  }
+
+  async function repondre(declenchement, statut, champsSupplementaires = {}) {
+    const { error } = await supabase
+      .from('declenchements_seuils_action')
+      .update({
+        statut,
+        horodatage_reponse: new Date().toISOString(),
+        repondu_par_contact_id: contactParSeuil[`reponse-${declenchement.id}`] || null,
+        ...champsSupplementaires,
+      })
+      .eq('id', declenchement.id)
+    if (error) setErreur(error.message)
+    else await rafraichir()
+  }
+
+  async function reporter(declenchement) {
+    const { error } = await supabase
+      .from('declenchements_seuils_action')
+      .update({
+        statut: 'reporte',
+        horodatage_reponse: new Date().toISOString(),
+        repondu_par_contact_id: contactParSeuil[`reponse-${declenchement.id}`] || null,
+        reporte_jusqu_a: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+        nombre_reports: (declenchement.nombre_reports ?? 0) + 1,
+      })
+      .eq('id', declenchement.id)
+    if (error) setErreur(error.message)
+    else await rafraichir()
+  }
+
+  if (chargementSeuils || chargement) return <p className="text-sm text-sourdine">Chargement…</p>
+
+  const declenchementsParSeuil = {}
+  for (const d of declenchements) {
+    if (!declenchementsParSeuil[d.seuil_action_id]) declenchementsParSeuil[d.seuil_action_id] = []
+    declenchementsParSeuil[d.seuil_action_id].push(d)
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="font-medium text-encre">Seuils d'action — déclenchement réflexe</h2>
+      </div>
+      <p className="text-xs text-sourdine mb-3">
+        Quand un seuil est franchi, la notification de l'action à mener est pré-remplie : il reste à confirmer,
+        refuser ou reporter 15 minutes — jamais à improviser l'action elle-même.
+      </p>
+
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
+
+      {seuils.length === 0 ? (
+        <p className="vide border border-dashed border-trait text-center p-4">
+          Aucun seuil d'action actif configuré pour ce contexte.
+        </p>
+      ) : (
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden bg-surface">
+          {seuils.map((s) => {
+            const historique = declenchementsParSeuil[s.id] ?? []
+            const courant = historique.find((d) => d.statut === 'en_attente' || d.statut === 'reporte')
+            const passes = historique.filter((d) => d !== courant)
+            const enRetard = courant?.statut === 'reporte' && courant.reporte_jusqu_a && new Date(courant.reporte_jusqu_a) <= new Date()
+
+            return (
+              <li key={s.id} className="px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-encre">
+                      {s.libelle}
+                      {s.roles?.libelle && <span className="text-xs text-sourdine ml-2">responsable : {s.roles.libelle}</span>}
+                    </p>
+                    <p className="text-xs text-sourdine mt-0.5"><strong>Seuil :</strong> {s.seuil_description}</p>
+                    <p className="text-xs text-sourdine mt-0.5"><strong>Action :</strong> {s.action}</p>
+                  </div>
+                  {!courant && (
+                    <div className="flex-shrink-0 text-right">
+                      <select
+                        value={contactParSeuil[s.id] ?? ''}
+                        onChange={(e) => setContactParSeuil((c) => ({ ...c, [s.id]: e.target.value }))}
+                        className="block mb-1.5 text-xs"
+                      >
+                        <option value="">Constaté par —</option>
+                        {contacts.map((c) => (
+                          <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+                        ))}
+                      </select>
+                      <BoutonPrincipal onClick={() => declencher(s)}>Seuil franchi</BoutonPrincipal>
+                    </div>
+                  )}
+                </div>
+
+                {courant && (
+                  <div className={`mt-2 rounded border p-3 ${enRetard ? 'border-chaud bg-fond' : 'border-info bg-fond'}`}>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-encre">
+                        Franchi le {new Date(courant.horodatage_declenchement).toLocaleString('fr-BE')}
+                        {courant.declenche_par && <> par {courant.declenche_par.prenom} {courant.declenche_par.nom}</>}
+                      </p>
+                      <span className={`jeton ${enRetard ? 'text-chaud' : 'text-info'}`}>
+                        {enRetard ? 'report écoulé — à redécider' : 'en attente de décision'}
+                      </span>
+                    </div>
+                    {courant.statut === 'reporte' && courant.reporte_jusqu_a && (
+                      <p className="text-xs text-sourdine mt-1">
+                        Reporté jusqu'à {new Date(courant.reporte_jusqu_a).toLocaleTimeString('fr-BE')}
+                        {courant.nombre_reports > 0 && <> ({courant.nombre_reports}× report{courant.nombre_reports > 1 ? 's' : ''})</>}
+                      </p>
+                    )}
+                    <select
+                      value={contactParSeuil[`reponse-${courant.id}`] ?? ''}
+                      onChange={(e) => setContactParSeuil((c) => ({ ...c, [`reponse-${courant.id}`]: e.target.value }))}
+                      className="block mt-2 mb-1.5 text-xs"
+                    >
+                      <option value="">Décidé par —</option>
+                      {contacts.map((c) => (
+                        <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+                      ))}
+                    </select>
+                    <div className="flex items-center gap-2">
+                      <BoutonPrincipal onClick={() => repondre(courant, 'confirme')}>Confirmer</BoutonPrincipal>
+                      <BoutonDiscret
+                        onClick={() => {
+                          const motif = prompt('Motif du refus :')
+                          if (motif !== null) repondre(courant, 'refuse', { motif_refus: motif.trim() || null })
+                        }}
+                      >
+                        Refuser
+                      </BoutonDiscret>
+                      <BoutonDiscret onClick={() => reporter(courant)}>Reporter 15 min</BoutonDiscret>
+                    </div>
+                  </div>
+                )}
+
+                {passes.length > 0 && (
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setHistoriquesOuverts((h) => ({ ...h, [s.id]: !h[s.id] }))}
+                      className="text-xs text-sourdine underline"
+                    >
+                      {historiquesOuverts[s.id] ? 'Masquer' : 'Voir'} l'historique ({passes.length})
+                    </button>
+                    {historiquesOuverts[s.id] && (
+                      <ul className="mt-1.5 space-y-1">
+                        {passes.map((d) => (
+                          <li key={d.id} className="text-xs text-sourdine">
+                            {new Date(d.horodatage_declenchement).toLocaleString('fr-BE')}
+                            {' → '}
+                            {STATUTS_DECLENCHEMENT_SEUIL.find((st) => st.valeur === d.statut)?.libelle ?? d.statut}
+                            {d.horodatage_reponse && <> le {new Date(d.horodatage_reponse).toLocaleString('fr-BE')}</>}
+                            {d.repondu_par && <> par {d.repondu_par.prenom} {d.repondu_par.nom}</>}
+                            {d.motif_refus && <> — motif : {d.motif_refus}</>}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </div>
   )
 }
