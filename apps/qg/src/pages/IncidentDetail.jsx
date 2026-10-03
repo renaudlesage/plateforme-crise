@@ -91,6 +91,12 @@ export default function IncidentDetail() {
         )}
       </div>
 
+      {PHASES_MODULES[incident.phase_cycle_vie]?.activation_30min !== false && (
+        <div className="mb-6">
+          <SectionActivation30Minutes incidentId={id} contexteId={contexteId} />
+        </div>
+      )}
+
       <div className="mb-6">
         <SectionPhaseCycleVie
           incidentId={id}
@@ -156,13 +162,13 @@ export default function IncidentDetail() {
 // en aval (levée/post-crise, où le travail devient REX plutôt
 // qu'opérationnel).
 const PHASES_MODULES = {
-  veille: { checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false },
-  vigilance: { checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false },
+  veille: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false },
+  vigilance: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false },
   pre_alerte: { suivi_intervenants: false, phase_transitoire: false, rex: false },
   alerte: { phase_transitoire: false, rex: false },
   phase_active: {},
-  levee: { checklist: false, rex: false },
-  post_crise: { escalade: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false },
+  levee: { activation_30min: false, checklist: false, rex: false },
+  post_crise: { activation_30min: false, escalade: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false },
 }
 
 const INDICATEURS_INTERVENANT = [
@@ -379,6 +385,231 @@ function FormulairePhaseEscalade({ incidentId, niveaux, contacts, onValider, onA
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
       </div>
     </form>
+  )
+}
+
+function SectionActivation30Minutes({ incidentId, contexteId }) {
+  const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
+  const [activation, setActivation] = useState(null)
+  const [chargement, setChargement] = useState(true)
+  const [erreur, setErreur] = useState(null)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('activation_incident')
+      .select('*')
+      .eq('incident_id', incidentId)
+      .maybeSingle()
+    if (error) setErreur(error.message)
+    else setActivation(data ?? { incident_id: incidentId })
+    setChargement(false)
+  }, [incidentId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function patch(champs) {
+    const valeurs = { ...activation, ...champs, incident_id: incidentId }
+    setActivation(valeurs)
+    const { error } = await supabase.from('activation_incident').upsert(valeurs, { onConflict: 'incident_id' })
+    if (error) setErreur(error.message)
+  }
+
+  if (chargement || !activation) return <p className="text-sm text-sourdine">Chargement…</p>
+
+  const etapes = [
+    activation.notification_autorite_fait,
+    activation.be_alert_decide,
+    activation.comite_convoque_fait,
+    activation.journal_ouvert_fait,
+    activation.porte_parole_designe_fait,
+  ]
+  const nbFaites = etapes.filter(Boolean).length
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="font-medium text-encre">Activation — 30 premières minutes</h2>
+        <span className="jeton text-info">{nbFaites} / 5</span>
+      </div>
+      <p className="text-xs text-sourdine mb-3">
+        Les réflexes d'ouverture de crise. Cocher une étape horodate automatiquement le moment où elle a été faite.
+      </p>
+
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
+
+      <ul className="divide-y divide-trait border border-trait rounded overflow-hidden bg-surface">
+        <li className="px-4 py-3">
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              checked={activation.notification_autorite_fait}
+              onChange={(e) =>
+                patch({
+                  notification_autorite_fait: e.target.checked,
+                  notification_autorite_horodatage: e.target.checked
+                    ? activation.notification_autorite_horodatage ?? new Date().toISOString()
+                    : activation.notification_autorite_horodatage,
+                })
+              }
+              className="mt-0.5"
+            />
+            <span className="flex-1">
+              <span className="text-sm text-encre">Notification de l'autorité (bourgmestre/gouverneur)</span>
+              {activation.notification_autorite_horodatage && (
+                <span className="text-xs text-sourdine ml-2">
+                  {new Date(activation.notification_autorite_horodatage).toLocaleString('fr-BE')}
+                </span>
+              )}
+              <select
+                value={activation.notification_autorite_contact_id ?? ''}
+                onChange={(e) => patch({ notification_autorite_contact_id: e.target.value || null })}
+                className="block mt-1 text-xs"
+              >
+                <option value="">Qui a été notifié —</option>
+                {contacts.map((c) => (
+                  <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+                ))}
+              </select>
+            </span>
+          </label>
+        </li>
+
+        <li className="px-4 py-3">
+          <p className="text-sm text-encre mb-1.5">Décision BE-Alert</p>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-1.5 text-sm text-encre">
+              <input
+                type="radio"
+                name={`be-alert-${incidentId}`}
+                checked={activation.be_alert_decide === true && activation.be_alert_envoye === true}
+                onChange={() =>
+                  patch({
+                    be_alert_decide: true,
+                    be_alert_envoye: true,
+                    be_alert_horodatage: activation.be_alert_horodatage ?? new Date().toISOString(),
+                    be_alert_motif: null,
+                  })
+                }
+              />
+              Envoyé
+            </label>
+            <label className="flex items-center gap-1.5 text-sm text-encre">
+              <input
+                type="radio"
+                name={`be-alert-${incidentId}`}
+                checked={activation.be_alert_decide === true && activation.be_alert_envoye === false}
+                onChange={() =>
+                  patch({
+                    be_alert_decide: true,
+                    be_alert_envoye: false,
+                    be_alert_horodatage: activation.be_alert_horodatage ?? new Date().toISOString(),
+                  })
+                }
+              />
+              Non envoyé
+            </label>
+            {activation.be_alert_horodatage && (
+              <span className="text-xs text-sourdine">
+                {new Date(activation.be_alert_horodatage).toLocaleString('fr-BE')}
+              </span>
+            )}
+          </div>
+          {activation.be_alert_decide && activation.be_alert_envoye === false && (
+            <input
+              value={activation.be_alert_motif ?? ''}
+              onChange={(e) => patch({ be_alert_motif: e.target.value })}
+              placeholder="Motif de non-envoi"
+              className="mt-1.5 text-xs w-full"
+            />
+          )}
+        </li>
+
+        <li className="px-4 py-3">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={activation.comite_convoque_fait}
+              onChange={(e) =>
+                patch({
+                  comite_convoque_fait: e.target.checked,
+                  comite_convoque_horodatage: e.target.checked
+                    ? activation.comite_convoque_horodatage ?? new Date().toISOString()
+                    : activation.comite_convoque_horodatage,
+                })
+              }
+            />
+            <span className="text-sm text-encre">Convocation du comité de coordination</span>
+            {activation.comite_convoque_horodatage && (
+              <span className="text-xs text-sourdine">
+                {new Date(activation.comite_convoque_horodatage).toLocaleString('fr-BE')}
+              </span>
+            )}
+          </label>
+        </li>
+
+        <li className="px-4 py-3">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={activation.journal_ouvert_fait}
+              onChange={(e) =>
+                patch({
+                  journal_ouvert_fait: e.target.checked,
+                  journal_ouvert_horodatage: e.target.checked
+                    ? activation.journal_ouvert_horodatage ?? new Date().toISOString()
+                    : activation.journal_ouvert_horodatage,
+                })
+              }
+            />
+            <span className="text-sm text-encre">Ouverture du journal de bord</span>
+            {activation.journal_ouvert_horodatage && (
+              <span className="text-xs text-sourdine">
+                {new Date(activation.journal_ouvert_horodatage).toLocaleString('fr-BE')}
+              </span>
+            )}
+          </label>
+        </li>
+
+        <li className="px-4 py-3">
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              checked={activation.porte_parole_designe_fait}
+              onChange={(e) =>
+                patch({
+                  porte_parole_designe_fait: e.target.checked,
+                  porte_parole_horodatage: e.target.checked
+                    ? activation.porte_parole_horodatage ?? new Date().toISOString()
+                    : activation.porte_parole_horodatage,
+                })
+              }
+              className="mt-0.5"
+            />
+            <span className="flex-1">
+              <span className="text-sm text-encre">Désignation d'un porte-parole</span>
+              {activation.porte_parole_horodatage && (
+                <span className="text-xs text-sourdine ml-2">
+                  {new Date(activation.porte_parole_horodatage).toLocaleString('fr-BE')}
+                </span>
+              )}
+              <select
+                value={activation.porte_parole_contact_id ?? ''}
+                onChange={(e) => patch({ porte_parole_contact_id: e.target.value || null })}
+                className="block mt-1 text-xs"
+              >
+                <option value="">Porte-parole —</option>
+                {contacts.map((c) => (
+                  <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+                ))}
+              </select>
+            </span>
+          </label>
+        </li>
+      </ul>
+    </div>
   )
 }
 
