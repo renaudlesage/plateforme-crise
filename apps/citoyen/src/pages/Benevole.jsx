@@ -160,9 +160,9 @@ export default function Benevole() {
             <label className="block text-xs font-medium text-sourdine mb-2">Compétences / moyens que vous pouvez mettre à disposition</label>
             <div className="space-y-2">
               {COMPETENCES_DISPONIBLES.map((c) => (
-                <label key={c} className="flex items-center gap-2 text-sm text-sourdine">
-                  <input type="checkbox" checked={competences.includes(c)} onChange={() => basculerCompetence(c)} />
-                  {c}
+                <label key={c} className="flex items-start gap-2 text-sm text-sourdine">
+                  <input type="checkbox" checked={competences.includes(c)} onChange={() => basculerCompetence(c)} className="mt-0.5" />
+                  <span>{c}</span>
                 </label>
               ))}
             </div>
@@ -178,9 +178,9 @@ export default function Benevole() {
             <label className="block text-xs font-medium text-sourdine mb-2">Missions que vous seriez prêt·e à assurer</label>
             <div className="space-y-2">
               {MISSIONS_DISPONIBLES.map((m) => (
-                <label key={m.valeur} className="flex items-center gap-2 text-sm text-sourdine">
-                  <input type="checkbox" checked={missionsPossibles.includes(m.valeur)} onChange={() => basculerMission(m.valeur)} />
-                  {m.libelle}
+                <label key={m.valeur} className="flex items-start gap-2 text-sm text-sourdine">
+                  <input type="checkbox" checked={missionsPossibles.includes(m.valeur)} onChange={() => basculerMission(m.valeur)} className="mt-0.5" />
+                  <span>{m.libelle}</span>
                 </label>
               ))}
             </div>

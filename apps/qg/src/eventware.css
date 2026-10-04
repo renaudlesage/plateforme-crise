@@ -455,6 +455,16 @@ input, select, textarea {
 
 input[type="file"] { padding: 7px; font-size: 13px; }
 
+/* Les checkboxes/radios héritent sinon `width: 100%` de la règle
+   générique ci-dessus : dans une ligne flex (`flex items-center gap-2`),
+   leur boîte s'étire alors sur toute la largeur disponible et repousse
+   le label tout à droite au lieu de rester collé à la case. */
+input[type="checkbox"], input[type="radio"] {
+  width: auto;
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
 button {
   padding: 9px 16px;
   border: 1px solid var(--trait-fort);
