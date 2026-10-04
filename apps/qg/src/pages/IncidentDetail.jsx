@@ -219,6 +219,12 @@ export default function IncidentDetail() {
           <SectionCommunicationD5 incidentId={id} />
         </div>
       )}
+
+      {PHASES_MODULES[incident.phase_cycle_vie]?.psychosocial_d2 !== false && (
+        <div className="mt-6">
+          <SectionPsychosocialD2 incidentId={id} />
+        </div>
+      )}
     </div>
   )
 }
@@ -233,9 +239,9 @@ export default function IncidentDetail() {
 // en aval (levée/post-crise, où le travail devient REX plutôt
 // qu'opérationnel).
 const PHASES_MODULES = {
-  veille: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false, pc_ops: false, communication_d5: false },
-  vigilance: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false, pc_ops: false, communication_d5: false },
-  pre_alerte: { suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false, pc_ops: false },
+  veille: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false, pc_ops: false, communication_d5: false, psychosocial_d2: false },
+  vigilance: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false, pc_ops: false, communication_d5: false, psychosocial_d2: false },
+  pre_alerte: { suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false, pc_ops: false, psychosocial_d2: false },
   alerte: { phase_transitoire: false, rex: false },
   phase_active: {},
   levee: { activation_30min: false, checklist: false, rex: false, seuils_action: false, pc_ops: false },
@@ -3643,5 +3649,325 @@ function SectionPcOpsRoles({ incidentId }) {
         </ul>
       )}
     </div>
+  )
+}
+
+const NIVEAUX_IMPLIQUES = [
+  { valeur: 'primaire', libelle: 'Primaire' },
+  { valeur: 'secondaire', libelle: 'Secondaire' },
+  { valeur: 'tertiaire', libelle: 'Tertiaire' },
+]
+
+const SOUS_CATEGORIES_IMPLIQUES = [
+  { valeur: 'decede', libelle: 'Décédé' },
+  { valeur: 'blesse', libelle: 'Blessé' },
+  { valeur: 'indemne', libelle: 'Indemne' },
+  { valeur: 'evacue', libelle: 'Évacué' },
+  { valeur: 'temoin_direct', libelle: 'Témoin direct' },
+  { valeur: 'proche_famille', libelle: 'Proche / famille' },
+  { valeur: 'reseau_social', libelle: 'Réseau social' },
+  { valeur: 'first_responder', libelle: 'First responder' },
+  { valeur: 'intervenant', libelle: 'Intervenant' },
+]
+
+const TYPES_STRUCTURE_PIPS = [
+  { valeur: 'ca', libelle: "CA — Centre d'Accueil" },
+  { valeur: 'cap', libelle: "CAP — Centre d'Accueil des Proches" },
+  { valeur: 'cat', libelle: "CAT — Centre d'Appel Téléphonique" },
+  { valeur: 'ctd', libelle: 'CTD — Centre de Traitement des Données' },
+  { valeur: 'ch', libelle: "CH — Centre d'Hébergement" },
+]
+
+const ORGANISMES_GESTIONNAIRES_PIPS = [
+  { valeur: 'reseau_pips_local', libelle: 'Réseau PIPS local' },
+  { valeur: 'sisu_croix_rouge', libelle: 'SISU / Croix-Rouge' },
+  { valeur: 'dsi_flandre', libelle: 'DSI (Flandre)' },
+]
+
+const STATUTS_STRUCTURE_PIPS = [
+  { valeur: 'inactif', libelle: 'Inactif' },
+  { valeur: 'actif', libelle: 'Actif' },
+  { valeur: 'ferme', libelle: 'Fermé' },
+]
+
+function SectionPsychosocialD2({ incidentId }) {
+  return (
+    <div>
+      <h2 className="font-medium text-encre mb-1">Psychosocial (D2) — coordination D2-D5</h2>
+      <p className="text-xs text-sourdine mb-3">
+        Catégorisation des personnes impliquées (cercle primaire/secondaire/tertiaire), structures
+        PIPS déployées, communication sur les victimes décédées et commémorations — guide D2-D5
+        (NCCN / SPF Santé publique).
+      </p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <GestionCategorisationImpliques incidentId={incidentId} />
+        <GestionStructuresPips incidentId={incidentId} />
+        <GestionCommunicationVictimesDeces incidentId={incidentId} />
+        <GestionCommemorations incidentId={incidentId} />
+      </div>
+    </div>
+  )
+}
+
+function GestionCategorisationImpliques({ incidentId }) {
+  const { lignes, chargement, erreur, creer, supprimer } = useCrudSimpleIncident('categorisation_impliques', incidentId)
+  const [personneRef, setPersonneRef] = useState('')
+  const [niveau, setNiveau] = useState('primaire')
+  const [sousCategorie, setSousCategorie] = useState('')
+
+  async function ajouter(e) {
+    e.preventDefault()
+    if (!personneRef.trim()) return
+    const { error } = await creer({
+      personne_ref: personneRef.trim(),
+      niveau,
+      sous_categorie: sousCategorie || null,
+    })
+    if (!error) {
+      setPersonneRef('')
+      setSousCategorie('')
+    }
+  }
+
+  return (
+    <BlocD5 titre="Personnes impliquées" aide="Toujours communiquer de l'intérieur du cercle vers l'extérieur (Ina Strating).">
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <form onSubmit={ajouter} className="flex flex-wrap gap-1.5 mb-2">
+        <input value={personneRef} onChange={(e) => setPersonneRef(e.target.value)} placeholder="personne / référence" className="text-xs flex-1 min-w-[8rem]" />
+        <select value={niveau} onChange={(e) => setNiveau(e.target.value)} className="text-xs">
+          {NIVEAUX_IMPLIQUES.map((n) => <option key={n.valeur} value={n.valeur}>{n.libelle}</option>)}
+        </select>
+        <select value={sousCategorie} onChange={(e) => setSousCategorie(e.target.value)} className="text-xs">
+          <option value="">sous-catégorie —</option>
+          {SOUS_CATEGORIES_IMPLIQUES.map((s) => <option key={s.valeur} value={s.valeur}>{s.libelle}</option>)}
+        </select>
+        <BoutonDiscret type="submit">Ajouter</BoutonDiscret>
+      </form>
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : (
+        <ul className="space-y-1">
+          {lignes.map((p) => (
+            <li key={p.id} className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+              <span>
+                <span className="jeton mr-1.5">{NIVEAUX_IMPLIQUES.find((n) => n.valeur === p.niveau)?.libelle ?? p.niveau}</span>
+                {p.personne_ref}
+                {p.sous_categorie && <> — {SOUS_CATEGORIES_IMPLIQUES.find((s) => s.valeur === p.sous_categorie)?.libelle ?? p.sous_categorie}</>}
+              </span>
+              <BoutonDiscret onClick={() => supprimer(p.id)}>×</BoutonDiscret>
+            </li>
+          ))}
+        </ul>
+      )}
+    </BlocD5>
+  )
+}
+
+function GestionStructuresPips({ incidentId }) {
+  const { lignes, chargement, erreur, creer, modifier, supprimer } = useCrudSimpleIncident('structures_pips', incidentId)
+  const [typeStructure, setTypeStructure] = useState('ca')
+  const [responsable, setResponsable] = useState('')
+  const [organismeGestionnaire, setOrganismeGestionnaire] = useState('')
+
+  async function ajouter(e) {
+    e.preventDefault()
+    const { error } = await creer({
+      type_structure: typeStructure,
+      responsable: responsable.trim() || null,
+      organisme_gestionnaire: organismeGestionnaire || null,
+      statut: 'actif',
+      date_ouverture: new Date().toISOString(),
+    })
+    if (!error) setResponsable('')
+  }
+
+  return (
+    <BlocD5 titre="Structures PIPS">
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <form onSubmit={ajouter} className="flex flex-wrap gap-1.5 mb-2">
+        <select value={typeStructure} onChange={(e) => setTypeStructure(e.target.value)} className="text-xs">
+          {TYPES_STRUCTURE_PIPS.map((t) => <option key={t.valeur} value={t.valeur}>{t.libelle}</option>)}
+        </select>
+        <select value={organismeGestionnaire} onChange={(e) => setOrganismeGestionnaire(e.target.value)} className="text-xs">
+          <option value="">organisme —</option>
+          {ORGANISMES_GESTIONNAIRES_PIPS.map((o) => <option key={o.valeur} value={o.valeur}>{o.libelle}</option>)}
+        </select>
+        <input value={responsable} onChange={(e) => setResponsable(e.target.value)} placeholder="responsable" className="text-xs flex-1 min-w-[6rem]" />
+        <BoutonDiscret type="submit">Ouvrir</BoutonDiscret>
+      </form>
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : (
+        <ul className="space-y-1">
+          {lignes.map((s) => (
+            <li key={s.id} className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+              <span>
+                {TYPES_STRUCTURE_PIPS.find((t) => t.valeur === s.type_structure)?.libelle ?? s.type_structure}
+                {s.responsable && <> — {s.responsable}</>}
+              </span>
+              <span className="flex gap-1">
+                <select value={s.statut} onChange={(e) => modifier(s.id, { statut: e.target.value, date_fermeture: e.target.value === 'ferme' ? new Date().toISOString() : null })} className="text-xs">
+                  {STATUTS_STRUCTURE_PIPS.map((st) => <option key={st.valeur} value={st.valeur}>{st.libelle}</option>)}
+                </select>
+                <BoutonDiscret onClick={() => supprimer(s.id)}>×</BoutonDiscret>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </BlocD5>
+  )
+}
+
+function GestionCommunicationVictimesDeces({ incidentId }) {
+  const [ligne, setLigne] = useState(null)
+  const [chargement, setChargement] = useState(true)
+  const [erreur, setErreur] = useState(null)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('communication_victimes_deces')
+      .select('*')
+      .eq('incident_id', incidentId)
+      .maybeSingle()
+    if (error) setErreur(error.message)
+    else setLigne(data)
+    setChargement(false)
+  }, [incidentId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function creerOuModifier(valeurs) {
+    if (ligne) {
+      const { error } = await supabase.from('communication_victimes_deces').update(valeurs).eq('id', ligne.id)
+      if (!error) await rafraichir()
+      return { error }
+    }
+    const { error } = await supabase.from('communication_victimes_deces').insert({ ...valeurs, incident_id: incidentId })
+    if (!error) await rafraichir()
+    return { error }
+  }
+
+  if (chargement) {
+    return (
+      <BlocD5 titre="Communication — victimes décédées">
+        <p className="text-xs text-sourdine">Chargement…</p>
+      </BlocD5>
+    )
+  }
+
+  const v = ligne ?? {}
+
+  return (
+    <BlocD5
+      titre="Communication — victimes décédées"
+      aide="Distinction stricte : le fait (à communiquer) ≠ l'identité (famille informée en premier, jamais par les autorités). Concertation parquet obligatoire."
+    >
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <div className="grid grid-cols-2 gap-1.5 mb-2">
+        <input
+          type="number"
+          min="0"
+          value={v.nombre_victimes_estime ?? ''}
+          onChange={(e) => creerOuModifier({ nombre_victimes_estime: e.target.value === '' ? null : Number(e.target.value) })}
+          placeholder="victimes estimées"
+          className="text-xs"
+        />
+        <input
+          type="number"
+          min="0"
+          value={v.nombre_victimes_confirme ?? ''}
+          onChange={(e) => creerOuModifier({ nombre_victimes_confirme: e.target.value === '' ? null : Number(e.target.value) })}
+          placeholder="victimes confirmées"
+          className="text-xs"
+        />
+      </div>
+      <ul className="space-y-1">
+        <li className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+          <span>Fait communiqué</span>
+          <input
+            type="checkbox"
+            checked={v.fait_communique ?? false}
+            onChange={(e) => creerOuModifier({ fait_communique: e.target.checked, date_communication_fait: e.target.checked ? new Date().toISOString() : null })}
+          />
+        </li>
+        <li className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+          <span>Identité communiquée à la famille</span>
+          <input
+            type="checkbox"
+            checked={v.identite_communiquee_famille ?? false}
+            onChange={(e) => creerOuModifier({ identite_communiquee_famille: e.target.checked, date_information_famille: e.target.checked ? new Date().toISOString() : null })}
+          />
+        </li>
+        <li className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+          <span>Concertation parquet effectuée</span>
+          <input
+            type="checkbox"
+            checked={v.concertation_parquet ?? false}
+            onChange={(e) => creerOuModifier({ concertation_parquet: e.target.checked })}
+          />
+        </li>
+        <li className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+          <span>DVI impliqué (identification non connue)</span>
+          <input
+            type="checkbox"
+            checked={v.dvi_implique ?? false}
+            onChange={(e) => creerOuModifier({ dvi_implique: e.target.checked })}
+          />
+        </li>
+      </ul>
+    </BlocD5>
+  )
+}
+
+function GestionCommemorations({ incidentId }) {
+  const { lignes, chargement, erreur, creer, modifier, supprimer } = useCrudSimpleIncident('commemorations', incidentId)
+  const [datePrevue, setDatePrevue] = useState('')
+  const [lieu, setLieu] = useState('')
+
+  async function ajouter(e) {
+    e.preventDefault()
+    if (!datePrevue) return
+    const { error } = await creer({ date_prevue: datePrevue, lieu: lieu.trim() || null })
+    if (!error) {
+      setDatePrevue('')
+      setLieu('')
+    }
+  }
+
+  return (
+    <BlocD5 titre="Commémorations" aide="Facteurs de décision : souhaits des impliqués, impact, proximité, période, appréciation sociale, attention médiatique.">
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <form onSubmit={ajouter} className="flex flex-wrap gap-1.5 mb-2">
+        <input type="date" value={datePrevue} onChange={(e) => setDatePrevue(e.target.value)} className="text-xs" />
+        <input value={lieu} onChange={(e) => setLieu(e.target.value)} placeholder="lieu" className="text-xs flex-1 min-w-[6rem]" />
+        <BoutonDiscret type="submit">Planifier</BoutonDiscret>
+      </form>
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : (
+        <ul className="space-y-1">
+          {lignes.map((c) => (
+            <li key={c.id} className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+              <span>
+                {c.date_prevue}
+                {c.lieu && <> — {c.lieu}</>}
+              </span>
+              <span className="flex gap-1">
+                <select value={c.statut} onChange={(e) => modifier(c.id, { statut: e.target.value })} className="text-xs">
+                  <option value="planifiee">Planifiée</option>
+                  <option value="realisee">Réalisée</option>
+                  <option value="annulee">Annulée</option>
+                </select>
+                <BoutonDiscret onClick={() => supprimer(c.id)}>×</BoutonDiscret>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </BlocD5>
   )
 }
