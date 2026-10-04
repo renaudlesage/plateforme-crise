@@ -10,8 +10,16 @@ const TYPES_CLIENT = [
   { valeur: 'federal', libelle: 'Fédéral' },
   { valeur: 'evenement', libelle: 'Événement' },
   { valeur: 'entite_critique', libelle: 'Entité critique (CER)' },
+  { valeur: 'gal', libelle: "GAL (Groupe d'Action Locale)" },
+  { valeur: 'intercommunale', libelle: 'Intercommunale' },
   { valeur: 'autre', libelle: 'Autre' },
 ]
+
+function libelleType(c) {
+  if (c.sous_type_territorial === 'gal') return "GAL (Groupe d'Action Locale)"
+  if (c.sous_type_territorial === 'intercommunale') return 'Intercommunale'
+  return TYPES_CLIENT.find((t) => t.valeur === c.type)?.libelle ?? c.type
+}
 
 export default function Clients() {
   const { selectionnerContexte } = useAuth()
@@ -25,7 +33,7 @@ export default function Clients() {
 
   const rafraichir = useCallback(async () => {
     setChargement(true)
-    const { data, error } = await supabase.rpc('lister_clients')
+    const { data, error } = await supabase.rpc('lister_clients_v2')
     if (error) setErreur(error.message)
     else {
       setErreur(null)
@@ -39,11 +47,15 @@ export default function Clients() {
   }, [rafraichir])
 
   async function creer(valeurs) {
+    const sousType = ['gal', 'intercommunale'].includes(valeurs.type) ? valeurs.type : null
     const { data, error } = await supabase.rpc('creer_client', {
-      p_type: valeurs.type,
+      p_type: sousType ? 'autre' : valeurs.type,
       p_nom: valeurs.nom,
     })
     if (error) return { error }
+    if (sousType && data) {
+      await supabase.from('contextes').update({ sous_type_territorial: sousType }).eq('id', data)
+    }
     setEnAjout(false)
     await rafraichir()
     return { data }
@@ -105,7 +117,7 @@ export default function Clients() {
                       {c.est_plateforme && <span className="jeton ml-2 text-info">plateforme</span>}
                     </p>
                     <p className="text-xs text-sourdine">
-                      {TYPES_CLIENT.find((t) => t.valeur === c.type)?.libelle ?? c.type} ·{' '}
+                      {libelleType(c)} ·{' '}
                       {c.nb_membres} compte{c.nb_membres === 1 ? '' : 's'}
                     </p>
                   </>

@@ -56,6 +56,7 @@ const SECTIONS = [
       { to: '/seuils-meteo', libelle: 'Seuils météo' },
       { to: '/registre-expertises', libelle: "Registre d'expertises" },
       { to: '/continuite-activite', libelle: "Continuité d'activité (BCM)" },
+      { to: '/resilience-territoriale', libelle: 'Résilience territoriale' },
     ],
   },
   {
