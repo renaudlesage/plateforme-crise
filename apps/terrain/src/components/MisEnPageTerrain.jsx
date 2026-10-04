@@ -1,6 +1,7 @@
 import { Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import BasculeTheme from './BasculeTheme'
+import IndicateurFile from './IndicateurFile'
 
 export default function MisEnPageTerrain() {
   const { contexteActuel, deconnexion, selectionnerContexte } = useAuth()
@@ -25,6 +26,8 @@ export default function MisEnPageTerrain() {
           </button>
         </div>
       </header>
+
+      <IndicateurFile />
 
       <main>
         <Outlet />

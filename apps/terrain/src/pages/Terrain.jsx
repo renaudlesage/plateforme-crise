@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret } from '../components/Boutons'
 import { supabase } from '../lib/supabase'
+import { fileEcritures } from '../lib/fileEcritures'
 
 const STORAGE_KEY_ROLE = 'terrain_role_id_selectionne'
 
@@ -161,23 +162,58 @@ function ChecklistRole({ incidentId, contexteId, roleId }) {
 
   async function basculer(template) {
     const existante = executions.find((e) => e.template_id === template.id)
+
+    // Debout, une main, deux gestes maximum — et ça doit survivre à une
+    // coupure réseau sans que la case se décoche en silence. Voir
+    // packages/shared/src/fileEcritures.js : écrit d'abord dans le
+    // téléphone (optimiste), envoie ensuite, rejoue si besoin.
     if (existante) {
-      await supabase
-        .from('checklist_executions')
-        .update({
-          execute: !existante.execute,
-          horodatage_execution: !existante.execute ? new Date().toISOString() : null,
-        })
-        .eq('id', existante.id)
+      const champs = {
+        execute: !existante.execute,
+        horodatage_execution: !existante.execute ? new Date().toISOString() : null,
+      }
+      setExecutions((prev) => prev.map((e) => (e.id === existante.id ? { ...e, ...champs } : e)))
+      const { statut, message } = await fileEcritures.ecrireOuEmpiler({
+        nature: 'update',
+        table: 'checklist_executions',
+        id: existante.id,
+        champs,
+        libelle: `Checklist · ${template.libelle}`,
+      })
+      if (statut === 'refus') {
+        // Refus immédiat (droits, ligne disparue) : l'optimisme ci-dessus
+        // était injustifié, on revient en arrière et on le dit.
+        setExecutions((prev) => prev.map((e) => (e.id === existante.id ? existante : e)))
+        setErreur(message)
+        return
+      }
     } else {
-      await supabase.from('checklist_executions').insert({
+      const champs = {
         incident_id: incidentId,
         template_id: template.id,
         execute: true,
         horodatage_execution: new Date().toISOString(),
+      }
+      const { statut, cle, message } = await fileEcritures.ecrireOuEmpiler({
+        nature: 'insert',
+        table: 'checklist_executions',
+        champs,
+        libelle: `Checklist · ${template.libelle}`,
       })
+      if (statut === 'refus') {
+        setErreur(message)
+        return
+      }
+      // Optimiste, avec le même id que la ligne qui finira en base
+      // (immédiatement ou après rejeu) — la case reste cochée à l'écran
+      // même hors réseau.
+      setExecutions((prev) => [...prev, { id: cle, ...champs }])
     }
-    await rafraichir()
+    // Pas de rafraichir() ici : l'état optimiste ci-dessus est déjà ce
+    // qu'on veut afficher, y compris hors réseau — un rechargement
+    // échouerait silencieusement à ce moment précis et n'ajouterait
+    // rien, et sur un refus RLS (le seul cas où erreur est affichée)
+    // la ligne refusée ci-dessus n'a de toute façon pas été optimisée.
   }
 
   const executionParTemplate = Object.fromEntries(executions.map((e) => [e.template_id, e]))
