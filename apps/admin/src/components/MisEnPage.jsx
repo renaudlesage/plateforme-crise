@@ -5,7 +5,10 @@ import BasculeTheme from './BasculeTheme'
 const SECTIONS = [
   {
     titre: null,
-    liens: [{ to: '/', libelle: 'Tableau de bord' }],
+    liens: [
+      { to: '/', libelle: 'Tableau de bord' },
+      { to: '/carte', libelle: 'Carte' },
+    ],
   },
   {
     titre: 'Configuration',

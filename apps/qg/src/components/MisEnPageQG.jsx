@@ -39,6 +39,9 @@ export default function MisEnPageQG() {
           <Link to="/signalements-citoyens" className="plaque-nav">
             Signalements citoyens
           </Link>
+          <Link to="/carte" className="plaque-nav">
+            Carte
+          </Link>
         </div>
       </header>
 

@@ -7,6 +7,7 @@ import SelectionContexte from './pages/SelectionContexte'
 import Incidents from './pages/Incidents'
 import IncidentDetail from './pages/IncidentDetail'
 import SignalementsCitoyens from './pages/SignalementsCitoyens'
+import Carte from './pages/Carte'
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
             <Route index element={<Incidents />} />
             <Route path="incidents/:id" element={<IncidentDetail />} />
             <Route path="signalements-citoyens" element={<SignalementsCitoyens />} />
+            <Route path="carte" element={<Carte />} />
           </Route>
         </Routes>
       </AuthProvider>

@@ -1,4 +1,5 @@
 export { createSupabaseClient } from './supabaseClient.js'
+export { default as CarteCrise } from './CarteCrise.jsx'
 export { creerFileEcritures } from './fileEcritures.js'
 export { surRetourReseau, nouvelleCle } from './reessai.js'
 export { texteErreur, estReseau } from './erreurs.js'
