@@ -36,6 +36,8 @@ import ChecklistD5 from './pages/ChecklistD5'
 import CentresCrise from './pages/CentresCrise'
 import DirPcOpsAttestes from './pages/DirPcOpsAttestes'
 import BeAlertTests from './pages/BeAlertTests'
+import Comptes from './pages/Comptes'
+import DefinirMotDePasse from './pages/DefinirMotDePasse'
 
 export default function App() {
   return (
@@ -43,6 +45,15 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/connexion" element={<Connexion />} />
+
+          <Route
+            path="/definir-mot-de-passe"
+            element={
+              <RoutePrivee exigeContexte={false}>
+                <DefinirMotDePasse />
+              </RoutePrivee>
+            }
+          />
 
           <Route
             path="/selection-contexte"
@@ -93,6 +104,7 @@ export default function App() {
             <Route path="centres-crise" element={<CentresCrise />} />
             <Route path="dir-pc-ops-attestes" element={<DirPcOpsAttestes />} />
             <Route path="be-alert-tests" element={<BeAlertTests />} />
+            <Route path="comptes" element={<Comptes />} />
           </Route>
         </Routes>
       </AuthProvider>

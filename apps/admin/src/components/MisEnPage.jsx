@@ -9,7 +9,10 @@ const SECTIONS = [
   },
   {
     titre: 'Configuration',
-    liens: [{ to: '/configuration', libelle: 'Rôles, niveaux, disciplines' }],
+    liens: [
+      { to: '/configuration', libelle: 'Rôles, niveaux, disciplines' },
+      { to: '/comptes', libelle: 'Comptes' },
+    ],
   },
   {
     titre: 'Plan légal',
