@@ -20,7 +20,7 @@ const MISSIONS_DISPONIBLES = [
   { valeur: 'evacuation', libelle: 'Aide à l’évacuation' },
   { valeur: 'logistique', libelle: 'Logistique' },
   { valeur: 'accueil', libelle: 'Accueil de sinistrés' },
-  { valeur: 'prise_en_charge', libelle: 'Prise en charge de personnes vulnérables' },
+  { valeur: 'prise_en_charge', libelle: 'Prise en charge de personnes à risque' },
 ]
 
 export default function Benevole() {

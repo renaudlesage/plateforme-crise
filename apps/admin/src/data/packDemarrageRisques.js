@@ -149,7 +149,7 @@ export const PACK_DEMARRAGE_RISQUES = [
     signaux_faibles: "Alertes du gestionnaire de réseau, signalements croisés de plusieurs quartiers simultanément.",
     mesures_preventives: "Recensement des personnes à équipement médical électro-dépendant, groupe électrogène de secours pour les bâtiments communaux critiques.",
     mesures_compensatoires: "Points de charge/chaleur ouverts dans les bâtiments communaux équipés de groupe électrogène, contact prioritaire des personnes recensées à risque.",
-    decisions_a_preparer: "Ouverture de points d'accueil chauffés, priorisation du recensement des personnes vulnérables à contacter en premier.",
+    decisions_a_preparer: "Ouverture de points d'accueil chauffés, priorisation du recensement des personnes à risque à contacter en premier.",
     messages_publics_predefinis: "Une coupure électrique affecte [zone] depuis [heure]. Un point d'accueil est ouvert à [lieu] pour les personnes en difficulté.",
   },
   {
@@ -208,7 +208,7 @@ export const PACK_DEMARRAGE_RISQUES = [
     effets_cascade: "Interruption des activités scolaires/économiques dans le périmètre, gestion de l'anxiété de la population, afflux de questions vers les services communaux.",
     signaux_faibles: "Déclenchement des sirènes d'alerte, notification officielle du gouverneur/Centre de Crise National.",
     mesures_preventives: "Test régulier des sirènes, information préalable de la population résidant en périmètre PPUI sur la conduite à tenir.",
-    mesures_compensatoires: "Relai communal de l'alerte via tous canaux disponibles (BE-Alert, réseaux sociaux, porte-à-porte si nécessaire), suivi des personnes vulnérables isolées.",
+    mesures_compensatoires: "Relai communal de l'alerte via tous canaux disponibles (BE-Alert, réseaux sociaux, porte-à-porte si nécessaire), suivi des personnes à risque isolées.",
     decisions_a_preparer: "Fermeture des écoles et lieux publics dans le périmètre, activation du centre de crise communal en soutien du niveau provincial/fédéral.",
     messages_publics_predefinis: "Mettez-vous à l'abri immédiatement : rentrez chez vous, fermez portes et fenêtres, arrêtez la ventilation. Ne sortez pas. Suivez les prochaines instructions officielles.",
   },
@@ -223,7 +223,7 @@ export const PACK_DEMARRAGE_RISQUES = [
     signaux_faibles: "Confirmation officielle du niveau de gravité par le Centre de Crise National, itinéraires d'évacuation activés par la province.",
     mesures_preventives: "Plan d'évacuation communal pré-établi avec itinéraires et points de rassemblement, recensement des personnes sans véhicule.",
     mesures_compensatoires: "Mobilisation des bus/cars communaux et scolaires pour les personnes sans moyen de transport, centres d'accueil hors périmètre activés en amont.",
-    decisions_a_preparer: "Ordre de priorité d'évacuation (écoles, personnes vulnérables, population générale), gestion du bouclage du périmètre évacué.",
+    decisions_a_preparer: "Ordre de priorité d'évacuation (écoles, personnes à risque, population générale), gestion du bouclage du périmètre évacué.",
     messages_publics_predefinis: "Évacuez immédiatement en suivant l'itinéraire [X] vers [centre d'accueil]. Emportez vos documents d'identité et médicaments essentiels. N'attendez pas de consigne supplémentaire pour partir.",
   },
   {

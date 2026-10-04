@@ -17,7 +17,7 @@ export default function PlanUrgence() {
   const charger = useCallback(async (j) => {
     setChargement(true)
     setErreur(null)
-    const { data, error } = await supabase.rpc('plan_urgence_menage_par_jeton', { p_jeton: j })
+    const { data, error } = await supabase.rpc('plan_urgence_menage_complet_par_jeton', { p_jeton: j })
     if (error) {
       setErreur(error.message)
     } else if (!data || data.length === 0) {
@@ -221,6 +221,8 @@ function FormulairePlan({ plan, jeton, onEnregistre, onReinitialiser }) {
       p_point_rdv_exterieur: pointRdv.trim() || null,
       p_medecin_famille: medecin.trim() || null,
       p_emplacements_coupures: coupures.trim() || null,
+      p_duree_autonomie_cible_heures: plan.duree_autonomie_cible_heures ?? 72,
+      p_preparation_financiere: plan.preparation_financiere ?? null,
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -336,6 +338,103 @@ function FormulairePlan({ plan, jeton, onEnregistre, onReinitialiser }) {
           Oublier ce plan sur cet appareil
         </button>
       </div>
+
+      <GestionBasics jeton={jeton} itemsInitiaux={plan.items_6_basics ?? []} dureeAutonomieHeures={plan.duree_autonomie_cible_heures ?? 72} />
     </form>
+  )
+}
+
+const STATUTS_BASIC = [
+  { valeur: 'a_faire', libelle: 'À faire' },
+  { valeur: 'partiel', libelle: 'En partie' },
+  { valeur: 'complet', libelle: 'Complet' },
+]
+
+function GestionBasics({ jeton, itemsInitiaux, dureeAutonomieHeures }) {
+  const [referentiel, setReferentiel] = useState([])
+  const [items, setItems] = useState(itemsInitiaux)
+  const [chargement, setChargement] = useState(true)
+
+  useEffect(() => {
+    supabase
+      .from('referentiel_6_basics')
+      .select('*')
+      .order('ordre')
+      .then(({ data }) => {
+        setReferentiel(data ?? [])
+        setChargement(false)
+      })
+  }, [])
+
+  function itemPour(code) {
+    return items.find((i) => i.basic_code === code) ?? { basic_code: code, statut: 'a_faire', details: '', quantite_stockee: '' }
+  }
+
+  async function sauvegarderItem(code, valeurs) {
+    const { error } = await supabase.rpc('maj_item_6_basics', {
+      p_jeton: jeton,
+      p_basic_code: code,
+      p_statut: valeurs.statut,
+      p_details: valeurs.details?.trim() || null,
+      p_quantite_stockee: valeurs.quantite_stockee?.trim() || null,
+    })
+    if (!error) {
+      setItems((prev) => {
+        const sansCelui = prev.filter((i) => i.basic_code !== code)
+        return [...sansCelui, { basic_code: code, ...valeurs }]
+      })
+    }
+    return { error }
+  }
+
+  return (
+    <div className="border-t border-trait pt-4 mt-4">
+      <h2 className="text-sm font-semibold text-encre mb-1">Les 6 indispensables</h2>
+      <p className="text-xs text-sourdine mb-3">
+        Référentiel européen "6 Basics of Self-Preparedness" (preparEU/NCCN) : de quoi tenir
+        {' '}{dureeAutonomieHeures}h en autonomie.
+      </p>
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : (
+        <ul className="space-y-2">
+          {referentiel.map((b) => (
+            <ItemBasic key={b.code} basic={b} item={itemPour(b.code)} onEnregistrer={(v) => sauvegarderItem(b.code, v)} />
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function ItemBasic({ basic, item, onEnregistrer }) {
+  const [statut, setStatut] = useState(item.statut)
+  const [details, setDetails] = useState(item.details ?? '')
+  const [enCours, setEnCours] = useState(false)
+  const [erreur, setErreur] = useState(null)
+
+  async function sauvegarder(nouveauStatut) {
+    setStatut(nouveauStatut)
+    setEnCours(true)
+    const { error } = await onEnregistrer({ statut: nouveauStatut, details, quantite_stockee: item.quantite_stockee })
+    setEnCours(false)
+    if (error) setErreur(error.message)
+  }
+
+  return (
+    <li className="border border-trait rounded p-3 bg-fond">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium text-encre">{basic.libelle}</p>
+          {basic.description && <p className="text-xs text-sourdine mt-0.5">{basic.description}</p>}
+        </div>
+        <select value={statut} onChange={(e) => sauvegarder(e.target.value)} disabled={enCours} className="text-xs flex-shrink-0">
+          {STATUTS_BASIC.map((s) => (
+            <option key={s.valeur} value={s.valeur}>{s.libelle}</option>
+          ))}
+        </select>
+      </div>
+      {erreur && <p className="text-xs text-chaud mt-1">{erreur}</p>}
+    </li>
   )
 }
