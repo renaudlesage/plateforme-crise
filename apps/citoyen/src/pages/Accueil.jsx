@@ -67,6 +67,12 @@ export default function Accueil() {
       <div className="bandeau">
         <span className="text-sm font-medium text-encre">{contexteActuel?.nom ?? '…'}</span>
         <div className="flex items-center gap-3">
+          <Link to="/plan-urgence" className="lien">
+            Mon plan d'urgence
+          </Link>
+          <Link to="/soutien" className="lien">
+            Besoin d'en parler ?
+          </Link>
           <Link to="/benevole" className="lien">
             Devenir bénévole
           </Link>

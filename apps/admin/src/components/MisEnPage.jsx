@@ -56,6 +56,7 @@ const SECTIONS = [
     liens: [
       { to: '/alertes-publiques', libelle: 'Alertes publiques' },
       { to: '/canaux-diffusion', libelle: 'Canaux de diffusion' },
+      { to: '/soutien-psychologique', libelle: 'Soutien psychologique' },
     ],
   },
 ]
