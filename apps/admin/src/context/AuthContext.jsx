@@ -13,6 +13,9 @@ export function AuthProvider({ children }) {
   const [acces, setAcces] = useState([])
   const [chargementAcces, setChargementAcces] = useState(false)
 
+  // Super-admin de la plateforme (admin du contexte "plateforme") : voit le module Clients
+  const [estSuperAdmin, setEstSuperAdmin] = useState(false)
+
   const [contexteId, setContexteId] = useState(
     () => localStorage.getItem(STORAGE_KEY_CONTEXTE) || null
   )
@@ -56,6 +59,16 @@ export function AuthProvider({ children }) {
     rafraichirAcces()
   }, [rafraichirAcces])
 
+  useEffect(() => {
+    if (!session?.user) {
+      setEstSuperAdmin(false)
+      return
+    }
+    supabase.rpc('est_super_admin').then(({ data, error }) => {
+      setEstSuperAdmin(!error && data === true)
+    })
+  }, [session?.user])
+
   // Si le contexte sélectionné en storage n'est plus dans la liste d'accès
   // (changement de compte, accès révoqué...), on le réinitialise.
   useEffect(() => {
@@ -97,6 +110,7 @@ export function AuthProvider({ children }) {
     chargementSession,
     acces,
     chargementAcces,
+    estSuperAdmin,
     contexteId,
     contexteActuel,
     selectionnerContexte,

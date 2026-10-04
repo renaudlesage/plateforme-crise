@@ -70,7 +70,7 @@ const SECTIONS = [
 ]
 
 export default function MisEnPage() {
-  const { utilisateur, contexteActuel, deconnexion, selectionnerContexte } = useAuth()
+  const { utilisateur, contexteActuel, estSuperAdmin, deconnexion, selectionnerContexte } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -79,10 +79,14 @@ export default function MisEnPage() {
     navigate('/selection-contexte')
   }
 
-  const sections =
+  let sections =
     contexteActuel?.contextes?.type === 'entite_critique'
       ? [...SECTIONS, { titre: 'Conformité', liens: [{ to: '/conformite-cer', libelle: 'Conformité CER' }] }]
       : SECTIONS
+
+  if (estSuperAdmin) {
+    sections = [{ titre: 'Plateforme', liens: [{ to: '/clients', libelle: 'Clients' }] }, ...sections]
+  }
 
   return (
     <div className="poste">

@@ -37,6 +37,7 @@ import CentresCrise from './pages/CentresCrise'
 import DirPcOpsAttestes from './pages/DirPcOpsAttestes'
 import BeAlertTests from './pages/BeAlertTests'
 import Comptes from './pages/Comptes'
+import Clients from './pages/Clients'
 import DefinirMotDePasse from './pages/DefinirMotDePasse'
 
 export default function App() {
@@ -105,6 +106,7 @@ export default function App() {
             <Route path="dir-pc-ops-attestes" element={<DirPcOpsAttestes />} />
             <Route path="be-alert-tests" element={<BeAlertTests />} />
             <Route path="comptes" element={<Comptes />} />
+            <Route path="clients" element={<Clients />} />
           </Route>
         </Routes>
       </AuthProvider>
