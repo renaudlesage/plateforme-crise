@@ -132,6 +132,12 @@ export default function IncidentDetail() {
         </div>
       )}
 
+      {PHASES_MODULES[incident.phase_cycle_vie]?.zones !== false && (
+        <div className="mb-6">
+          <SectionZonesIntervention incidentId={id} />
+        </div>
+      )}
+
       <div className="mb-6">
         <SectionPhaseCycleVie
           incidentId={id}
@@ -197,14 +203,34 @@ export default function IncidentDetail() {
 // en aval (levée/post-crise, où le travail devient REX plutôt
 // qu'opérationnel).
 const PHASES_MODULES = {
-  veille: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false },
-  vigilance: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false },
-  pre_alerte: { suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false },
+  veille: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false },
+  vigilance: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false },
+  pre_alerte: { suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false },
   alerte: { phase_transitoire: false, rex: false },
   phase_active: {},
   levee: { activation_30min: false, checklist: false, rex: false, seuils_action: false },
-  post_crise: { activation_30min: false, escalade: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, seuils_action: false, requisitions: false },
+  post_crise: { activation_30min: false, escalade: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, seuils_action: false, requisitions: false, zones: false },
 }
+
+const TYPES_ZONE = [
+  { valeur: 'rouge', libelle: 'Rouge — exclusion', perimetre: 'exclusion' },
+  { valeur: 'orange', libelle: 'Orange — isolation', perimetre: 'isolation' },
+  { valeur: 'jaune', libelle: 'Jaune — dissuasion', perimetre: 'dissuasion' },
+]
+
+const ACCES_PAR_TYPE_ZONE = {
+  rouge: "Exclusivement services d'intervention, experts, techniciens. Population évacuée ou consignes spécifiques (fermer portes/fenêtres).",
+  orange: "Services d'intervention + résidents/travailleurs sur accord explicite du Dir-PC-Ops. PC-Ops positionné juste à l'intérieur du périmètre.",
+  jaune: 'Accès déconseillé aux non-résidents/non-travailleurs sauf décision PC-Ops. Trafic de transit détourné, "touristes de catastrophe" écartés.',
+}
+
+const TYPES_POINT_LOGISTIQUE = [
+  { valeur: 'ppd', libelle: 'PPD — Point de Première Destination' },
+  { valeur: 'parking_ambulances', libelle: 'Parking ambulances' },
+  { valeur: 'parking_evacues', libelle: 'Parking évacués / victimes non blessées' },
+  { valeur: 'pma', libelle: 'PMA — Poste Médical Avancé' },
+  { valeur: 'pc_ops', libelle: 'PC-Ops' },
+]
 
 const ETAPES_RETABLISSEMENT = [
   { valeur: 'retablissement_post_crise', libelle: 'Rétablissement post-crise (services essentiels)' },
@@ -1353,6 +1379,304 @@ function FormulaireEtapeRetablissement({ contacts, valeursInitiales = {}, onVali
         <BoutonPrincipal type="submit" disabled={enCours}>
           {enCours ? 'Enregistrement…' : 'Enregistrer'}
         </BoutonPrincipal>
+        <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
+      </div>
+    </form>
+  )
+}
+
+function SectionZonesIntervention({ incidentId }) {
+  const [zones, setZones] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [erreur, setErreur] = useState(null)
+  const [enAjout, setEnAjout] = useState(false)
+  const [ligneEnEdition, setLigneEnEdition] = useState(null)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('zones_intervention')
+      .select('*, points_logistique_zone(*)')
+      .eq('incident_id', incidentId)
+      .order('date_etablissement', { ascending: false })
+    if (error) setErreur(error.message)
+    else setZones(data ?? [])
+    setChargement(false)
+  }, [incidentId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function creer(valeurs) {
+    const { error } = await supabase.from('zones_intervention').insert({ ...valeurs, incident_id: incidentId })
+    if (error) return { error }
+    await rafraichir()
+    return { error: null }
+  }
+
+  async function modifier(idZone, valeurs) {
+    const { error } = await supabase.from('zones_intervention').update(valeurs).eq('id', idZone)
+    if (error) return { error }
+    await rafraichir()
+    return { error: null }
+  }
+
+  async function lever(zone) {
+    await supabase.from('zones_intervention').update({ date_levee: new Date().toISOString() }).eq('id', zone.id)
+    await rafraichir()
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="font-medium text-encre">Zones d'intervention</h2>
+        {!enAjout && <BoutonPrincipal onClick={() => setEnAjout(true)}>Établir une zone</BoutonPrincipal>}
+      </div>
+      <p className="text-xs text-sourdine mb-3">
+        Zonage opérationnel du terrain (doctrine NCCN) : rouge (exclusion), orange (isolation, PC-Ops
+        juste à l'intérieur), jaune (dissuasion — PPD et parking ambulances obligatoires).
+        Représenté en cercle (centre + rayon), pas en polygone précis.
+      </p>
+
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
+
+      {enAjout && (
+        <div className="border border-trait rounded p-3 mb-3 bg-fond">
+          <FormulaireZone
+            onAnnuler={() => setEnAjout(false)}
+            onValider={async (valeurs) => {
+              const { error } = await creer(valeurs)
+              if (!error) setEnAjout(false)
+              return { error }
+            }}
+          />
+        </div>
+      )}
+
+      {chargement ? (
+        <p className="text-sm text-sourdine">Chargement…</p>
+      ) : zones.length === 0 && !enAjout ? (
+        <p className="vide border border-dashed border-trait text-center p-4">Aucune zone établie pour cet incident.</p>
+      ) : (
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden bg-surface">
+          {zones.map((z) =>
+            ligneEnEdition === z.id ? (
+              <li key={z.id} className="p-3 bg-fond">
+                <FormulaireZone
+                  valeursInitiales={z}
+                  onAnnuler={() => setLigneEnEdition(null)}
+                  onValider={async (valeurs) => {
+                    const { error } = await modifier(z.id, valeurs)
+                    if (!error) setLigneEnEdition(null)
+                    return { error }
+                  }}
+                />
+              </li>
+            ) : (
+              <li key={z.id} className="px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-encre">
+                      {TYPES_ZONE.find((t) => t.valeur === z.type_zone)?.libelle ?? z.type_zone}
+                      {z.date_levee ? (
+                        <span className="jeton ml-2 text-sourdine">levée</span>
+                      ) : (
+                        <span className="jeton ml-2 text-chaud">active</span>
+                      )}
+                    </p>
+                    {z.acces_autorise && <p className="text-xs text-sourdine mt-0.5">{z.acces_autorise}</p>}
+                    {(z.centre_latitude != null && z.centre_longitude != null) && (
+                      <p className="text-xs text-sourdine mt-0.5">
+                        centre {z.centre_latitude}, {z.centre_longitude}
+                        {z.rayon_metres != null && <> · rayon {z.rayon_metres} m</>}
+                      </p>
+                    )}
+                    <p className="text-xs text-sourdine mt-1">
+                      établie le {new Date(z.date_etablissement).toLocaleString('fr-BE')}
+                      {z.date_levee && <> · levée le {new Date(z.date_levee).toLocaleString('fr-BE')}</>}
+                    </p>
+                    <GestionPointsLogistiqueZone zoneId={z.id} points={z.points_logistique_zone ?? []} onChangement={rafraichir} />
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0 ml-3">
+                    <BoutonDiscret onClick={() => setLigneEnEdition(z.id)}>Modifier</BoutonDiscret>
+                    {!z.date_levee && <BoutonDiscret onClick={() => lever(z)}>Lever</BoutonDiscret>}
+                  </div>
+                </div>
+              </li>
+            )
+          )}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function FormulaireZone({ valeursInitiales = {}, onValider, onAnnuler }) {
+  const [typeZone, setTypeZone] = useState(valeursInitiales.type_zone ?? 'rouge')
+  const [centreLatitude, setCentreLatitude] = useState(valeursInitiales.centre_latitude ?? '')
+  const [centreLongitude, setCentreLongitude] = useState(valeursInitiales.centre_longitude ?? '')
+  const [rayonMetres, setRayonMetres] = useState(valeursInitiales.rayon_metres ?? '')
+  const [accesAutorise, setAccesAutorise] = useState(valeursInitiales.acces_autorise ?? ACCES_PAR_TYPE_ZONE.rouge)
+  const [erreur, setErreur] = useState(null)
+  const [enCours, setEnCours] = useState(false)
+
+  function changerType(valeur) {
+    setTypeZone(valeur)
+    if (!valeursInitiales.id) setAccesAutorise(ACCES_PAR_TYPE_ZONE[valeur])
+  }
+
+  async function soumettre(e) {
+    e.preventDefault()
+    setEnCours(true)
+    const { error } = await onValider({
+      type_zone: typeZone,
+      perimetre: TYPES_ZONE.find((t) => t.valeur === typeZone)?.perimetre,
+      centre_latitude: centreLatitude === '' ? null : Number(centreLatitude),
+      centre_longitude: centreLongitude === '' ? null : Number(centreLongitude),
+      rayon_metres: rayonMetres === '' ? null : Number(rayonMetres),
+      acces_autorise: accesAutorise.trim() || null,
+    })
+    setEnCours(false)
+    if (error) setErreur(error.message)
+  }
+
+  return (
+    <form onSubmit={soumettre} className="space-y-3">
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Type de zone</label>
+        <select value={typeZone} onChange={(e) => changerType(e.target.value)} className="w-full sm:w-64">
+          {TYPES_ZONE.map((t) => (
+            <option key={t.valeur} value={t.valeur}>{t.libelle}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Latitude centre</label>
+          <input type="number" step="any" value={centreLatitude} onChange={(e) => setCentreLatitude(e.target.value)} className="w-full" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Longitude centre</label>
+          <input type="number" step="any" value={centreLongitude} onChange={(e) => setCentreLongitude(e.target.value)} className="w-full" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Rayon (m)</label>
+          <input type="number" min="0" value={rayonMetres} onChange={(e) => setRayonMetres(e.target.value)} className="w-full" />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Règles d'accès</label>
+        <textarea value={accesAutorise} onChange={(e) => setAccesAutorise(e.target.value)} rows={2} className="w-full" />
+      </div>
+
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
+
+      <div className="flex gap-2">
+        <BoutonPrincipal type="submit" disabled={enCours}>
+          {enCours ? 'Enregistrement…' : 'Enregistrer'}
+        </BoutonPrincipal>
+        <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
+      </div>
+    </form>
+  )
+}
+
+function GestionPointsLogistiqueZone({ zoneId, points, onChangement }) {
+  const [enAjout, setEnAjout] = useState(false)
+  const [erreur, setErreur] = useState(null)
+
+  async function creer(valeurs) {
+    const { error } = await supabase.from('points_logistique_zone').insert({ ...valeurs, zone_id: zoneId })
+    if (error) { setErreur(error.message); return { error } }
+    await onChangement()
+    return { error: null }
+  }
+
+  async function supprimer(idPoint) {
+    const { error } = await supabase.from('points_logistique_zone').delete().eq('id', idPoint)
+    if (!error) await onChangement()
+  }
+
+  return (
+    <div className="mt-2 pt-2 border-t border-trait">
+      <div className="flex items-center justify-between mb-1">
+        <p className="etiquette">Points logistiques</p>
+        {!enAjout && <BoutonDiscret onClick={() => setEnAjout(true)}>Ajouter</BoutonDiscret>}
+      </div>
+      {erreur && <p className="text-xs text-chaud mb-1">{erreur}</p>}
+      {enAjout && (
+        <FormulairePointLogistique
+          onAnnuler={() => setEnAjout(false)}
+          onValider={async (valeurs) => {
+            const { error } = await creer(valeurs)
+            if (!error) setEnAjout(false)
+            return { error }
+          }}
+        />
+      )}
+      {points.length === 0 && !enAjout ? (
+        <p className="text-xs text-sourdine">Aucun point logistique défini.</p>
+      ) : (
+        <ul className="space-y-1">
+          {points.map((pt) => (
+            <li key={pt.id} className="flex items-center justify-between text-xs text-encre">
+              <span>
+                <span className="jeton mr-1.5">{TYPES_POINT_LOGISTIQUE.find((t) => t.valeur === pt.type_point)?.libelle ?? pt.type_point}</span>
+                {pt.latitude != null && pt.longitude != null && <>{pt.latitude}, {pt.longitude}</>}
+                {pt.capacite != null && <> · capacité {pt.capacite}</>}
+                {pt.commentaire && <> · {pt.commentaire}</>}
+              </span>
+              <BoutonDiscret onClick={() => supprimer(pt.id)}>✕</BoutonDiscret>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function FormulairePointLogistique({ onValider, onAnnuler }) {
+  const [typePoint, setTypePoint] = useState('ppd')
+  const [latitude, setLatitude] = useState('')
+  const [longitude, setLongitude] = useState('')
+  const [capacite, setCapacite] = useState('')
+  const [commentaire, setCommentaire] = useState('')
+  const [erreur, setErreur] = useState(null)
+  const [enCours, setEnCours] = useState(false)
+
+  async function soumettre(e) {
+    e.preventDefault()
+    setEnCours(true)
+    const { error } = await onValider({
+      type_point: typePoint,
+      latitude: latitude === '' ? null : Number(latitude),
+      longitude: longitude === '' ? null : Number(longitude),
+      capacite: capacite === '' ? null : Number(capacite),
+      commentaire: commentaire.trim() || null,
+    })
+    setEnCours(false)
+    if (error) setErreur(error.message)
+  }
+
+  return (
+    <form onSubmit={soumettre} className="space-y-2 mb-2">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+        <select value={typePoint} onChange={(e) => setTypePoint(e.target.value)} className="w-full text-xs">
+          {TYPES_POINT_LOGISTIQUE.map((t) => (
+            <option key={t.valeur} value={t.valeur}>{t.libelle}</option>
+          ))}
+        </select>
+        <input type="number" step="any" value={latitude} onChange={(e) => setLatitude(e.target.value)} placeholder="Latitude" className="w-full text-xs" />
+        <input type="number" step="any" value={longitude} onChange={(e) => setLongitude(e.target.value)} placeholder="Longitude" className="w-full text-xs" />
+        <input type="number" min="0" value={capacite} onChange={(e) => setCapacite(e.target.value)} placeholder="Capacité" className="w-full text-xs" />
+      </div>
+      <input value={commentaire} onChange={(e) => setCommentaire(e.target.value)} placeholder="Commentaire" className="w-full text-xs" />
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <div className="flex gap-1.5">
+        <BoutonPrincipal type="submit" disabled={enCours}>{enCours ? '…' : 'Enregistrer'}</BoutonPrincipal>
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
       </div>
     </form>
