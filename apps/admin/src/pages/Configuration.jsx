@@ -2,11 +2,13 @@ import { useState } from 'react'
 import Roles from './configuration/Roles'
 import NiveauxEscalade from './configuration/NiveauxEscalade'
 import Disciplines from './configuration/Disciplines'
+import Paragon from './configuration/Paragon'
 
 const ONGLETS = [
   { id: 'roles', label: 'Rôles', Composant: Roles },
   { id: 'niveaux', label: "Niveaux d'escalade", Composant: NiveauxEscalade },
   { id: 'disciplines', label: 'Disciplines', Composant: Disciplines },
+  { id: 'paragon', label: 'Paragon', Composant: Paragon },
 ]
 
 export default function Configuration() {

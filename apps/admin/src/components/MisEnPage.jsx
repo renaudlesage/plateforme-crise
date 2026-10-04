@@ -43,6 +43,7 @@ const SECTIONS = [
       { to: '/checklists', libelle: 'Checklists' },
       { to: '/exercices', libelle: 'Exercices' },
       { to: '/conformite-legale', libelle: 'Conformité légale (AR 2019)' },
+      { to: '/formation-stress-aigu', libelle: 'Facteur humain — stress aigu' },
     ],
   },
   {

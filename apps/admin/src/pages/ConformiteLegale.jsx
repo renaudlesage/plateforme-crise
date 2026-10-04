@@ -88,6 +88,14 @@ function BlocObligations({ contexteId }) {
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
+                <label className="flex items-center gap-1 text-xs text-sourdine" title="Volet gestion du stress aigu couvert">
+                  <input
+                    type="checkbox"
+                    checked={o.volet_gestion_stress_aigu ?? false}
+                    onChange={(e) => modifier(o.id, { volet_gestion_stress_aigu: e.target.checked })}
+                  />
+                  stress aigu
+                </label>
                 <input
                   type="date"
                   value={o.prochaine_echeance ?? ''}

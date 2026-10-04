@@ -38,6 +38,7 @@ import DirPcOpsAttestes from './pages/DirPcOpsAttestes'
 import FichesActionD5 from './pages/FichesActionD5'
 import AccordsMedias from './pages/AccordsMedias'
 import SirenesZones from './pages/SirenesZones'
+import FormationStressAigu from './pages/FormationStressAigu'
 import BeAlertTests from './pages/BeAlertTests'
 import Comptes from './pages/Comptes'
 import Clients from './pages/Clients'
@@ -110,6 +111,7 @@ export default function App() {
             <Route path="fiches-action-d5" element={<FichesActionD5 />} />
             <Route path="accords-medias" element={<AccordsMedias />} />
             <Route path="sirenes-zones" element={<SirenesZones />} />
+            <Route path="formation-stress-aigu" element={<FormationStressAigu />} />
             <Route path="be-alert-tests" element={<BeAlertTests />} />
             <Route path="comptes" element={<Comptes />} />
             <Route path="clients" element={<Clients />} />

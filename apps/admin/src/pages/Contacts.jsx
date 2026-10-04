@@ -3,6 +3,12 @@ import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
 
+const LIBELLES_SOURCE = {
+  icms_legacy: 'importé ICMS',
+  paragon_import: 'importé Paragon',
+  crisiware_natif: 'natif Crisiware',
+}
+
 const CATEGORIES_SUGGEREES = [
   'AUTORITE',
   'CELLULE_SECURITE',
@@ -137,6 +143,9 @@ export default function Contacts() {
                     {c.email && <span>· {c.email}</span>}
                     {c.telephone && <span>· {c.telephone}</span>}
                     {c.suppleant && <span>· suppléant : {c.suppleant.prenom} {c.suppleant.nom}</span>}
+                    {c.source_system && c.source_system !== 'saisie_manuelle' && <span>· {LIBELLES_SOURCE[c.source_system] ?? c.source_system}</span>}
+                    {c.rgpd_consentement_statut === 'en_attente' && <span className="text-info">· consentement RGPD en attente</span>}
+                    {c.rgpd_consentement_statut === 'refuse' && <span className="text-chaud">· consentement RGPD refusé</span>}
                   </p>
                 </div>
                 <div className="flex gap-2 flex-shrink-0 ml-3">
@@ -171,6 +180,7 @@ function FormulaireContact({ disciplines, roles, contactsExistants, valeursIniti
   const [roleId, setRoleId] = useState(valeursInitiales.role_id ?? '')
   const [suppleantDe, setSuppleantDe] = useState(valeursInitiales.est_suppleant_de ?? '')
   const [actif, setActif] = useState(valeursInitiales.actif ?? true)
+  const [rgpdConsentementStatut, setRgpdConsentementStatut] = useState(valeursInitiales.rgpd_consentement_statut ?? 'non_applicable')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -190,6 +200,9 @@ function FormulaireContact({ disciplines, roles, contactsExistants, valeursIniti
       role_id: roleId || null,
       est_suppleant_de: suppleantDe || null,
       actif,
+      rgpd_consentement_statut: rgpdConsentementStatut,
+      rgpd_consentement_demande_le: rgpdConsentementStatut === 'en_attente' ? new Date().toISOString() : valeursInitiales.rgpd_consentement_demande_le ?? null,
+      rgpd_consentement_repondu_le: ['accepte', 'refuse'].includes(rgpdConsentementStatut) ? new Date().toISOString() : null,
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -283,10 +296,21 @@ function FormulaireContact({ disciplines, roles, contactsExistants, valeursIniti
         </select>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-sourdine">
-        <input type="checkbox" checked={actif} onChange={(e) => setActif(e.target.checked)} />
-        Actif
-      </label>
+      <div className="flex items-center gap-3">
+        <label className="flex items-center gap-2 text-sm text-sourdine">
+          <input type="checkbox" checked={actif} onChange={(e) => setActif(e.target.checked)} />
+          Actif
+        </label>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-sourdine">Consentement RGPD (contact importé)</span>
+          <select value={rgpdConsentementStatut} onChange={(e) => setRgpdConsentementStatut(e.target.value)} className="text-xs">
+            <option value="non_applicable">Non applicable</option>
+            <option value="en_attente">En attente</option>
+            <option value="accepte">Accepté</option>
+            <option value="refuse">Refusé</option>
+          </select>
+        </div>
+      </div>
 
       {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 

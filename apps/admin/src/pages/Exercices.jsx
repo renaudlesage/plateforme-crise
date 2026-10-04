@@ -222,6 +222,7 @@ function FormulaireExercice({ valeursInitiales = {}, onValider, onAnnuler }) {
 
       {valeursInitiales.id && <GestionRolesExercice exerciceId={valeursInitiales.id} />}
       {valeursInitiales.id && <GestionEvaluationsExercice exerciceId={valeursInitiales.id} />}
+      {valeursInitiales.id && <GestionObservationsStress exerciceId={valeursInitiales.id} />}
 
       {erreur && <p className="text-sm text-chaud">{erreur}</p>}
 
@@ -488,5 +489,99 @@ function FormulaireEvaluationExercice({ exerciceId, contacts = [], onValider, on
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
       </div>
     </form>
+  )
+}
+
+const REACTIONS_STRESS = [
+  { valeur: 'sideration', libelle: 'Sidération' },
+  { valeur: 'agitation', libelle: 'Agitation' },
+  { valeur: 'fuite_panique', libelle: 'Fuite panique' },
+  { valeur: 'comportement_automate', libelle: "Comportement d'automate" },
+]
+
+function GestionObservationsStress({ exerciceId }) {
+  const [observations, setObservations] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [erreur, setErreur] = useState(null)
+  const [personne, setPersonne] = useState('')
+  const [roleCelluleCrise, setRoleCelluleCrise] = useState('')
+  const [niveauStressPercu, setNiveauStressPercu] = useState(2)
+  const [reactionObservee, setReactionObservee] = useState('')
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('observations_stress_intervenant')
+      .select('*')
+      .eq('exercice_id', exerciceId)
+      .order('horodatage', { ascending: false })
+    if (error) setErreur(error.message)
+    else setObservations(data ?? [])
+    setChargement(false)
+  }, [exerciceId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function ajouter(e) {
+    e.preventDefault()
+    if (!personne.trim()) return
+    const { error } = await supabase.from('observations_stress_intervenant').insert({
+      exercice_id: exerciceId,
+      personne: personne.trim(),
+      role_cellule_crise: roleCelluleCrise.trim() || null,
+      niveau_stress_percu: niveauStressPercu,
+      reaction_observee: reactionObservee || null,
+    })
+    if (!error) {
+      setPersonne('')
+      setRoleCelluleCrise('')
+      setReactionObservee('')
+      await rafraichir()
+    } else setErreur(error.message)
+  }
+
+  async function retirer(id) {
+    await supabase.from('observations_stress_intervenant').delete().eq('id', id)
+    await rafraichir()
+  }
+
+  return (
+    <div className="pt-2 border-t border-trait">
+      <p className="text-xs font-medium text-sourdine mb-1">
+        Sensibilisation au stress aigu (débriefing) — jamais un diagnostic clinique individuel
+      </p>
+      {erreur && <p className="text-xs text-chaud mb-1">{erreur}</p>}
+      <form onSubmit={ajouter} className="flex flex-wrap gap-1.5 mb-2">
+        <input value={personne} onChange={(e) => setPersonne(e.target.value)} placeholder="personne" className="text-xs flex-1 min-w-[6rem]" />
+        <input value={roleCelluleCrise} onChange={(e) => setRoleCelluleCrise(e.target.value)} placeholder="rôle en cellule" className="text-xs flex-1 min-w-[6rem]" />
+        <select value={niveauStressPercu} onChange={(e) => setNiveauStressPercu(Number(e.target.value))} className="text-xs">
+          {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>stress {n}/5</option>)}
+        </select>
+        <select value={reactionObservee} onChange={(e) => setReactionObservee(e.target.value)} className="text-xs">
+          <option value="">réaction observée —</option>
+          {REACTIONS_STRESS.map((r) => <option key={r.valeur} value={r.valeur}>{r.libelle}</option>)}
+        </select>
+        <BoutonDiscret type="submit">Ajouter</BoutonDiscret>
+      </form>
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : observations.length === 0 ? (
+        <p className="text-xs text-sourdine">Aucune observation pour l'instant.</p>
+      ) : (
+        <ul className="space-y-1">
+          {observations.map((o) => (
+            <li key={o.id} className="flex items-center justify-between text-xs bg-surface border border-trait rounded px-2 py-1">
+              <span>
+                {o.personne}{o.role_cellule_crise && <> ({o.role_cellule_crise})</>} — stress {o.niveau_stress_percu}/5
+                {o.reaction_observee && <> · {REACTIONS_STRESS.find((r) => r.valeur === o.reaction_observee)?.libelle}</>}
+              </span>
+              <button type="button" onClick={() => retirer(o.id)} className="text-sourdine hover:text-chaud flex-shrink-0">✕</button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
