@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
+import { televerserDocumentPlan, urlDocumentPlan } from '../lib/documentsPlans'
 
 const TYPES_PLAN = [
   { valeur: 'PGUI', libelle: 'PGUI — plan général' },
@@ -47,6 +48,7 @@ export default function PlansUrgence() {
 
       {enAjout && (
         <FormulairePlan
+          contexteId={contexteId}
           onAnnuler={() => setEnAjout(false)}
           onValider={async (valeurs) => {
             const { error } = await creer(valeurs)
@@ -68,6 +70,7 @@ export default function PlansUrgence() {
             ligneEnEdition === p.id ? (
               <li key={p.id} className="bg-fond p-3">
                 <FormulairePlan
+                  contexteId={contexteId}
                   valeursInitiales={p}
                   onAnnuler={() => setLigneEnEdition(null)}
                   onValider={async (valeurs) => {
@@ -94,9 +97,21 @@ export default function PlansUrgence() {
                   <p className="text-xs text-sourdine mt-0.5">
                     {p.date_redaction && <>rédigé le {p.date_redaction}{p.service_redaction && <> par {p.service_redaction}</>}</>}
                     {p.date_validation && <> · validé le {p.date_validation}{p.service_validation && <> par {p.service_validation}</>}</>}
+                    {p.nom_fichier_document && <> · 📎 {p.nom_fichier_document}</>}
                   </p>
                 </Link>
                 <div className="flex gap-2 flex-shrink-0 ml-3">
+                  {p.chemin_document && (
+                    <BoutonDiscret
+                      onClick={async () => {
+                        const { url, error } = await urlDocumentPlan(p.chemin_document)
+                        if (error) alert(error.message)
+                        else window.open(url, '_blank')
+                      }}
+                    >
+                      Ouvrir le document
+                    </BoutonDiscret>
+                  )}
                   <BoutonDiscret onClick={() => setLigneEnEdition(p.id)}>Modifier</BoutonDiscret>
                   <BoutonDiscret
                     onClick={() => {
@@ -115,7 +130,7 @@ export default function PlansUrgence() {
   )
 }
 
-function FormulairePlan({ valeursInitiales = {}, onValider, onAnnuler }) {
+function FormulairePlan({ contexteId, valeursInitiales = {}, onValider, onAnnuler }) {
   const [typePlan, setTypePlan] = useState(valeursInitiales.type_plan ?? 'PGUI')
   const [version, setVersion] = useState(valeursInitiales.version ?? '')
   const [dateRedaction, setDateRedaction] = useState(valeursInitiales.date_redaction ?? '')
@@ -124,13 +139,16 @@ function FormulairePlan({ valeursInitiales = {}, onValider, onAnnuler }) {
   const [serviceValidation, setServiceValidation] = useState(valeursInitiales.service_validation ?? '')
   const [frequenceMajMois, setFrequenceMajMois] = useState(valeursInitiales.frequence_maj_mois ?? '')
   const [statut, setStatut] = useState(valeursInitiales.statut ?? 'brouillon')
+  const [fichier, setFichier] = useState(null)
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
   async function soumettre(e) {
     e.preventDefault()
     setEnCours(true)
-    const { error } = await onValider({
+    setErreur(null)
+
+    const valeurs = {
       type_plan: typePlan,
       version: version.trim(),
       date_redaction: dateRedaction || null,
@@ -139,7 +157,26 @@ function FormulairePlan({ valeursInitiales = {}, onValider, onAnnuler }) {
       service_validation: serviceValidation.trim() || null,
       frequence_maj_mois: frequenceMajMois === '' ? null : Number(frequenceMajMois),
       statut,
-    })
+    }
+
+    // Génère l'id côté client quand il n'existe pas encore (création), pour
+    // pouvoir déposer le document AVANT l'insertion de la ligne : le chemin
+    // de stockage "<contexte_id>/<plan_id>/..." en a besoin, et les policies
+    // RLS du bucket s'appuient sur ce même id.
+    const planId = valeursInitiales.id ?? crypto.randomUUID()
+    if (!valeursInitiales.id) valeurs.id = planId
+
+    if (fichier) {
+      const { error: erreurUpload, colonnes } = await televerserDocumentPlan({ contexteId, planId, fichier })
+      if (erreurUpload) {
+        setEnCours(false)
+        setErreur(erreurUpload.message)
+        return
+      }
+      Object.assign(valeurs, colonnes)
+    }
+
+    const { error } = await onValider(valeurs)
     setEnCours(false)
     if (error) setErreur(error.message)
   }
@@ -194,6 +231,16 @@ function FormulairePlan({ valeursInitiales = {}, onValider, onAnnuler }) {
       <div>
         <label className="block text-xs font-medium text-sourdine mb-1">Périodicité de mise à jour (mois)</label>
         <input type="number" min="1" value={frequenceMajMois} onChange={(e) => setFrequenceMajMois(e.target.value)} className="w-full sm:w-40" />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Document (PDF, Word…)</label>
+        {valeursInitiales.nom_fichier_document && !fichier && (
+          <p className="text-xs text-sourdine mb-1">
+            Document actuel : {valeursInitiales.nom_fichier_document} — en choisir un autre le remplace.
+          </p>
+        )}
+        <input type="file" onChange={(e) => setFichier(e.target.files?.[0] ?? null)} className="w-full text-sm" />
       </div>
 
       {erreur && <p className="text-sm text-chaud">{erreur}</p>}

@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
 import { supabase } from '../lib/supabase'
+import { televerserDocumentPlan, urlDocumentPlan } from '../lib/documentsPlans'
 
 const CATEGORIES_FICHE = [
   { valeur: 'administrative', libelle: 'Partie administrative' },
@@ -91,6 +92,10 @@ export default function PlanUrgenceDetail() {
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
       <div className="mb-6">
+        <SectionDocumentPlan plan={plan} contexteId={contexteId} onChange={chargerPlan} />
+      </div>
+
+      <div className="mb-6">
         <SectionFichesPlan planId={plan.id} />
       </div>
 
@@ -105,6 +110,62 @@ export default function PlanUrgenceDetail() {
       <div>
         <SectionEntreprisesSeveso planId={plan.id} contexteId={contexteId} />
       </div>
+    </div>
+  )
+}
+
+function SectionDocumentPlan({ plan, contexteId, onChange }) {
+  const inputFichierRef = useRef(null)
+  const [enCours, setEnCours] = useState(false)
+  const [erreur, setErreur] = useState(null)
+
+  async function remplacer(e) {
+    const fichier = e.target.files?.[0]
+    e.target.value = ''
+    if (!fichier) return
+    setEnCours(true)
+    setErreur(null)
+    const { error: erreurUpload, colonnes } = await televerserDocumentPlan({ contexteId, planId: plan.id, fichier })
+    if (erreurUpload) {
+      setEnCours(false)
+      setErreur(erreurUpload.message)
+      return
+    }
+    const { error } = await supabase.from('plans_urgence').update(colonnes).eq('id', plan.id)
+    setEnCours(false)
+    if (error) setErreur(error.message)
+    else await onChange()
+  }
+
+  return (
+    <div className="border border-trait rounded p-4 bg-fond">
+      <h2 className="font-medium text-encre mb-2">Document</h2>
+      {plan.nom_fichier_document ? (
+        <p className="text-sm text-sourdine mb-2">
+          📎 {plan.nom_fichier_document}
+          {plan.document_televerse_le && <> — déposé le {new Date(plan.document_televerse_le).toLocaleString('fr-BE')}</>}
+        </p>
+      ) : (
+        <p className="text-sm text-sourdine mb-2">Aucun document déposé pour ce plan.</p>
+      )}
+      <div className="flex items-center gap-2 flex-wrap">
+        {plan.chemin_document && (
+          <BoutonDiscret
+            onClick={async () => {
+              const { url, error } = await urlDocumentPlan(plan.chemin_document)
+              if (error) setErreur(error.message)
+              else window.open(url, '_blank')
+            }}
+          >
+            Ouvrir le document
+          </BoutonDiscret>
+        )}
+        <BoutonDiscret onClick={() => inputFichierRef.current?.click()} disabled={enCours}>
+          {enCours ? 'Dépôt…' : plan.chemin_document ? 'Remplacer le document' : 'Déposer un document'}
+        </BoutonDiscret>
+        <input ref={inputFichierRef} type="file" onChange={remplacer} disabled={enCours} className="hidden" />
+      </div>
+      {erreur && <p className="text-sm text-chaud mt-2">{erreur}</p>}
     </div>
   )
 }
