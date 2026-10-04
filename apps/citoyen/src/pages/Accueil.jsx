@@ -73,6 +73,9 @@ export default function Accueil() {
           <Link to="/soutien" className="lien">
             Besoin d'en parler ?
           </Link>
+          <Link to="/risques" className="lien">
+            S'informer sur les risques
+          </Link>
           <Link to="/benevole" className="lien">
             Devenir bénévole
           </Link>

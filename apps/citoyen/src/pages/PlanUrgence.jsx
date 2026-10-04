@@ -17,7 +17,7 @@ export default function PlanUrgence() {
   const charger = useCallback(async (j) => {
     setChargement(true)
     setErreur(null)
-    const { data, error } = await supabase.rpc('plan_urgence_menage_complet_par_jeton', { p_jeton: j })
+    const { data, error } = await supabase.rpc('plan_urgence_menage_v2_par_jeton', { p_jeton: j })
     if (error) {
       setErreur(error.message)
     } else if (!data || data.length === 0) {
@@ -342,7 +342,63 @@ function FormulairePlan({ plan, jeton, onEnregistre, onReinitialiser }) {
       </div>
 
       <GestionBasics jeton={jeton} itemsInitiaux={plan.items_6_basics ?? []} dureeAutonomieHeures={plan.duree_autonomie_cible_heures ?? 72} />
+      <GestionKitUrgence jeton={jeton} itemsInitiaux={plan.items_kit_urgence ?? []} />
     </form>
+  )
+}
+
+const ITEMS_KIT = [
+  { code: 'pharmacie', libelle: 'Pharmacie' },
+  { code: 'checklist_evacuation', libelle: "Checklist d'évacuation" },
+  { code: 'documents_contacts', libelle: 'Documents et contacts importants' },
+  { code: 'briquet_bougies', libelle: 'Briquet et bougies' },
+  { code: 'lampe_poche_dynamo', libelle: 'Lampe de poche à dynamo' },
+  { code: 'piles', libelle: 'Piles de rechange' },
+  { code: 'chargeur_gsm', libelle: 'Chargeur GSM / batterie externe' },
+  { code: 'radio_piles', libelle: 'Radio à piles' },
+  { code: 'liste_numeros', libelle: 'Liste des numéros importants' },
+  { code: 'couteau_multifonction', libelle: 'Couteau multifonction' },
+]
+
+function GestionKitUrgence({ jeton, itemsInitiaux }) {
+  const [items, setItems] = useState(itemsInitiaux)
+
+  function presentPour(code) {
+    return items.find((i) => i.item_code === code)?.present ?? false
+  }
+
+  async function basculer(code) {
+    const nouveauPresent = !presentPour(code)
+    const { error } = await supabase.rpc('maj_item_kit_urgence', {
+      p_jeton: jeton,
+      p_item_code: code,
+      p_present: nouveauPresent,
+    })
+    if (!error) {
+      setItems((prev) => {
+        const sansCelui = prev.filter((i) => i.item_code !== code)
+        return [...sansCelui, { item_code: code, present: nouveauPresent }]
+      })
+    }
+  }
+
+  return (
+    <div className="border-t border-trait pt-4 mt-4">
+      <h2 className="text-sm font-semibold text-encre mb-1">Mon kit d'urgence</h2>
+      <p className="text-xs text-sourdine mb-3">
+        10 éléments conseillés par le Centre de Crise National pour tenir en autonomie.
+      </p>
+      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {ITEMS_KIT.map((item) => (
+          <li key={item.code}>
+            <label className="flex items-center gap-2 text-sm text-encre">
+              <input type="checkbox" checked={presentPour(item.code)} onChange={() => basculer(item.code)} />
+              {item.libelle}
+            </label>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 

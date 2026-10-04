@@ -3,6 +3,7 @@ import Accueil from './pages/Accueil'
 import Benevole from './pages/Benevole'
 import PlanUrgence from './pages/PlanUrgence'
 import Soutien from './pages/Soutien'
+import Risques from './pages/Risques'
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
         <Route path="/benevole" element={<Benevole />} />
         <Route path="/plan-urgence" element={<PlanUrgence />} />
         <Route path="/soutien" element={<Soutien />} />
+        <Route path="/risques" element={<Risques />} />
       </Routes>
     </BrowserRouter>
   )

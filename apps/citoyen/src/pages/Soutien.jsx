@@ -7,6 +7,7 @@ const STORAGE_KEY_CONTEXTE = 'citoyen_contexte_id_selectionne'
 export default function Soutien() {
   const contexteId = localStorage.getItem(STORAGE_KEY_CONTEXTE) || ''
   const [ressources, setRessources] = useState([])
+  const [ressourcesPsychoeducatives, setRessourcesPsychoeducatives] = useState([])
   const [chargement, setChargement] = useState(true)
   const [erreur, setErreur] = useState(null)
 
@@ -15,17 +16,20 @@ export default function Soutien() {
       setChargement(false)
       return
     }
-    supabase
-      .from('annuaire_soutien_psychologique')
-      .select('*')
-      .eq('actif', true)
-      .or(`contexte_id.is.null,contexte_id.eq.${contexteId}`)
-      .order('ordre_affichage')
-      .then(({ data, error }) => {
-        if (error) setErreur(error.message)
-        else setRessources(data ?? [])
-        setChargement(false)
-      })
+    Promise.all([
+      supabase
+        .from('annuaire_soutien_psychologique')
+        .select('*')
+        .eq('actif', true)
+        .or(`contexte_id.is.null,contexte_id.eq.${contexteId}`)
+        .order('ordre_affichage'),
+      supabase.from('ressources_psychoeducatives').select('*'),
+    ]).then(([r, rp]) => {
+      if (r.error) setErreur(r.error.message)
+      else setRessources(r.data ?? [])
+      setRessourcesPsychoeducatives(rp.data ?? [])
+      setChargement(false)
+    })
   }, [contexteId])
 
   if (!contexteId) return <Navigate to="/" replace />
@@ -64,6 +68,27 @@ export default function Soutien() {
             </li>
           ))}
         </ul>
+      )}
+
+      {ressourcesPsychoeducatives.filter((r) => r.public_cible !== 'intervenant').length > 0 && (
+        <div className="mt-6 space-y-3">
+          <p className="text-sm font-medium text-encre">
+            Comment réagir après un événement difficile
+          </p>
+          {ressourcesPsychoeducatives
+            .filter((r) => r.public_cible !== 'intervenant')
+            .map((r) => (
+              <div key={r.id} className="border border-trait rounded p-3 bg-fond">
+                <p className="text-sm font-medium text-encre mb-1">{r.titre}</p>
+                <ul className="list-disc list-inside text-sm text-sourdine space-y-1">
+                  {(r.contenu ?? []).map((c, i) => (
+                    <li key={i}>{c}</li>
+                  ))}
+                </ul>
+                {r.source && <p className="text-xs text-sourdine mt-2">Source : {r.source}</p>}
+              </div>
+            ))}
+        </div>
       )}
     </div>
   )

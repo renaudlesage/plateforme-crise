@@ -1474,7 +1474,7 @@ function GestionSuiviPsychosocial({ incidentId }) {
           className="text-xs flex-1 min-w-[6rem]"
         />
       </div>
-      <label className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+      <label className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1 mb-1.5">
         <span>Bilan Post-Crise (BPC) réalisé</span>
         <input
           type="checkbox"
@@ -1487,6 +1487,30 @@ function GestionSuiviPsychosocial({ incidentId }) {
           }
         />
       </label>
+      <div className="flex flex-wrap gap-1.5">
+        <div className="flex items-center gap-1.5 text-xs">
+          <span className="text-sourdine">Pic anniversaire prévu</span>
+          <input
+            type="date"
+            value={v.date_pic_anniversaire_prevu ?? ''}
+            onChange={(e) => creerOuModifier({ date_pic_anniversaire_prevu: e.target.value || null })}
+            className="text-xs"
+          />
+        </div>
+        <input
+          value={(v.ressources_orientees ?? []).join(', ')}
+          onChange={(e) =>
+            creerOuModifier({
+              ressources_orientees: e.target.value
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean),
+            })
+          }
+          placeholder="ressources orientées (séparées par des virgules)"
+          className="text-xs flex-1 min-w-[10rem]"
+        />
+      </div>
     </BlocD5>
   )
 }
@@ -3878,8 +3902,75 @@ function SectionPsychosocialD2({ incidentId }) {
         <GestionStructuresPips incidentId={incidentId} />
         <GestionCommunicationVictimesDeces incidentId={incidentId} />
         <GestionCommemorations incidentId={incidentId} />
+        <GestionSignauxAlerte incidentId={incidentId} />
       </div>
     </div>
+  )
+}
+
+const SIGNAUX_ALERTE = [
+  { valeur: 'comportement_tres_different', libelle: 'Comportement très différent' },
+  { valeur: 'incapacite_fonctionner_quotidien', libelle: 'Incapacité à fonctionner au quotidien' },
+  { valeur: 'tension_irritabilite_persistante', libelle: 'Tension / irritabilité persistante' },
+  { valeur: 'pensees_intrusives_prolongees', libelle: 'Pensées intrusives prolongées' },
+  { valeur: 'usage_excessif_alcool_medicaments', libelle: "Usage excessif d'alcool / médicaments" },
+  { valeur: 'anhedonie', libelle: 'Anhédonie' },
+  { valeur: 'relations_proches_degradees', libelle: 'Relations proches dégradées' },
+]
+
+function GestionSignauxAlerte({ incidentId }) {
+  const { lignes, chargement, erreur, creer, supprimer } = useCrudSimpleIncident('signaux_alerte_suivi_individuel', incidentId)
+  const [personneRef, setPersonneRef] = useState('')
+  const [signal, setSignal] = useState(SIGNAUX_ALERTE[0].valeur)
+  const [signalePar, setSignalePar] = useState('')
+  const [orienteVers, setOrienteVers] = useState('')
+
+  async function ajouter(e) {
+    e.preventDefault()
+    if (!personneRef.trim()) return
+    const { error } = await creer({
+      personne_ref: personneRef.trim(),
+      signal,
+      signale_par: signalePar.trim() || null,
+      oriente_vers: orienteVers.trim() || null,
+      date_signalement: new Date().toISOString(),
+    })
+    if (!error) {
+      setPersonneRef('')
+      setSignalePar('')
+      setOrienteVers('')
+    }
+  }
+
+  return (
+    <BlocD5 titre="Signaux d'alerte (suivi individuel)" aide="Signes de stress aigu dépassé chez un intervenant ou une personne impliquée, à orienter vers une ressource adaptée.">
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <form onSubmit={ajouter} className="flex flex-wrap gap-1.5 mb-2">
+        <input value={personneRef} onChange={(e) => setPersonneRef(e.target.value)} placeholder="personne / référence" className="text-xs flex-1 min-w-[8rem]" />
+        <select value={signal} onChange={(e) => setSignal(e.target.value)} className="text-xs">
+          {SIGNAUX_ALERTE.map((s) => <option key={s.valeur} value={s.valeur}>{s.libelle}</option>)}
+        </select>
+        <input value={signalePar} onChange={(e) => setSignalePar(e.target.value)} placeholder="signalé par" className="text-xs flex-1 min-w-[6rem]" />
+        <input value={orienteVers} onChange={(e) => setOrienteVers(e.target.value)} placeholder="orienté vers" className="text-xs flex-1 min-w-[6rem]" />
+        <BoutonDiscret type="submit">Ajouter</BoutonDiscret>
+      </form>
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : (
+        <ul className="space-y-1">
+          {lignes.map((s) => (
+            <li key={s.id} className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+              <span>
+                <span className="jeton mr-1.5">{SIGNAUX_ALERTE.find((x) => x.valeur === s.signal)?.libelle ?? s.signal}</span>
+                {s.personne_ref}
+                {s.oriente_vers && <> — orienté vers {s.oriente_vers}</>}
+              </span>
+              <BoutonDiscret onClick={() => supprimer(s.id)}>×</BoutonDiscret>
+            </li>
+          ))}
+        </ul>
+      )}
+    </BlocD5>
   )
 }
 
