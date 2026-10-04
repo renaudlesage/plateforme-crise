@@ -1313,7 +1313,155 @@ function SectionSuiviRetablissement({ incidentId, contexteId }) {
           )}
         </ul>
       )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4">
+        <GestionVoletsRetablissement incidentId={incidentId} />
+        <GestionSuiviPsychosocial incidentId={incidentId} />
+      </div>
     </div>
+  )
+}
+
+const VOLETS_RETABLISSEMENT_DETAIL = [
+  { valeur: 'relogement_evacues', libelle: 'Relogement des évacués' },
+  { valeur: 'enquete_judiciaire', libelle: 'Enquête judiciaire' },
+  { valeur: 'indemnisation_assurances', libelle: 'Indemnisation / assurances' },
+  { valeur: 'gestion_dons', libelle: 'Gestion des dons' },
+  { valeur: 'commemoration', libelle: 'Commémoration' },
+  { valeur: 'nettoyage_terrain', libelle: 'Nettoyage du terrain' },
+  { valeur: 'appui_linguistique', libelle: 'Appui linguistique' },
+  { valeur: 'besoin_securite', libelle: 'Besoin de sécurité' },
+]
+
+function GestionVoletsRetablissement({ incidentId }) {
+  const { lignes, chargement, erreur, creer, modifier, supprimer } = useCrudSimpleIncident('retablissement_details', incidentId)
+  const [volet, setVolet] = useState('relogement_evacues')
+  const [responsable, setResponsable] = useState('')
+
+  async function ajouter(e) {
+    e.preventDefault()
+    const { error } = await creer({ volet, responsable: responsable.trim() || null })
+    if (!error) setResponsable('')
+  }
+
+  return (
+    <BlocD5 titre="Volets détaillés du rétablissement (P9)" aide="Chaîne du PPUI Seveso, volets concrets au-delà des grandes étapes ci-dessus.">
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <form onSubmit={ajouter} className="flex flex-wrap gap-1.5 mb-2">
+        <select value={volet} onChange={(e) => setVolet(e.target.value)} className="text-xs">
+          {VOLETS_RETABLISSEMENT_DETAIL.map((v) => <option key={v.valeur} value={v.valeur}>{v.libelle}</option>)}
+        </select>
+        <input value={responsable} onChange={(e) => setResponsable(e.target.value)} placeholder="responsable" className="text-xs flex-1 min-w-[6rem]" />
+        <BoutonDiscret type="submit">Ajouter</BoutonDiscret>
+      </form>
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : (
+        <ul className="space-y-1">
+          {lignes.map((v) => (
+            <li key={v.id} className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+              <span>
+                {VOLETS_RETABLISSEMENT_DETAIL.find((x) => x.valeur === v.volet)?.libelle ?? v.volet}
+                {v.responsable && <> — {v.responsable}</>}
+              </span>
+              <span className="flex gap-1">
+                <select value={v.statut} onChange={(e) => modifier(v.id, { statut: e.target.value })} className="text-xs">
+                  <option value="en_cours">En cours</option>
+                  <option value="termine">Terminé</option>
+                  <option value="suspendu">Suspendu</option>
+                </select>
+                <BoutonDiscret onClick={() => supprimer(v.id)}>×</BoutonDiscret>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </BlocD5>
+  )
+}
+
+const PHASES_PSYCHOSOCIAL = [
+  { valeur: 'pips_aigu', libelle: 'PIPS — phase aiguë' },
+  { valeur: 'ccps_coordination', libelle: 'CCPS — coordination' },
+  { valeur: 'transition_communale', libelle: 'Transition communale' },
+]
+
+function GestionSuiviPsychosocial({ incidentId }) {
+  const [ligne, setLigne] = useState(null)
+  const [chargement, setChargement] = useState(true)
+  const [erreur, setErreur] = useState(null)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('suivi_psychosocial_crise')
+      .select('*')
+      .eq('incident_id', incidentId)
+      .maybeSingle()
+    if (error) setErreur(error.message)
+    else setLigne(data)
+    setChargement(false)
+  }, [incidentId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function creerOuModifier(valeurs) {
+    if (ligne) {
+      const { error } = await supabase.from('suivi_psychosocial_crise').update(valeurs).eq('id', ligne.id)
+      if (!error) await rafraichir()
+      return { error }
+    }
+    const { error } = await supabase.from('suivi_psychosocial_crise').insert({ ...valeurs, incident_id: incidentId })
+    if (!error) await rafraichir()
+    return { error }
+  }
+
+  if (chargement) {
+    return (
+      <BlocD5 titre="Chaîne psychosociale (PIPS → PSM → CCPS)">
+        <p className="text-xs text-sourdine">Chargement…</p>
+      </BlocD5>
+    )
+  }
+
+  const v = ligne ?? { phase: 'pips_aigu' }
+
+  return (
+    <BlocD5 titre="Chaîne psychosociale (PIPS → PSM → CCPS)" aide="Transfert formalisé du PSM vers le coordinateur post-aigu communal, précédé d'un Bilan Post-Crise.">
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <div className="flex flex-wrap gap-1.5 mb-2">
+        <select value={v.phase} onChange={(e) => creerOuModifier({ phase: e.target.value })} className="text-xs">
+          {PHASES_PSYCHOSOCIAL.map((p) => <option key={p.valeur} value={p.valeur}>{p.libelle}</option>)}
+        </select>
+        <input
+          value={v.psm_responsable ?? ''}
+          onChange={(e) => creerOuModifier({ psm_responsable: e.target.value.trim() || null })}
+          placeholder="PSM responsable"
+          className="text-xs flex-1 min-w-[6rem]"
+        />
+        <input
+          value={v.coordinateur_post_aigu_communal ?? ''}
+          onChange={(e) => creerOuModifier({ coordinateur_post_aigu_communal: e.target.value.trim() || null })}
+          placeholder="coordinateur communal"
+          className="text-xs flex-1 min-w-[6rem]"
+        />
+      </div>
+      <label className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+        <span>Bilan Post-Crise (BPC) réalisé</span>
+        <input
+          type="checkbox"
+          checked={v.bilan_post_crise_realise ?? false}
+          onChange={(e) =>
+            creerOuModifier({
+              bilan_post_crise_realise: e.target.checked,
+              bilan_post_crise_date: e.target.checked ? new Date().toISOString().slice(0, 10) : null,
+            })
+          }
+        />
+      </label>
+    </BlocD5>
   )
 }
 
