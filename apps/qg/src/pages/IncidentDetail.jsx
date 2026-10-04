@@ -53,6 +53,13 @@ export default function IncidentDetail() {
     chargerIncident()
   }
 
+  async function basculerModeBeAlert(mode) {
+    const actuels = incident.be_alert_mode ?? []
+    const nouveaux = actuels.includes(mode) ? actuels.filter((m) => m !== mode) : [...actuels, mode]
+    await supabase.from('incidents').update({ be_alert_mode: nouveaux.length > 0 ? nouveaux : null }).eq('id', id)
+    chargerIncident()
+  }
+
   if (chargementIncident) return <p className="text-sm text-sourdine">Chargement…</p>
   if (!incident) return <p className="text-sm text-chaud">Incident introuvable.</p>
 
@@ -119,6 +126,19 @@ export default function IncidentDetail() {
               <option value="evolutif">Évolutif</option>
               <option value="previsible">Prévisible</option>
             </select>
+          </div>
+          <div className="flex items-center gap-3 mt-1.5">
+            <label className="text-xs text-sourdine">BE-Alert :</label>
+            {MODES_BE_ALERT.map((m) => (
+              <label key={m.valeur} className="flex items-center gap-1 text-xs text-sourdine">
+                <input
+                  type="checkbox"
+                  checked={(incident.be_alert_mode ?? []).includes(m.valeur)}
+                  onChange={() => basculerModeBeAlert(m.valeur)}
+                />
+                {m.libelle}
+              </label>
+            ))}
           </div>
         </div>
         {incident.statut !== 'cloture' && (
@@ -247,6 +267,12 @@ const PHASES_MODULES = {
   levee: { activation_30min: false, checklist: false, rex: false, seuils_action: false, pc_ops: false },
   post_crise: { activation_30min: false, escalade: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, seuils_action: false, requisitions: false, zones: false, pc_ops: false, communication_d5: false },
 }
+
+const MODES_BE_ALERT = [
+  { valeur: 'inscription', libelle: 'Inscription' },
+  { valeur: 'localisation', libelle: 'Localisation' },
+  { valeur: 'diffusion_masse', libelle: 'Diffusion de masse' },
+]
 
 const TYPES_ZONE = [
   { valeur: 'rouge', libelle: 'Rouge — exclusion', perimetre: 'exclusion' },

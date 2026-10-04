@@ -61,6 +61,7 @@ const SECTIONS = [
       { to: '/canaux-diffusion', libelle: 'Canaux de diffusion' },
       { to: '/soutien-psychologique', libelle: 'Soutien psychologique' },
       { to: '/checklist-d5', libelle: 'Checklist D5' },
+      { to: '/be-alert-tests', libelle: 'Tests BE-Alert' },
     ],
   },
 ]

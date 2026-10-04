@@ -35,6 +35,7 @@ import ConformiteLegale from './pages/ConformiteLegale'
 import ChecklistD5 from './pages/ChecklistD5'
 import CentresCrise from './pages/CentresCrise'
 import DirPcOpsAttestes from './pages/DirPcOpsAttestes'
+import BeAlertTests from './pages/BeAlertTests'
 
 export default function App() {
   return (
@@ -91,6 +92,7 @@ export default function App() {
             <Route path="checklist-d5" element={<ChecklistD5 />} />
             <Route path="centres-crise" element={<CentresCrise />} />
             <Route path="dir-pc-ops-attestes" element={<DirPcOpsAttestes />} />
+            <Route path="be-alert-tests" element={<BeAlertTests />} />
           </Route>
         </Routes>
       </AuthProvider>
