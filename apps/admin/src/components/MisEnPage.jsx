@@ -71,6 +71,11 @@ export default function MisEnPage() {
     navigate('/selection-contexte')
   }
 
+  const sections =
+    contexteActuel?.contextes?.type === 'entite_critique'
+      ? [...SECTIONS, { titre: 'Conformité', liens: [{ to: '/conformite-cer', libelle: 'Conformité CER' }] }]
+      : SECTIONS
+
   return (
     <div className="poste">
       <header className="tete">
@@ -92,7 +97,7 @@ export default function MisEnPage() {
 
       <div className="corps">
         <nav className="plaques">
-          {SECTIONS.map((section, i) => (
+          {sections.map((section, i) => (
             <div key={i} className="bloc" style={{ marginBottom: 14 }}>
               {section.titre && <h2>{section.titre}</h2>}
               {section.liens.map((lien) => {

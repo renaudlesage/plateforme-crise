@@ -12,6 +12,7 @@ const LIBELLE_TYPE = {
   province: 'Province',
   federal: 'Fédéral',
   evenement: 'Événement',
+  entite_critique: 'Entité critique (CER)',
   autre: 'Autre',
 }
 
