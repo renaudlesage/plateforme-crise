@@ -6,6 +6,7 @@ import Connexion from './pages/Connexion'
 import SelectionContexte from './pages/SelectionContexte'
 import Incidents from './pages/Incidents'
 import IncidentDetail from './pages/IncidentDetail'
+import SignalementsCitoyens from './pages/SignalementsCitoyens'
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
           >
             <Route index element={<Incidents />} />
             <Route path="incidents/:id" element={<IncidentDetail />} />
+            <Route path="signalements-citoyens" element={<SignalementsCitoyens />} />
           </Route>
         </Routes>
       </AuthProvider>
