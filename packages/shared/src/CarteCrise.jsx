@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, useMapEvents } from 'react-leaflet'
 import { divIcon } from 'leaflet'
 import { useEffect } from 'react'
 
@@ -7,9 +7,11 @@ import { useEffect } from 'react'
  * QG. Pas de clé API (même choix qu'Eventware, pour la cohérence entre
  * les deux produits — voir briefing-eventware-pour-crisiware.md §1).
  *
- * Volontairement en lecture pour cette première itération : afficher
- * ce qui est déjà saisi en coordonnées brutes, avant d'envisager une
- * édition par clic sur la carte.
+ * En lecture par défaut. Passer `onClicCarte` bascule en mode
+ * sélection : un clic sur la carte renvoie `{lat, lon}` et une pastille
+ * de sélection (distincte des marqueurs de couche) se positionne là —
+ * c'est ce qui sert à géolocaliser le déclenchement d'un incident ou
+ * le centre d'une zone, sans taper des coordonnées à la main.
  *
  * Chaque app importe une fois `leaflet/dist/leaflet.css` (dans main.jsx) —
  * ce composant ne le fait pas lui-même pour éviter de l'importer deux
@@ -19,17 +21,30 @@ import { useEffect } from 'react'
  * @param {number} [zoom]
  * @param {Array<{id:string, lat:number, lon:number, titre:string, sousTitre?:string, couleur?:string}>} [marqueurs]
  * @param {Array<{id:string, lat:number, lon:number, rayonM:number, couleur?:string, libelle?:string}>} [cercles]
+ * @param {{lat:number, lon:number}|null} [selection] - pastille de sélection, en mode édition
+ * @param {(point: {lat:number, lon:number}) => void} [onClicCarte] - présence = active le mode sélection (clic + curseur adapté)
  * @param {string} [hauteur] - toute valeur CSS valide, ex. '420px' ou '60vh'
  */
-export default function CarteCrise({ centre, zoom = 13, marqueurs = [], cercles = [], hauteur = '420px' }) {
+export default function CarteCrise({
+  centre,
+  zoom = 13,
+  marqueurs = [],
+  cercles = [],
+  selection = null,
+  onClicCarte = null,
+  hauteur = '420px',
+}) {
   return (
-    <div style={{ height: hauteur, borderRadius: 8, overflow: 'hidden' }}>
+    <div
+      style={{ height: hauteur, borderRadius: 8, overflow: 'hidden', cursor: onClicCarte ? 'crosshair' : undefined }}
+    >
       <MapContainer center={[centre.lat, centre.lon]} zoom={zoom} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <RecentrerSiChangement centre={centre} />
+        {onClicCarte && <CaptureClic onClicCarte={onClicCarte} />}
 
         {cercles.map((c) => (
           <Circle
@@ -55,9 +70,21 @@ export default function CarteCrise({ centre, zoom = 13, marqueurs = [], cercles 
             </Popup>
           </Marker>
         ))}
+
+        {selection && <Marker position={[selection.lat, selection.lon]} icon={iconeSelection()} />}
       </MapContainer>
     </div>
   )
+}
+
+/** Mode sélection : chaque clic sur la carte renvoie le point cliqué. */
+function CaptureClic({ onClicCarte }) {
+  useMapEvents({
+    click(e) {
+      onClicCarte({ lat: e.latlng.lat, lon: e.latlng.lng })
+    },
+  })
+  return null
 }
 
 /** Recentre la carte quand `centre` change de référence (changement de contexte, par ex.) — Leaflet ne le fait pas de lui-même. */
@@ -82,5 +109,15 @@ function icone(couleur = '#2563eb') {
     html: `<div style="width:16px;height:16px;border-radius:50%;background:${couleur};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4)"></div>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8],
+  })
+}
+
+/** Pastille de sélection : plus grande, anneau marqué, pour qu'elle ne se confonde jamais avec un marqueur de couche. */
+function iconeSelection() {
+  return divIcon({
+    className: '',
+    html: `<div style="width:22px;height:22px;border-radius:50%;background:#dc2626;border:3px solid white;box-shadow:0 0 0 2px #dc2626,0 1px 4px rgba(0,0,0,0.5)"></div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
   })
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { SelecteurLocalisation } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
@@ -10,6 +11,7 @@ export default function IncidentDetail() {
   const { contexteId } = useAuth()
   const [incident, setIncident] = useState(null)
   const [chargementIncident, setChargementIncident] = useState(true)
+  const [localisationOuverte, setLocalisationOuverte] = useState(false)
   const { lignes: sitesQG } = useTableContexte('sites_qg', contexteId, { tri: 'priorite' })
 
   const chargerIncident = useCallback(async () => {
@@ -57,6 +59,11 @@ export default function IncidentDetail() {
     const actuels = incident.be_alert_mode ?? []
     const nouveaux = actuels.includes(mode) ? actuels.filter((m) => m !== mode) : [...actuels, mode]
     await supabase.from('incidents').update({ be_alert_mode: nouveaux.length > 0 ? nouveaux : null }).eq('id', id)
+    chargerIncident()
+  }
+
+  async function changerLocalisation(latitude, longitude) {
+    await supabase.from('incidents').update({ latitude, longitude }).eq('id', id)
     chargerIncident()
   }
 
@@ -139,6 +146,28 @@ export default function IncidentDetail() {
                 {m.libelle}
               </label>
             ))}
+          </div>
+          <div className="mt-1.5">
+            <button type="button" className="text-xs text-sourdine lien" onClick={() => setLocalisationOuverte((v) => !v)}>
+              {incident.latitude != null
+                ? `Localisation : ${Number(incident.latitude).toFixed(5)}, ${Number(incident.longitude).toFixed(5)}`
+                : 'Localisation : non renseignée'}
+              {' — '}{localisationOuverte ? 'masquer' : 'modifier'}
+            </button>
+            {localisationOuverte && (
+              <div className="mt-2 max-w-md">
+                <SelecteurLocalisation
+                  lat={incident.latitude}
+                  lon={incident.longitude}
+                  onChange={changerLocalisation}
+                  centreDefaut={
+                    incident.latitude != null
+                      ? { lat: Number(incident.latitude), lon: Number(incident.longitude) }
+                      : undefined
+                  }
+                />
+              </div>
+            )}
           </div>
         </div>
         {incident.statut !== 'cloture' && (

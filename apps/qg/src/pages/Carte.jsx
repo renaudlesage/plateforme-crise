@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 const CENTRE_BELGIQUE = { lat: 50.5039, lon: 4.4699 }
 
 const COUCHES = [
+  { cle: 'incidents', libelle: 'Incidents en cours', couleur: '#b91c1c' },
   { cle: 'objets_a_risque', libelle: 'Objets à risque', couleur: '#dc5a3c' },
   { cle: 'centres_accueil', libelle: "Centres d'accueil", couleur: '#2563eb' },
   { cle: 'sites_qg', libelle: 'Sites QG', couleur: '#7c3aed' },
@@ -40,7 +41,7 @@ export default function Carte() {
       supabase.from('sites_qg').select('id, nom, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
       supabase.from('infrastructures_critiques').select('id, nom, type, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
       supabase.from('signalements_citoyens').select('id, reference, type, statut, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null).not('statut', 'in', '(clos,sans_suite)'),
-      supabase.from('incidents').select('id').eq('contexte_id', contexteId).eq('statut', 'en_cours'),
+      supabase.from('incidents').select('id, nom, type_evenement, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'en_cours'),
     ])
 
     const premierErreur = [objets, centres, sites, infra, signalements, incidentsActifs].find((r) => r.error)
@@ -51,6 +52,7 @@ export default function Carte() {
     }
 
     setPoints({
+      incidents: (incidentsActifs.data ?? []).filter((i) => i.latitude != null),
       objets_a_risque: objets.data ?? [],
       centres_accueil: centres.data ?? [],
       sites_qg: sites.data ?? [],
@@ -88,7 +90,7 @@ export default function Carte() {
           lat: Number(p.latitude),
           lon: Number(p.longitude),
           titre: p.identification ?? p.nom ?? p.reference ?? c.libelle,
-          sousTitre: p.categorie ?? p.type_lieu ?? p.type ?? LIBELLE_TYPE_SIGNALEMENT[p.type] ?? undefined,
+          sousTitre: p.categorie ?? p.type_lieu ?? p.type ?? p.type_evenement ?? LIBELLE_TYPE_SIGNALEMENT[p.type] ?? undefined,
           couleur: c.couleur,
         })
       }

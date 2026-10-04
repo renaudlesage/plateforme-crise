@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { SelecteurLocalisation } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
@@ -130,6 +131,8 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
   const [phaseCycleVie, setPhaseCycleVie] = useState('alerte')
   const [complexiteType, setComplexiteType] = useState('')
   const [dynamiqueEvenement, setDynamiqueEvenement] = useState('')
+  const [latitude, setLatitude] = useState(null)
+  const [longitude, setLongitude] = useState(null)
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -145,6 +148,8 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
       phase_cycle_vie: phaseCycleVie,
       complexite_type: complexiteType || null,
       dynamique_evenement: dynamiqueEvenement || null,
+      latitude,
+      longitude,
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -227,6 +232,14 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
           <option value="evolutif">Évolutif</option>
           <option value="previsible">Prévisible</option>
         </select>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Localisation du déclenchement</label>
+        <p className="text-xs text-sourdine mb-1">
+          Facultatif, mais recommandé : repère l'incident sur la carte du contexte dès le départ.
+        </p>
+        <SelecteurLocalisation lat={latitude} lon={longitude} onChange={(la, lo) => { setLatitude(la); setLongitude(lo) }} />
       </div>
 
       {erreur && <p className="text-sm text-chaud">{erreur}</p>}
