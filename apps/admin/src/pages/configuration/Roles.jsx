@@ -1,7 +1,26 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useTableContexte } from '../../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../../components/Boutons'
+import { supabase } from '../../lib/supabase'
+
+const RESSOURCES = [
+  { valeur: 'configuration', libelle: 'Configuration' },
+  { valeur: 'referentiels', libelle: 'Référentiels' },
+  { valeur: 'plans_urgence', libelle: "Plans d'urgence" },
+  { valeur: 'exercices', libelle: 'Exercices' },
+  { valeur: 'incidents', libelle: 'Incidents' },
+  { valeur: 'communication', libelle: 'Communication' },
+  { valeur: 'resilience_territoriale', libelle: 'Résilience territoriale' },
+  { valeur: 'conformite_legale', libelle: 'Conformité légale' },
+  { valeur: 'comptes', libelle: 'Comptes' },
+]
+const ACTIONS = [
+  { valeur: 'lire', libelle: 'Lire' },
+  { valeur: 'creer', libelle: 'Créer' },
+  { valeur: 'modifier', libelle: 'Modifier' },
+  { valeur: 'supprimer', libelle: 'Supprimer' },
+]
 
 export default function Roles() {
   const { contexteId } = useAuth()
@@ -13,6 +32,7 @@ export default function Roles() {
 
   const [enAjout, setEnAjout] = useState(false)
   const [ligneEnEdition, setLigneEnEdition] = useState(null)
+  const [capacitesOuvertes, setCapacitesOuvertes] = useState(null)
 
   return (
     <section>
@@ -69,6 +89,11 @@ export default function Roles() {
                   <p className="text-sm font-medium text-encre">{r.libelle}</p>
                   <p className="text-xs text-sourdine">
                     code : {r.code}
+                    {r.tout_pouvoir && (
+                      <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-chaud">
+                        tous pouvoirs
+                      </span>
+                    )}
                     {r.peut_declencher_escalade && (
                       <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-veille">
                         peut déclencher une escalade
@@ -77,6 +102,11 @@ export default function Roles() {
                   </p>
                 </div>
                 <div className="flex gap-2">
+                  <BoutonDiscret
+                    onClick={() => setCapacitesOuvertes(capacitesOuvertes === r.id ? null : r.id)}
+                  >
+                    {capacitesOuvertes === r.id ? 'Masquer les capacités' : 'Capacités'}
+                  </BoutonDiscret>
                   <BoutonDiscret onClick={() => setLigneEnEdition(r.id)}>Modifier</BoutonDiscret>
                   <BoutonDiscret
                     onClick={() => {
@@ -89,9 +119,101 @@ export default function Roles() {
               </li>
             )
           )}
+          {roles.map((r) =>
+            capacitesOuvertes === r.id && ligneEnEdition !== r.id ? (
+              <li key={`${r.id}-capacites`} className="bg-fond p-3">
+                <GestionCapacites role={r} />
+              </li>
+            ) : null
+          )}
         </ul>
       )}
     </section>
+  )
+}
+
+function GestionCapacites({ role }) {
+  const [capacites, setCapacites] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [erreur, setErreur] = useState(null)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('role_capacites')
+      .select('id, ressource, action')
+      .eq('role_id', role.id)
+    if (error) setErreur(error.message)
+    else {
+      setErreur(null)
+      setCapacites(data ?? [])
+    }
+    setChargement(false)
+  }, [role.id])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function basculer(ressource, action) {
+    const existante = capacites.find((c) => c.ressource === ressource && c.action === action)
+    if (existante) {
+      await supabase.from('role_capacites').delete().eq('id', existante.id)
+    } else {
+      await supabase.from('role_capacites').insert({ role_id: role.id, ressource, action })
+    }
+    await rafraichir()
+  }
+
+  if (role.tout_pouvoir) {
+    return (
+      <p className="text-sm text-sourdine">
+        Ce rôle a <span className="font-medium text-encre">tous pouvoirs</span> — la grille de
+        capacités ci-dessous est ignorée tant que cette case reste cochée dans le formulaire du rôle.
+      </p>
+    )
+  }
+
+  return (
+    <div>
+      <p className="text-xs text-sourdine mb-2">
+        Si aucune case n'est cochée pour ce rôle, l'accès retombe sur le niveau global du compte
+        (lecture/écriture/admin) — rien ne change tant que cette grille reste vide.
+      </p>
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
+      {chargement ? (
+        <p className="text-sm text-sourdine">Chargement…</p>
+      ) : (
+        <table className="text-sm w-full">
+          <thead>
+            <tr>
+              <th className="text-left text-xs text-sourdine font-medium py-1">Ressource</th>
+              {ACTIONS.map((a) => (
+                <th key={a.valeur} className="text-xs text-sourdine font-medium py-1">
+                  {a.libelle}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {RESSOURCES.map((r) => (
+              <tr key={r.valeur} className="border-t border-trait">
+                <td className="py-1.5 text-encre">{r.libelle}</td>
+                {ACTIONS.map((a) => (
+                  <td key={a.valeur} className="text-center">
+                    <input
+                      type="checkbox"
+                      checked={capacites.some((c) => c.ressource === r.valeur && c.action === a.valeur)}
+                      onChange={() => basculer(r.valeur, a.valeur)}
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
   )
 }
 
@@ -101,6 +223,7 @@ function FormulaireRole({ valeursInitiales = {}, onValider, onAnnuler }) {
   const [peutDeclencher, setPeutDeclencher] = useState(
     valeursInitiales.peut_declencher_escalade ?? false
   )
+  const [toutPouvoir, setToutPouvoir] = useState(valeursInitiales.tout_pouvoir ?? false)
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -118,6 +241,7 @@ function FormulaireRole({ valeursInitiales = {}, onValider, onAnnuler }) {
       code: codeFinal,
       libelle: libelle.trim(),
       peut_declencher_escalade: peutDeclencher,
+      tout_pouvoir: toutPouvoir,
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -156,6 +280,15 @@ function FormulaireRole({ valeursInitiales = {}, onValider, onAnnuler }) {
           onChange={(e) => setPeutDeclencher(e.target.checked)}
         />
         Peut déclencher une escalade de niveau
+      </label>
+
+      <label className="flex items-center gap-2 text-sm text-sourdine">
+        <input
+          type="checkbox"
+          checked={toutPouvoir}
+          onChange={(e) => setToutPouvoir(e.target.checked)}
+        />
+        Tous pouvoirs (ignore la grille de capacités)
       </label>
 
       {erreur && <p className="text-sm text-chaud">{erreur}</p>}
