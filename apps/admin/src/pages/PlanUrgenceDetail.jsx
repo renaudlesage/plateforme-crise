@@ -30,6 +30,25 @@ const STATUTS_PROPOSITION = [
   { valeur: 'rejete', libelle: 'Rejeté' },
 ]
 
+const SCENARIOS_RISQUE_RS = [
+  { valeur: 'thermique', libelle: 'Thermique' },
+  { valeur: 'surpression', libelle: 'Surpression' },
+  { valeur: 'toxique', libelle: 'Toxique' },
+  { valeur: 'ecotoxique', libelle: 'Écotoxique' },
+]
+
+const TYPES_ZONE_RS = [
+  { valeur: 'zdi', libelle: 'ZDI — zone des dangers d\'intervention' },
+  { valeur: 'zr', libelle: 'ZR — zone des risques' },
+  { valeur: 'zv', libelle: 'ZV — zone de vigilance' },
+]
+
+const METHODES_DELIMITATION_RS = [
+  { valeur: 'simulation', libelle: 'Simulation' },
+  { valeur: 'distance_conventionnelle', libelle: 'Distance conventionnelle' },
+  { valeur: 'pas_de_delimitation', libelle: 'Pas de délimitation' },
+]
+
 export default function PlanUrgenceDetail() {
   const { id } = useParams()
   const { contexteId } = useAuth()
@@ -79,8 +98,12 @@ export default function PlanUrgenceDetail() {
         <SectionPropositionsModification planId={plan.id} contexteId={contexteId} />
       </div>
 
-      <div>
+      <div className="mb-6">
         <SectionRisquesIdentifies planId={plan.id} contexteId={contexteId} />
+      </div>
+
+      <div>
+        <SectionEntreprisesSeveso planId={plan.id} contexteId={contexteId} />
       </div>
     </div>
   )
@@ -721,6 +744,442 @@ function FormulaireRisqueIdentifie({ objetsRisque, valeursInitiales = {}, onVali
         <BoutonPrincipal type="submit" disabled={enCours}>
           {enCours ? 'Enregistrement…' : 'Enregistrer'}
         </BoutonPrincipal>
+        <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
+      </div>
+    </form>
+  )
+}
+
+function SectionEntreprisesSeveso({ planId, contexteId }) {
+  const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
+  const [entreprises, setEntreprises] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [erreur, setErreur] = useState(null)
+  const [enAjout, setEnAjout] = useState(false)
+  const [ligneEnEdition, setLigneEnEdition] = useState(null)
+  const [entrepriseDepliee, setEntrepriseDepliee] = useState(null)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase
+      .from('ppui_seveso_entreprises')
+      .select('*, responsable:contacts!ppui_seveso_entreprises_responsable_contact_id_fkey(id, nom, prenom)')
+      .eq('plan_id', planId)
+      .order('nom_entreprise')
+    if (error) setErreur(error.message)
+    else setEntreprises(data ?? [])
+    setChargement(false)
+  }, [planId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function creer(valeurs) {
+    const { error } = await supabase.from('ppui_seveso_entreprises').insert({ ...valeurs, plan_id: planId })
+    if (error) return { error }
+    await rafraichir()
+    return { error: null }
+  }
+
+  async function modifier(idEntreprise, valeurs) {
+    const { error } = await supabase.from('ppui_seveso_entreprises').update(valeurs).eq('id', idEntreprise)
+    if (error) return { error }
+    await rafraichir()
+    return { error: null }
+  }
+
+  async function supprimer(idEntreprise) {
+    const { error } = await supabase.from('ppui_seveso_entreprises').delete().eq('id', idEntreprise)
+    if (!error) await rafraichir()
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="font-medium text-encre">Entreprises Seveso (PPUI)</h2>
+        {!enAjout && <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter une entreprise</BoutonPrincipal>}
+      </div>
+      <p className="text-xs text-sourdine mb-3">
+        Établissements Seveso seuil haut couverts par ce plan, avec leurs scénarios de risque et,
+        pour chacun, les zones d'effet (ZDI/ZR/ZV) calculées.
+      </p>
+
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
+
+      {enAjout && (
+        <div className="border border-trait rounded p-3 mb-3 bg-fond">
+          <FormulaireEntrepriseSeveso
+            contacts={contacts}
+            onAnnuler={() => setEnAjout(false)}
+            onValider={async (valeurs) => {
+              const { error } = await creer(valeurs)
+              if (!error) setEnAjout(false)
+              return { error }
+            }}
+          />
+        </div>
+      )}
+
+      {chargement ? (
+        <p className="text-sm text-sourdine">Chargement…</p>
+      ) : entreprises.length === 0 && !enAjout ? (
+        <p className="vide border border-dashed border-trait text-center p-4">Aucune entreprise Seveso enregistrée pour ce plan.</p>
+      ) : (
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden bg-surface">
+          {entreprises.map((ent) =>
+            ligneEnEdition === ent.id ? (
+              <li key={ent.id} className="p-3 bg-fond">
+                <FormulaireEntrepriseSeveso
+                  contacts={contacts}
+                  valeursInitiales={ent}
+                  onAnnuler={() => setLigneEnEdition(null)}
+                  onValider={async (valeurs) => {
+                    const { error } = await modifier(ent.id, valeurs)
+                    if (!error) setLigneEnEdition(null)
+                    return { error }
+                  }}
+                />
+              </li>
+            ) : (
+              <li key={ent.id} className="px-4 py-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-encre">
+                      {ent.nom_entreprise}
+                      {ent.systeme_enregistrement_personnel && (
+                        <span className="jeton ml-2 text-info">enregistrement du personnel</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-sourdine mt-0.5">{ent.adresse}</p>
+                    {ent.scenarios_risque?.length > 0 && (
+                      <p className="text-xs text-sourdine mt-0.5">
+                        scénarios :{' '}
+                        {ent.scenarios_risque
+                          .map((s) => SCENARIOS_RISQUE_RS.find((sc) => sc.valeur === s)?.libelle ?? s)
+                          .join(', ')}
+                      </p>
+                    )}
+                    <p className="text-xs text-sourdine mt-0.5">
+                      {ent.numero_permanence && <>permanence : {ent.numero_permanence} · </>}
+                      {ent.responsable && <>responsable : {ent.responsable.prenom} {ent.responsable.nom} · </>}
+                      {ent.nb_personnes_max_site != null && <>max sur site : {ent.nb_personnes_max_site}</>}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0 ml-3">
+                    <BoutonDiscret onClick={() => setEntrepriseDepliee(entrepriseDepliee === ent.id ? null : ent.id)}>
+                      {entrepriseDepliee === ent.id ? 'Masquer les zones' : 'Zones d\'effet'}
+                    </BoutonDiscret>
+                    <BoutonDiscret onClick={() => setLigneEnEdition(ent.id)}>Modifier</BoutonDiscret>
+                    <BoutonDiscret
+                      onClick={() => {
+                        if (confirm(`Supprimer "${ent.nom_entreprise}" ?`)) supprimer(ent.id)
+                      }}
+                    >
+                      Supprimer
+                    </BoutonDiscret>
+                  </div>
+                </div>
+                {entrepriseDepliee === ent.id && (
+                  <div className="mt-3 border-t border-trait pt-3">
+                    <SectionZonesEffetRS entrepriseId={ent.id} />
+                  </div>
+                )}
+              </li>
+            )
+          )}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function FormulaireEntrepriseSeveso({ contacts, valeursInitiales = {}, onValider, onAnnuler }) {
+  const [nomEntreprise, setNomEntreprise] = useState(valeursInitiales.nom_entreprise ?? '')
+  const [adresse, setAdresse] = useState(valeursInitiales.adresse ?? '')
+  const [numeroPermanence, setNumeroPermanence] = useState(valeursInitiales.numero_permanence ?? '')
+  const [responsableContactId, setResponsableContactId] = useState(valeursInitiales.responsable_contact_id ?? '')
+  const [responsableCcComContactId, setResponsableCcComContactId] = useState(
+    valeursInitiales.responsable_cc_com_contact_id ?? ''
+  )
+  const [scenariosRisque, setScenariosRisque] = useState(valeursInitiales.scenarios_risque ?? [])
+  const [nbPersonnesMaxSite, setNbPersonnesMaxSite] = useState(valeursInitiales.nb_personnes_max_site ?? '')
+  const [systemeEnregistrement, setSystemeEnregistrement] = useState(
+    valeursInitiales.systeme_enregistrement_personnel ?? false
+  )
+  const [rayonDescriptionKm, setRayonDescriptionKm] = useState(
+    valeursInitiales.rayon_description_environnement_km ?? 2
+  )
+  const [erreur, setErreur] = useState(null)
+  const [enCours, setEnCours] = useState(false)
+
+  function basculerScenario(s) {
+    setScenariosRisque((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
+  }
+
+  async function soumettre(e) {
+    e.preventDefault()
+    setEnCours(true)
+    const { error } = await onValider({
+      nom_entreprise: nomEntreprise.trim(),
+      adresse: adresse.trim(),
+      numero_permanence: numeroPermanence.trim() || null,
+      responsable_contact_id: responsableContactId || null,
+      responsable_cc_com_contact_id: responsableCcComContactId || null,
+      scenarios_risque: scenariosRisque,
+      nb_personnes_max_site: nbPersonnesMaxSite === '' ? null : Number(nbPersonnesMaxSite),
+      systeme_enregistrement_personnel: systemeEnregistrement,
+      rayon_description_environnement_km: rayonDescriptionKm === '' ? null : Number(rayonDescriptionKm),
+    })
+    setEnCours(false)
+    if (error) setErreur(error.message)
+  }
+
+  return (
+    <form onSubmit={soumettre} className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Entreprise</label>
+          <input required value={nomEntreprise} onChange={(e) => setNomEntreprise(e.target.value)} className="w-full" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Numéro de permanence</label>
+          <input value={numeroPermanence} onChange={(e) => setNumeroPermanence(e.target.value)} className="w-full" />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Adresse</label>
+        <input required value={adresse} onChange={(e) => setAdresse(e.target.value)} className="w-full" />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-2">Scénarios de risque</label>
+        <div className="flex flex-wrap gap-4">
+          {SCENARIOS_RISQUE_RS.map((s) => (
+            <label key={s.valeur} className="flex items-center gap-2 text-sm text-sourdine">
+              <input type="checkbox" checked={scenariosRisque.includes(s.valeur)} onChange={() => basculerScenario(s.valeur)} />
+              {s.libelle}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Responsable (contact Cellule de sécurité)</label>
+          <select value={responsableContactId} onChange={(e) => setResponsableContactId(e.target.value)} className="w-full">
+            <option value="">—</option>
+            {contacts.map((c) => (
+              <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Responsable (contact communal — CC.com)</label>
+          <select value={responsableCcComContactId} onChange={(e) => setResponsableCcComContactId(e.target.value)} className="w-full">
+            <option value="">—</option>
+            {contacts.map((c) => (
+              <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Nb maximum de personnes sur site</label>
+          <input type="number" min="0" value={nbPersonnesMaxSite} onChange={(e) => setNbPersonnesMaxSite(e.target.value)} className="w-full" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Rayon de description de l'environnement (km)</label>
+          <input type="number" step="0.1" min="0" value={rayonDescriptionKm} onChange={(e) => setRayonDescriptionKm(e.target.value)} className="w-full" />
+        </div>
+      </div>
+
+      <label className="flex items-center gap-2 text-sm text-sourdine">
+        <input type="checkbox" checked={systemeEnregistrement} onChange={(e) => setSystemeEnregistrement(e.target.checked)} />
+        Système d'enregistrement du personnel présent sur site
+      </label>
+
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
+
+      <div className="flex gap-2">
+        <BoutonPrincipal type="submit" disabled={enCours}>
+          {enCours ? 'Enregistrement…' : 'Enregistrer'}
+        </BoutonPrincipal>
+        <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
+      </div>
+    </form>
+  )
+}
+
+function SectionZonesEffetRS({ entrepriseId }) {
+  const [zones, setZones] = useState([])
+  const [reference, setReference] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [erreur, setErreur] = useState(null)
+  const [enAjout, setEnAjout] = useState(false)
+  const [ligneEnEdition, setLigneEnEdition] = useState(null)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const [zonesRes, refRes] = await Promise.all([
+      supabase.from('zones_effet_rs').select('*').eq('entreprise_id', entrepriseId).order('scenario'),
+      supabase.from('referentiel_distances_conventionnelles').select('*'),
+    ])
+    if (zonesRes.error) setErreur(zonesRes.error.message)
+    else setZones(zonesRes.data ?? [])
+    setReference(refRes.data ?? [])
+    setChargement(false)
+  }, [entrepriseId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function creer(valeurs) {
+    const { error } = await supabase.from('zones_effet_rs').insert({ ...valeurs, entreprise_id: entrepriseId })
+    if (error) return { error }
+    await rafraichir()
+    return { error: null }
+  }
+
+  async function modifier(idZone, valeurs) {
+    const { error } = await supabase.from('zones_effet_rs').update(valeurs).eq('id', idZone)
+    if (error) return { error }
+    await rafraichir()
+    return { error: null }
+  }
+
+  async function supprimer(idZone) {
+    const { error } = await supabase.from('zones_effet_rs').delete().eq('id', idZone)
+    if (!error) await rafraichir()
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <p className="etiquette">Zones d'effet (ZDI / ZR / ZV)</p>
+        {!enAjout && <BoutonDiscret onClick={() => setEnAjout(true)}>Ajouter une zone</BoutonDiscret>}
+      </div>
+
+      {reference.length > 0 && (
+        <p className="text-xs text-sourdine mt-1 mb-2">
+          Distances conventionnelles (AM 20 juin 2008) :{' '}
+          {reference
+            .map((r) => `${r.type_accident} — ZV ${r.distance_zv_m ?? '—'} m / ZR ${r.distance_zr_m ?? '—'} m`)
+            .join(' · ')}
+        </p>
+      )}
+
+      {erreur && <p className="text-xs text-chaud mb-2">{erreur}</p>}
+
+      {enAjout && (
+        <div className="border border-trait rounded p-3 mb-2 bg-surface">
+          <FormulaireZoneEffetRS
+            onAnnuler={() => setEnAjout(false)}
+            onValider={async (valeurs) => {
+              const { error } = await creer(valeurs)
+              if (!error) setEnAjout(false)
+              return { error }
+            }}
+          />
+        </div>
+      )}
+
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : zones.length === 0 && !enAjout ? (
+        <p className="text-xs text-sourdine">Aucune zone d'effet calculée pour cette entreprise.</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {zones.map((z) =>
+            ligneEnEdition === z.id ? (
+              <li key={z.id} className="border border-trait rounded p-3 bg-surface">
+                <FormulaireZoneEffetRS
+                  valeursInitiales={z}
+                  onAnnuler={() => setLigneEnEdition(null)}
+                  onValider={async (valeurs) => {
+                    const { error } = await modifier(z.id, valeurs)
+                    if (!error) setLigneEnEdition(null)
+                    return { error }
+                  }}
+                />
+              </li>
+            ) : (
+              <li key={z.id} className="flex items-center justify-between border border-trait rounded px-3 py-2 bg-surface text-xs">
+                <span>
+                  <span className="jeton mr-2">{TYPES_ZONE_RS.find((t) => t.valeur === z.type_zone)?.libelle ?? z.type_zone}</span>
+                  {z.scenario}
+                  {z.distance_m != null && <> · {z.distance_m} m</>}
+                  {' · '}
+                  {METHODES_DELIMITATION_RS.find((m) => m.valeur === z.methode_delimitation)?.libelle ?? z.methode_delimitation}
+                  {z.date_calcul && <> · calculé le {z.date_calcul}</>}
+                </span>
+                <span className="flex gap-1.5">
+                  <BoutonDiscret onClick={() => setLigneEnEdition(z.id)}>Modifier</BoutonDiscret>
+                  <BoutonDiscret onClick={() => supprimer(z.id)}>Supprimer</BoutonDiscret>
+                </span>
+              </li>
+            )
+          )}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function FormulaireZoneEffetRS({ valeursInitiales = {}, onValider, onAnnuler }) {
+  const [scenario, setScenario] = useState(valeursInitiales.scenario ?? '')
+  const [typeZone, setTypeZone] = useState(valeursInitiales.type_zone ?? 'zdi')
+  const [methodeDelimitation, setMethodeDelimitation] = useState(valeursInitiales.methode_delimitation ?? 'simulation')
+  const [distanceM, setDistanceM] = useState(valeursInitiales.distance_m ?? '')
+  const [centreLatitude, setCentreLatitude] = useState(valeursInitiales.centre_latitude ?? '')
+  const [centreLongitude, setCentreLongitude] = useState(valeursInitiales.centre_longitude ?? '')
+  const [conditionsMeteo, setConditionsMeteo] = useState(valeursInitiales.conditions_meteo ?? '')
+  const [dateCalcul, setDateCalcul] = useState(valeursInitiales.date_calcul ?? '')
+  const [erreur, setErreur] = useState(null)
+  const [enCours, setEnCours] = useState(false)
+
+  async function soumettre(e) {
+    e.preventDefault()
+    setEnCours(true)
+    const { error } = await onValider({
+      scenario: scenario.trim(),
+      type_zone: typeZone,
+      methode_delimitation: methodeDelimitation,
+      distance_m: distanceM === '' ? null : Number(distanceM),
+      centre_latitude: centreLatitude === '' ? null : Number(centreLatitude),
+      centre_longitude: centreLongitude === '' ? null : Number(centreLongitude),
+      conditions_meteo: conditionsMeteo.trim() || null,
+      date_calcul: dateCalcul || null,
+    })
+    setEnCours(false)
+    if (error) setErreur(error.message)
+  }
+
+  return (
+    <form onSubmit={soumettre} className="space-y-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <input required placeholder="Scénario" value={scenario} onChange={(e) => setScenario(e.target.value)} className="text-xs" />
+        <select value={typeZone} onChange={(e) => setTypeZone(e.target.value)} className="text-xs">
+          {TYPES_ZONE_RS.map((t) => <option key={t.valeur} value={t.valeur}>{t.libelle}</option>)}
+        </select>
+        <select value={methodeDelimitation} onChange={(e) => setMethodeDelimitation(e.target.value)} className="text-xs">
+          {METHODES_DELIMITATION_RS.map((m) => <option key={m.valeur} value={m.valeur}>{m.libelle}</option>)}
+        </select>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+        <input type="number" step="0.1" placeholder="Distance (m)" value={distanceM} onChange={(e) => setDistanceM(e.target.value)} className="text-xs" />
+        <input placeholder="Latitude centre" value={centreLatitude} onChange={(e) => setCentreLatitude(e.target.value)} className="text-xs" />
+        <input placeholder="Longitude centre" value={centreLongitude} onChange={(e) => setCentreLongitude(e.target.value)} className="text-xs" />
+        <input type="date" value={dateCalcul} onChange={(e) => setDateCalcul(e.target.value)} className="text-xs" />
+      </div>
+      <input placeholder="Conditions météo lors du calcul" value={conditionsMeteo} onChange={(e) => setConditionsMeteo(e.target.value)} className="w-full text-xs" />
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <div className="flex gap-1.5">
+        <BoutonPrincipal type="submit" disabled={enCours}>Enregistrer</BoutonPrincipal>
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
       </div>
     </form>

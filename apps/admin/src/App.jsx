@@ -33,6 +33,8 @@ import AnnuaireSoutien from './pages/AnnuaireSoutien'
 import EntiteCritique from './pages/EntiteCritique'
 import ConformiteLegale from './pages/ConformiteLegale'
 import ChecklistD5 from './pages/ChecklistD5'
+import CentresCrise from './pages/CentresCrise'
+import DirPcOpsAttestes from './pages/DirPcOpsAttestes'
 
 export default function App() {
   return (
@@ -87,6 +89,8 @@ export default function App() {
             <Route path="conformite-cer" element={<EntiteCritique />} />
             <Route path="conformite-legale" element={<ConformiteLegale />} />
             <Route path="checklist-d5" element={<ChecklistD5 />} />
+            <Route path="centres-crise" element={<CentresCrise />} />
+            <Route path="dir-pc-ops-attestes" element={<DirPcOpsAttestes />} />
           </Route>
         </Routes>
       </AuthProvider>

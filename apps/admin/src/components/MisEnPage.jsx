@@ -29,6 +29,8 @@ const SECTIONS = [
       { to: '/centres-accueil', libelle: "Centres d'accueil" },
       { to: '/canaux-radio', libelle: 'Canaux radio' },
       { to: '/plans-reference', libelle: 'Plans de référence' },
+      { to: '/centres-crise', libelle: 'Centres de crise' },
+      { to: '/dir-pc-ops-attestes', libelle: 'Dir PC-Ops attestés' },
     ],
   },
   {
