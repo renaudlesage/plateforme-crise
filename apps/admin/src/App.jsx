@@ -40,6 +40,7 @@ import AccordsMedias from './pages/AccordsMedias'
 import SirenesZones from './pages/SirenesZones'
 import FormationStressAigu from './pages/FormationStressAigu'
 import ResilienceTerritoriale from './pages/ResilienceTerritoriale'
+import SourcesExternesAlertes from './pages/SourcesExternesAlertes'
 import BeAlertTests from './pages/BeAlertTests'
 import Comptes from './pages/Comptes'
 import Clients from './pages/Clients'
@@ -114,6 +115,7 @@ export default function App() {
             <Route path="sirenes-zones" element={<SirenesZones />} />
             <Route path="formation-stress-aigu" element={<FormationStressAigu />} />
             <Route path="resilience-territoriale" element={<ResilienceTerritoriale />} />
+            <Route path="sources-externes-alertes" element={<SourcesExternesAlertes />} />
             <Route path="be-alert-tests" element={<BeAlertTests />} />
             <Route path="comptes" element={<Comptes />} />
             <Route path="clients" element={<Clients />} />
