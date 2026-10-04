@@ -35,6 +35,9 @@ import ConformiteLegale from './pages/ConformiteLegale'
 import ChecklistD5 from './pages/ChecklistD5'
 import CentresCrise from './pages/CentresCrise'
 import DirPcOpsAttestes from './pages/DirPcOpsAttestes'
+import FichesActionD5 from './pages/FichesActionD5'
+import AccordsMedias from './pages/AccordsMedias'
+import SirenesZones from './pages/SirenesZones'
 import BeAlertTests from './pages/BeAlertTests'
 import Comptes from './pages/Comptes'
 import Clients from './pages/Clients'
@@ -104,6 +107,9 @@ export default function App() {
             <Route path="checklist-d5" element={<ChecklistD5 />} />
             <Route path="centres-crise" element={<CentresCrise />} />
             <Route path="dir-pc-ops-attestes" element={<DirPcOpsAttestes />} />
+            <Route path="fiches-action-d5" element={<FichesActionD5 />} />
+            <Route path="accords-medias" element={<AccordsMedias />} />
+            <Route path="sirenes-zones" element={<SirenesZones />} />
             <Route path="be-alert-tests" element={<BeAlertTests />} />
             <Route path="comptes" element={<Comptes />} />
             <Route path="clients" element={<Clients />} />

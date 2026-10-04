@@ -3490,8 +3490,265 @@ function SectionCommunicationD5({ incidentId }) {
         <GestionStrategieCommunication incidentId={incidentId} />
         <GestionAnalysesIbs incidentId={incidentId} />
         <GestionWebcare incidentId={incidentId} />
+        <GestionChecklistActionD5 incidentId={incidentId} />
+        <GestionMessageUrgentMedias incidentId={incidentId} />
+        <GestionActivationsSirenes incidentId={incidentId} />
+        <GestionEvaluationCommunication incidentId={incidentId} />
       </div>
     </div>
+  )
+}
+
+function GestionChecklistActionD5({ incidentId }) {
+  const { lignes, chargement, erreur, creer, modifier, supprimer } = useCrudSimpleIncident('points_checklist_action_d5', incidentId)
+  const [fiches, setFiches] = useState([])
+  const [ficheId, setFicheId] = useState('')
+  const [description, setDescription] = useState('')
+
+  useEffect(() => {
+    supabase.from('fiches_action_d5').select('id, code, titre').order('numero').then(({ data }) => setFiches(data ?? []))
+  }, [])
+
+  async function ajouter(e) {
+    e.preventDefault()
+    if (!description.trim()) return
+    const { error } = await creer({
+      fiche_id: ficheId || null,
+      numero_etape: lignes.length + 1,
+      description: description.trim(),
+    })
+    if (!error) setDescription('')
+  }
+
+  return (
+    <BlocD5 titre="Checklist d'activation D5" aide="Instanciée à partir de la bibliothèque de fiches D5/1-25, propre à cet incident.">
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <form onSubmit={ajouter} className="flex flex-wrap gap-1.5 mb-2">
+        <select value={ficheId} onChange={(e) => setFicheId(e.target.value)} className="text-xs flex-1 min-w-[8rem]">
+          <option value="">fiche —</option>
+          {fiches.map((f) => <option key={f.id} value={f.id}>{f.code} — {f.titre}</option>)}
+        </select>
+        <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="étape" className="text-xs flex-1 min-w-[8rem]" />
+        <BoutonDiscret type="submit">Ajouter</BoutonDiscret>
+      </form>
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : (
+        <ul className="space-y-1">
+          {lignes.map((p) => (
+            <li key={p.id} className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+              <label className="flex items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  checked={p.fait ?? false}
+                  onChange={(e) => modifier(p.id, { fait: e.target.checked, fait_le: e.target.checked ? new Date().toISOString() : null })}
+                />
+                <span className={p.fait ? 'line-through text-sourdine' : ''}>{p.numero_etape}. {p.description}</span>
+              </label>
+              <BoutonDiscret onClick={() => supprimer(p.id)}>×</BoutonDiscret>
+            </li>
+          ))}
+        </ul>
+      )}
+    </BlocD5>
+  )
+}
+
+function GestionMessageUrgentMedias({ incidentId }) {
+  const { lignes, chargement, erreur, creer, supprimer } = useCrudSimpleIncident('messages_urgents_medias', incidentId)
+  const [phase, setPhase] = useState('communal')
+  const [situationType, setSituationType] = useState('')
+  const [populationMesures, setPopulationMesures] = useState('')
+  const [redigePar, setRedigePar] = useState('')
+
+  async function ajouter(e) {
+    e.preventDefault()
+    const { error } = await creer({
+      phase,
+      numero_message: lignes.length + 1,
+      situation_type: situationType.trim() || null,
+      population_mesures: populationMesures
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+      redige_par: redigePar.trim() || null,
+    })
+    if (!error) {
+      setSituationType('')
+      setPopulationMesures('')
+      setRedigePar('')
+    }
+  }
+
+  return (
+    <BlocD5 titre="Message urgent aux médias" aide="Fiche D5/8-9 : formulaire structuré situation/population/presse.">
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <form onSubmit={ajouter} className="flex flex-wrap gap-1.5 mb-2">
+        <select value={phase} onChange={(e) => setPhase(e.target.value)} className="text-xs">
+          <option value="communal">Communal</option>
+          <option value="provincial">Provincial</option>
+          <option value="national">National</option>
+        </select>
+        <input value={situationType} onChange={(e) => setSituationType(e.target.value)} placeholder="type de situation" className="text-xs flex-1 min-w-[8rem]" />
+        <input value={populationMesures} onChange={(e) => setPopulationMesures(e.target.value)} placeholder="mesures population (virgules)" className="text-xs flex-1 min-w-[8rem]" />
+        <input value={redigePar} onChange={(e) => setRedigePar(e.target.value)} placeholder="rédigé par" className="text-xs flex-1 min-w-[6rem]" />
+        <BoutonDiscret type="submit">Ajouter</BoutonDiscret>
+      </form>
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : (
+        <ul className="space-y-1">
+          {[...lignes].reverse().map((m) => (
+            <li key={m.id} className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+              <span>
+                <span className="jeton mr-1.5">{m.phase}</span>
+                message #{m.numero_message}{m.situation_type && <> — {m.situation_type}</>}
+              </span>
+              <BoutonDiscret onClick={() => supprimer(m.id)}>×</BoutonDiscret>
+            </li>
+          ))}
+        </ul>
+      )}
+    </BlocD5>
+  )
+}
+
+function GestionActivationsSirenes({ incidentId }) {
+  const { lignes, chargement, erreur, creer, supprimer } = useCrudSimpleIncident('activations_sirenes', incidentId)
+  const [zones, setZones] = useState([])
+  const [messages, setMessages] = useState([])
+  const [zonesChoisies, setZonesChoisies] = useState([])
+  const [messagesChoisis, setMessagesChoisis] = useState([])
+  const [ordonnePar, setOrdonnePar] = useState('')
+
+  useEffect(() => {
+    supabase.from('zones_sirenes').select('id, zone_code').order('zone_code').then(({ data }) => setZones(data ?? []))
+    supabase.from('catalogue_messages_sirene').select('id, code, libelle').then(({ data }) => setMessages(data ?? []))
+  }, [])
+
+  function basculerZone(id) {
+    setZonesChoisies((liste) => (liste.includes(id) ? liste.filter((x) => x !== id) : [...liste, id]))
+  }
+
+  function basculerMessage(id) {
+    setMessagesChoisis((liste) => {
+      if (liste.includes(id)) return liste.filter((x) => x !== id)
+      return liste.length < 3 ? [...liste, id] : liste
+    })
+  }
+
+  async function activer(e) {
+    e.preventDefault()
+    if (zonesChoisies.length === 0 || messagesChoisis.length === 0) return
+    const { error } = await creer({
+      zones: zonesChoisies,
+      messages: messagesChoisis.slice(0, 3),
+      ordonne_par: ordonnePar.trim() || null,
+    })
+    if (!error) {
+      setZonesChoisies([])
+      setMessagesChoisis([])
+      setOrdonnePar('')
+    }
+  }
+
+  return (
+    <BlocD5 titre="Déclenchement sirènes" aide="Max 3 messages combinables par signal (fiche D5/7).">
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <form onSubmit={activer} className="space-y-1.5 mb-2">
+        <div className="flex flex-wrap gap-1">
+          {zones.map((z) => (
+            <button
+              type="button"
+              key={z.id}
+              onClick={() => basculerZone(z.id)}
+              className={`pastille-filtre${zonesChoisies.includes(z.id) ? ' actif' : ''}`}
+            >
+              {z.zone_code}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {messages.map((m) => (
+            <button
+              type="button"
+              key={m.id}
+              onClick={() => basculerMessage(m.id)}
+              disabled={!messagesChoisis.includes(m.id) && messagesChoisis.length >= 3}
+              className={`pastille-filtre${messagesChoisis.includes(m.id) ? ' actif' : ''}`}
+            >
+              {m.libelle}
+            </button>
+          ))}
+        </div>
+        <input value={ordonnePar} onChange={(e) => setOrdonnePar(e.target.value)} placeholder="ordonné par" className="text-xs w-full" />
+        <BoutonDiscret type="submit">Déclencher</BoutonDiscret>
+      </form>
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : (
+        <ul className="space-y-1">
+          {[...lignes].reverse().map((a) => (
+            <li key={a.id} className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+              <span>
+                {new Date(a.ordonne_le).toLocaleString('fr-BE')} — {a.zones?.length ?? 0} zone(s), {a.messages?.length ?? 0} message(s)
+                {a.ordonne_par && <> ({a.ordonne_par})</>}
+              </span>
+              <BoutonDiscret onClick={() => supprimer(a.id)}>×</BoutonDiscret>
+            </li>
+          ))}
+        </ul>
+      )}
+    </BlocD5>
+  )
+}
+
+function GestionEvaluationCommunication({ incidentId }) {
+  const { lignes, chargement, erreur, creer, supprimer } = useCrudSimpleIncident('evaluations_communication', incidentId)
+  const [evaluePar, setEvaluePar] = useState('')
+  const [pointsPositifs, setPointsPositifs] = useState('')
+  const [pointsNegatifs, setPointsNegatifs] = useState('')
+
+  async function ajouter(e) {
+    e.preventDefault()
+    const { error } = await creer({
+      evalue_par: evaluePar.trim() || null,
+      points_positifs: pointsPositifs.trim() || null,
+      points_negatifs: pointsNegatifs.trim() || null,
+    })
+    if (!error) {
+      setEvaluePar('')
+      setPointsPositifs('')
+      setPointsNegatifs('')
+    }
+  }
+
+  return (
+    <BlocD5 titre="Évaluation de la communication" aide="Fiche D5/25, 10 critères.">
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <form onSubmit={ajouter} className="space-y-1.5 mb-2">
+        <input value={evaluePar} onChange={(e) => setEvaluePar(e.target.value)} placeholder="évalué par" className="text-xs w-full" />
+        <textarea value={pointsPositifs} onChange={(e) => setPointsPositifs(e.target.value)} rows={2} placeholder="points positifs" className="text-xs w-full" />
+        <textarea value={pointsNegatifs} onChange={(e) => setPointsNegatifs(e.target.value)} rows={2} placeholder="points négatifs" className="text-xs w-full" />
+        <BoutonDiscret type="submit">Ajouter</BoutonDiscret>
+      </form>
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : (
+        <ul className="space-y-1">
+          {[...lignes].reverse().map((e) => (
+            <li key={e.id} className="text-xs bg-fond border border-trait rounded px-2 py-1">
+              <div className="flex items-center justify-between">
+                <span>{new Date(e.created_at).toLocaleString('fr-BE')}{e.evalue_par && <> — {e.evalue_par}</>}</span>
+                <BoutonDiscret onClick={() => supprimer(e.id)}>×</BoutonDiscret>
+              </div>
+              {e.points_positifs && <p className="mt-1">+ {e.points_positifs}</p>}
+              {e.points_negatifs && <p>− {e.points_negatifs}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </BlocD5>
   )
 }
 
