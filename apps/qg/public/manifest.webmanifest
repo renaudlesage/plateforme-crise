@@ -1,0 +1,17 @@
+{
+  "name": "Crisiware — QG",
+  "short_name": "QG",
+  "description": "Poste de coordination de crise Crisiware — vue QG pour la cellule de gestion.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#10151b",
+  "theme_color": "#b3311d",
+  "lang": "fr",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

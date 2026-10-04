@@ -1,0 +1,17 @@
+{
+  "name": "Crisiware — Terrain",
+  "short_name": "Terrain",
+  "description": "Application terrain Crisiware pour les intervenants mobiles en situation de crise.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#10151b",
+  "theme_color": "#a86a00",
+  "lang": "fr",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
