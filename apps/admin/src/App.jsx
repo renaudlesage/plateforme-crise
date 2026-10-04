@@ -31,6 +31,8 @@ import Hopitaux from './pages/Hopitaux'
 import PlansContinuiteActivite from './pages/PlansContinuiteActivite'
 import AnnuaireSoutien from './pages/AnnuaireSoutien'
 import EntiteCritique from './pages/EntiteCritique'
+import ConformiteLegale from './pages/ConformiteLegale'
+import ChecklistD5 from './pages/ChecklistD5'
 
 export default function App() {
   return (
@@ -83,6 +85,8 @@ export default function App() {
             <Route path="continuite-activite" element={<PlansContinuiteActivite />} />
             <Route path="soutien-psychologique" element={<AnnuaireSoutien />} />
             <Route path="conformite-cer" element={<EntiteCritique />} />
+            <Route path="conformite-legale" element={<ConformiteLegale />} />
+            <Route path="checklist-d5" element={<ChecklistD5 />} />
           </Route>
         </Routes>
       </AuthProvider>

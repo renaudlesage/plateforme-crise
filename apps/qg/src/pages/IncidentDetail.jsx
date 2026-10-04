@@ -48,6 +48,11 @@ export default function IncidentDetail() {
     chargerIncident()
   }
 
+  async function changerDynamiqueEvenement(valeur) {
+    await supabase.from('incidents').update({ dynamique_evenement: valeur || null }).eq('id', id)
+    chargerIncident()
+  }
+
   if (chargementIncident) return <p className="text-sm text-sourdine">Chargement…</p>
   if (!incident) return <p className="text-sm text-chaud">Incident introuvable.</p>
 
@@ -100,6 +105,19 @@ export default function IncidentDetail() {
               <option value="">—</option>
               <option value="A">Type A — problème unique</option>
               <option value="B">Type B — cascade multisectorielle</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2 mt-1.5">
+            <label className="text-xs text-sourdine" title="Guide bourgmestre : flash = sans préavis, évolutif = aggravation progressive, prévisible = anticipable (météo, etc.)">Dynamique :</label>
+            <select
+              value={incident.dynamique_evenement ?? ''}
+              onChange={(e) => changerDynamiqueEvenement(e.target.value)}
+              className=""
+            >
+              <option value="">—</option>
+              <option value="flash">Flash</option>
+              <option value="evolutif">Évolutif</option>
+              <option value="previsible">Prévisible</option>
             </select>
           </div>
         </div>
@@ -189,6 +207,18 @@ export default function IncidentDetail() {
           <SectionRex incidentId={id} contexteId={contexteId} />
         </div>
       )}
+
+      {PHASES_MODULES[incident.phase_cycle_vie]?.pc_ops !== false && (
+        <div className="mt-6">
+          <SectionPcOpsRoles incidentId={id} />
+        </div>
+      )}
+
+      {PHASES_MODULES[incident.phase_cycle_vie]?.communication_d5 !== false && (
+        <div className="mt-6">
+          <SectionCommunicationD5 incidentId={id} />
+        </div>
+      )}
     </div>
   )
 }
@@ -203,13 +233,13 @@ export default function IncidentDetail() {
 // en aval (levée/post-crise, où le travail devient REX plutôt
 // qu'opérationnel).
 const PHASES_MODULES = {
-  veille: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false },
-  vigilance: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false },
-  pre_alerte: { suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false },
+  veille: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false, pc_ops: false, communication_d5: false },
+  vigilance: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false, pc_ops: false, communication_d5: false },
+  pre_alerte: { suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false, pc_ops: false },
   alerte: { phase_transitoire: false, rex: false },
   phase_active: {},
-  levee: { activation_30min: false, checklist: false, rex: false, seuils_action: false },
-  post_crise: { activation_30min: false, escalade: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, seuils_action: false, requisitions: false, zones: false },
+  levee: { activation_30min: false, checklist: false, rex: false, seuils_action: false, pc_ops: false },
+  post_crise: { activation_30min: false, escalade: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, seuils_action: false, requisitions: false, zones: false, pc_ops: false, communication_d5: false },
 }
 
 const TYPES_ZONE = [
@@ -2988,6 +3018,8 @@ function SectionLivreDeBord({ incidentId, contexteId }) {
   const [decision, setDecision] = useState('')
   const [expediteurContactId, setExpediteurContactId] = useState('')
   const [destinataireContactId, setDestinataireContactId] = useState('')
+  const [justificationPrevoyance, setJustificationPrevoyance] = useState('')
+  const [informerPopulation, setInformerPopulation] = useState(false)
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -3019,6 +3051,8 @@ function SectionLivreDeBord({ incidentId, contexteId }) {
       decision: decision.trim() || null,
       expediteur_contact_id: expediteurContactId || null,
       destinataire_contact_id: destinataireContactId || null,
+      justification_prevoyance: justificationPrevoyance.trim() || null,
+      information_population_horodatage: informerPopulation ? new Date().toISOString() : null,
     })
     setEnCours(false)
     if (error) {
@@ -3028,6 +3062,8 @@ function SectionLivreDeBord({ incidentId, contexteId }) {
       setDecision('')
       setExpediteurContactId('')
       setDestinataireContactId('')
+      setJustificationPrevoyance('')
+      setInformerPopulation(false)
       await rafraichir()
     }
   }
@@ -3074,6 +3110,21 @@ function SectionLivreDeBord({ incidentId, contexteId }) {
             ))}
           </select>
         </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">
+            Justification de prévoyance (réforme resp. civile 2025, art. 6.15 — pourquoi cette décision était raisonnable au moment où elle a été prise)
+          </label>
+          <textarea
+            value={justificationPrevoyance}
+            onChange={(e) => setJustificationPrevoyance(e.target.value)}
+            rows={2}
+            className="w-full"
+          />
+        </div>
+        <label className="flex items-center gap-2 text-xs text-sourdine">
+          <input type="checkbox" checked={informerPopulation} onChange={(e) => setInformerPopulation(e.target.checked)} />
+          Information de la population horodatée à cette entrée (le défaut d'information est une circonstance aggravante retenue par la jurisprudence — Xynthia 2010)
+        </label>
         <BoutonPrincipal type="submit" disabled={enCours || !message.trim()}>
           {enCours ? 'Ajout…' : 'Ajouter au livre de bord'}
         </BoutonPrincipal>
@@ -3094,6 +3145,14 @@ function SectionLivreDeBord({ incidentId, contexteId }) {
               </p>
               <p className="text-sm text-encre mt-0.5">{e.message}</p>
               {e.decision && <p className="text-xs text-sourdine mt-1">décision : {e.decision}</p>}
+              {e.justification_prevoyance && (
+                <p className="text-xs text-sourdine mt-0.5">prévoyance : {e.justification_prevoyance}</p>
+              )}
+              {e.information_population_horodatage && (
+                <p className="text-xs text-ok mt-0.5">
+                  population informée le {new Date(e.information_population_horodatage).toLocaleString('fr-BE')}
+                </p>
+              )}
               {(e.expediteur || e.destinataire) && (
                 <p className="text-xs text-sourdine mt-0.5">
                   {e.expediteur && <>de {e.expediteur.prenom} {e.expediteur.nom}</>}
@@ -3101,6 +3160,484 @@ function SectionLivreDeBord({ incidentId, contexteId }) {
                   {e.destinataire && <>à {e.destinataire.prenom} {e.destinataire.nom}</>}
                 </p>
               )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+// Hook générique pour une table enfant simple scopée par incident_id (pattern
+// repris de EntiteCritique.jsx côté admin, adapté ici à incident_id).
+function useCrudSimpleIncident(table, incidentId) {
+  const [lignes, setLignes] = useState([])
+  const [chargement, setChargement] = useState(true)
+  const [erreur, setErreur] = useState(null)
+
+  const rafraichir = useCallback(async () => {
+    setChargement(true)
+    const { data, error } = await supabase.from(table).select('*').eq('incident_id', incidentId)
+    if (error) setErreur(error.message)
+    else setLignes(data ?? [])
+    setChargement(false)
+  }, [table, incidentId])
+
+  useEffect(() => {
+    rafraichir()
+  }, [rafraichir])
+
+  async function creer(valeurs) {
+    const { error } = await supabase.from(table).insert({ ...valeurs, incident_id: incidentId })
+    if (error) return { error }
+    await rafraichir()
+    return { error: null }
+  }
+  async function modifier(id, valeurs) {
+    const { error } = await supabase.from(table).update(valeurs).eq('id', id)
+    if (error) return { error }
+    await rafraichir()
+    return { error: null }
+  }
+  async function supprimer(id) {
+    const { error } = await supabase.from(table).delete().eq('id', id)
+    if (!error) await rafraichir()
+  }
+
+  return { lignes, chargement, erreur, creer, modifier, supprimer }
+}
+
+function BlocD5({ titre, aide, children }) {
+  return (
+    <div className="border border-trait rounded p-4 bg-surface">
+      <p className="etiquette mb-1">{titre}</p>
+      {aide && <p className="text-xs text-sourdine mb-2">{aide}</p>}
+      {children}
+    </div>
+  )
+}
+
+const ROLES_POCC = [
+  { valeur: 'analyste', libelle: 'Analyste (méthode IBS)' },
+  { valeur: 'teamleader', libelle: 'Teamleader' },
+  { valeur: 'redacteur', libelle: 'Rédacteur / D5 terrain' },
+  { valeur: 'strategue', libelle: 'Stratège (Dir-D5)' },
+  { valeur: 'porte_parole', libelle: 'Porte-parole' },
+]
+
+const ROLES_PC_OPS = [
+  { valeur: 'cpu', libelle: 'CPU' },
+  { valeur: 'ihf', libelle: 'IHF' },
+  { valeur: 'psim', libelle: 'PSIM' },
+  { valeur: 'expert', libelle: 'Expert' },
+  { valeur: 'dir_si', libelle: 'Dir-Si (D1 secours)' },
+  { valeur: 'dir_med', libelle: 'Dir-Med (D2 médical)' },
+  { valeur: 'dir_pol', libelle: 'Dir-Pol (D3 police)' },
+  { valeur: 'dir_log', libelle: 'Dir-Log (D4 logistique)' },
+  { valeur: 'dir_info', libelle: 'Dir-Info (D5 information)' },
+]
+
+const PILIERS_MESSAGE_REFLEXE = [
+  { valeur: 'we_know', libelle: 'WE KNOW!' },
+  { valeur: 'we_do', libelle: 'WE DO!' },
+  { valeur: 'we_care', libelle: 'WE CARE!' },
+  { valeur: 'we_ll_be_back', libelle: "WE'LL BE BACK!" },
+]
+
+const STATUTS_MESSAGE_REFLEXE = [
+  { valeur: 'brouillon', libelle: 'Brouillon' },
+  { valeur: 'valide', libelle: 'Validé' },
+  { valeur: 'publie', libelle: 'Publié' },
+]
+
+const TONALITES_WEBCARE = [
+  { valeur: 'positif', libelle: 'Positif' },
+  { valeur: 'neutre', libelle: 'Neutre' },
+  { valeur: 'critique', libelle: 'Critique' },
+  { valeur: 'injurieux', libelle: 'Injurieux' },
+  { valeur: 'panique', libelle: 'Panique' },
+  { valeur: 'menacant', libelle: 'Menaçant' },
+  { valeur: 'phishing', libelle: 'Phishing' },
+]
+
+const ACTIONS_WEBCARE = [
+  { valeur: 'repondu', libelle: 'Répondu' },
+  { valeur: 'redirige', libelle: 'Redirigé' },
+  { valeur: 'bloque', libelle: 'Bloqué' },
+  { valeur: 'signale_police', libelle: 'Signalé à la police' },
+  { valeur: 'ignore', libelle: 'Ignoré' },
+  { valeur: 'supprime', libelle: 'Supprimé' },
+  { valeur: 'like_favori', libelle: 'Like / favori' },
+]
+
+function SectionCommunicationD5({ incidentId }) {
+  return (
+    <div>
+      <h2 className="font-medium text-encre mb-1">Communication de crise (POCC)</h2>
+      <p className="text-xs text-sourdine mb-3">
+        Processus Opérationnel en Communication de Crise (D5) : flux Analyste → Teamleader →
+        Rédacteur → Stratège → Effet. Les messages réflexes couvrent les 4 piliers WE KNOW! / WE
+        DO! / WE CARE! / WE'LL BE BACK!.
+      </p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <GestionPoccRoles incidentId={incidentId} />
+        <GestionNumerosInformation incidentId={incidentId} />
+        <GestionMessagesReflexes incidentId={incidentId} />
+        <GestionStrategieCommunication incidentId={incidentId} />
+        <GestionAnalysesIbs incidentId={incidentId} />
+        <GestionWebcare incidentId={incidentId} />
+      </div>
+    </div>
+  )
+}
+
+function GestionPoccRoles({ incidentId }) {
+  const { lignes, chargement, erreur, creer, supprimer } = useCrudSimpleIncident('pocc_roles', incidentId)
+  const [role, setRole] = useState('analyste')
+  const [personne, setPersonne] = useState('')
+  const [contact, setContact] = useState('')
+
+  async function ajouter(e) {
+    e.preventDefault()
+    if (!personne.trim()) return
+    const { error } = await creer({ role, personne: personne.trim(), contact: contact.trim() || null })
+    if (!error) {
+      setPersonne('')
+      setContact('')
+    }
+  }
+
+  return (
+    <BlocD5 titre="Rôles POCC">
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <form onSubmit={ajouter} className="flex flex-wrap gap-1.5 mb-2">
+        <select value={role} onChange={(e) => setRole(e.target.value)} className="text-xs">
+          {ROLES_POCC.map((r) => <option key={r.valeur} value={r.valeur}>{r.libelle}</option>)}
+        </select>
+        <input value={personne} onChange={(e) => setPersonne(e.target.value)} placeholder="personne" className="text-xs flex-1 min-w-[6rem]" />
+        <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="contact" className="text-xs flex-1 min-w-[6rem]" />
+        <BoutonDiscret type="submit">Ajouter</BoutonDiscret>
+      </form>
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : (
+        <ul className="space-y-1">
+          {lignes.map((r) => (
+            <li key={r.id} className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+              <span>{ROLES_POCC.find((x) => x.valeur === r.role)?.libelle ?? r.role} — {r.personne}{r.contact && <> ({r.contact})</>}</span>
+              <BoutonDiscret onClick={() => supprimer(r.id)}>×</BoutonDiscret>
+            </li>
+          ))}
+        </ul>
+      )}
+    </BlocD5>
+  )
+}
+
+function GestionNumerosInformation({ incidentId }) {
+  const { lignes, chargement, erreur, creer, modifier, supprimer } = useCrudSimpleIncident('numeros_information_crise', incidentId)
+  const [niveau, setNiveau] = useState('local')
+  const [numero, setNumero] = useState('')
+
+  async function ajouter(e) {
+    e.preventDefault()
+    const { error } = await creer({ niveau, numero: numero.trim() || null, statut: 'pre_alerte' })
+    if (!error) setNumero('')
+  }
+
+  return (
+    <BlocD5 titre="Numéros d'information de crise">
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <form onSubmit={ajouter} className="flex flex-wrap gap-1.5 mb-2">
+        <select value={niveau} onChange={(e) => setNiveau(e.target.value)} className="text-xs">
+          <option value="local">Local</option>
+          <option value="national">National</option>
+        </select>
+        <input value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="numéro" className="text-xs flex-1 min-w-[6rem]" />
+        <BoutonDiscret type="submit">Activer</BoutonDiscret>
+      </form>
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : (
+        <ul className="space-y-1">
+          {lignes.map((n) => (
+            <li key={n.id} className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+              <span>
+                {n.niveau} {n.numero && <>· {n.numero}</>}
+                {n.faq_prete && <> · FAQ prête</>}
+              </span>
+              <span className="flex gap-1">
+                <select value={n.statut} onChange={(e) => modifier(n.id, { statut: e.target.value })} className="text-xs">
+                  <option value="inactif">Inactif</option>
+                  <option value="pre_alerte">Pré-alerte</option>
+                  <option value="actif">Actif</option>
+                </select>
+                <BoutonDiscret onClick={() => modifier(n.id, { faq_prete: !n.faq_prete })}>FAQ</BoutonDiscret>
+                <BoutonDiscret onClick={() => supprimer(n.id)}>×</BoutonDiscret>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </BlocD5>
+  )
+}
+
+function GestionMessagesReflexes({ incidentId }) {
+  const { lignes, chargement, erreur, creer, modifier, supprimer } = useCrudSimpleIncident('pocc_messages_reflexes', incidentId)
+  const [pilier, setPilier] = useState('we_know')
+  const [contenu, setContenu] = useState('')
+
+  async function ajouter(e) {
+    e.preventDefault()
+    if (!contenu.trim()) return
+    const { error } = await creer({ pilier, contenu: contenu.trim() })
+    if (!error) setContenu('')
+  }
+
+  return (
+    <BlocD5 titre="Messages réflexes">
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <form onSubmit={ajouter} className="space-y-1.5 mb-2">
+        <select value={pilier} onChange={(e) => setPilier(e.target.value)} className="text-xs w-full">
+          {PILIERS_MESSAGE_REFLEXE.map((p) => <option key={p.valeur} value={p.valeur}>{p.libelle}</option>)}
+        </select>
+        <textarea value={contenu} onChange={(e) => setContenu(e.target.value)} rows={2} placeholder="contenu du message" className="text-xs w-full" />
+        <BoutonDiscret type="submit">Ajouter</BoutonDiscret>
+      </form>
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : (
+        <ul className="space-y-1">
+          {lignes.map((m) => (
+            <li key={m.id} className="text-xs bg-fond border border-trait rounded px-2 py-1">
+              <div className="flex items-center justify-between">
+                <span className="jeton text-info">{PILIERS_MESSAGE_REFLEXE.find((p) => p.valeur === m.pilier)?.libelle}</span>
+                <span className="flex gap-1">
+                  <select value={m.statut} onChange={(e) => modifier(m.id, { statut: e.target.value, publie_a: e.target.value === 'publie' ? new Date().toISOString() : m.publie_a })} className="text-xs">
+                    {STATUTS_MESSAGE_REFLEXE.map((s) => <option key={s.valeur} value={s.valeur}>{s.libelle}</option>)}
+                  </select>
+                  <BoutonDiscret onClick={() => supprimer(m.id)}>×</BoutonDiscret>
+                </span>
+              </div>
+              <p className="mt-1">{m.contenu}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </BlocD5>
+  )
+}
+
+function GestionStrategieCommunication({ incidentId }) {
+  const { lignes, chargement, erreur, creer, supprimer } = useCrudSimpleIncident('pocc_strategie_communication', incidentId)
+  const [objectif, setObjectif] = useState('')
+  const [cercleVictimes, setCercleVictimes] = useState('')
+  const [strategie, setStrategie] = useState('')
+
+  async function ajouter(e) {
+    e.preventDefault()
+    if (!objectif.trim()) return
+    const { error } = await creer({
+      objectif: objectif.trim(),
+      cercle_victimes_niveau: cercleVictimes || null,
+      strategie: strategie || null,
+    })
+    if (!error) {
+      setObjectif('')
+      setCercleVictimes('')
+      setStrategie('')
+    }
+  }
+
+  return (
+    <BlocD5 titre="Stratégie de communication (Dir-D5)" aide="Objectif/Contenu/Tonalité/Canal + cercle des victimes.">
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <form onSubmit={ajouter} className="space-y-1.5 mb-2">
+        <input value={objectif} onChange={(e) => setObjectif(e.target.value)} placeholder="objectif" className="text-xs w-full" />
+        <div className="flex gap-1.5">
+          <select value={cercleVictimes} onChange={(e) => setCercleVictimes(e.target.value)} className="text-xs flex-1">
+            <option value="">cercle des victimes —</option>
+            <option value="victimes_survivants_famille">Victimes/survivants/famille</option>
+            <option value="concerne_proche">Concerné proche</option>
+            <option value="concerne_large">Concerné large</option>
+          </select>
+          <select value={strategie} onChange={(e) => setStrategie(e.target.value)} className="text-xs flex-1">
+            <option value="">stratégie —</option>
+            <option value="stealing_thunder">Stealing thunder</option>
+            <option value="framing_rationnel">Framing rationnel</option>
+            <option value="framing_emotionnel">Framing émotionnel</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+        <BoutonDiscret type="submit">Ajouter</BoutonDiscret>
+      </form>
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : (
+        <ul className="space-y-1">
+          {[...lignes].reverse().map((s) => (
+            <li key={s.id} className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+              <span>{s.objectif}{s.strategie && <> · {s.strategie}</>}</span>
+              <BoutonDiscret onClick={() => supprimer(s.id)}>×</BoutonDiscret>
+            </li>
+          ))}
+        </ul>
+      )}
+    </BlocD5>
+  )
+}
+
+function GestionAnalysesIbs({ incidentId }) {
+  const { lignes, chargement, erreur, creer, supprimer } = useCrudSimpleIncident('pocc_analyses_ibs', incidentId)
+  const [information, setInformation] = useState('')
+  const [behavior, setBehavior] = useState('')
+  const [sensemaking, setSensemaking] = useState('')
+
+  async function ajouter(e) {
+    e.preventDefault()
+    if (!information.trim() && !behavior.trim() && !sensemaking.trim()) return
+    const { error } = await creer({
+      information: information.trim() || null,
+      behavior: behavior.trim() || null,
+      sensemaking: sensemaking.trim() || null,
+    })
+    if (!error) {
+      setInformation('')
+      setBehavior('')
+      setSensemaking('')
+    }
+  }
+
+  return (
+    <BlocD5 titre="Analyses IBS (Analyste)" aide="Information / Behavior / Sensemaking.">
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <form onSubmit={ajouter} className="space-y-1.5 mb-2">
+        <input value={information} onChange={(e) => setInformation(e.target.value)} placeholder="information" className="text-xs w-full" />
+        <input value={behavior} onChange={(e) => setBehavior(e.target.value)} placeholder="behavior" className="text-xs w-full" />
+        <input value={sensemaking} onChange={(e) => setSensemaking(e.target.value)} placeholder="sensemaking" className="text-xs w-full" />
+        <BoutonDiscret type="submit">Ajouter</BoutonDiscret>
+      </form>
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : (
+        <ul className="space-y-1">
+          {[...lignes].reverse().map((a) => (
+            <li key={a.id} className="text-xs bg-fond border border-trait rounded px-2 py-1">
+              <div className="flex items-center justify-between">
+                <span>{new Date(a.horodatage).toLocaleString('fr-BE')}</span>
+                <BoutonDiscret onClick={() => supprimer(a.id)}>×</BoutonDiscret>
+              </div>
+              {a.information && <p>I: {a.information}</p>}
+              {a.behavior && <p>B: {a.behavior}</p>}
+              {a.sensemaking && <p>S: {a.sensemaking}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </BlocD5>
+  )
+}
+
+function GestionWebcare({ incidentId }) {
+  const { lignes, chargement, erreur, creer, supprimer } = useCrudSimpleIncident('webcare_messages', incidentId)
+  const [messageOriginal, setMessageOriginal] = useState('')
+  const [tonalite, setTonalite] = useState('neutre')
+  const [actionPrise, setActionPrise] = useState('')
+
+  async function ajouter(e) {
+    e.preventDefault()
+    if (!messageOriginal.trim()) return
+    const { error } = await creer({
+      message_original: messageOriginal.trim(),
+      tonalite,
+      action_prise: actionPrise || null,
+    })
+    if (!error) {
+      setMessageOriginal('')
+      setActionPrise('')
+    }
+  }
+
+  return (
+    <BlocD5 titre="Webcare (modération réseaux sociaux)">
+      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
+      <form onSubmit={ajouter} className="space-y-1.5 mb-2">
+        <textarea value={messageOriginal} onChange={(e) => setMessageOriginal(e.target.value)} rows={2} placeholder="message original" className="text-xs w-full" />
+        <div className="flex gap-1.5">
+          <select value={tonalite} onChange={(e) => setTonalite(e.target.value)} className="text-xs flex-1">
+            {TONALITES_WEBCARE.map((t) => <option key={t.valeur} value={t.valeur}>{t.libelle}</option>)}
+          </select>
+          <select value={actionPrise} onChange={(e) => setActionPrise(e.target.value)} className="text-xs flex-1">
+            <option value="">action —</option>
+            {ACTIONS_WEBCARE.map((a) => <option key={a.valeur} value={a.valeur}>{a.libelle}</option>)}
+          </select>
+        </div>
+        <BoutonDiscret type="submit">Ajouter</BoutonDiscret>
+      </form>
+      {chargement ? (
+        <p className="text-xs text-sourdine">Chargement…</p>
+      ) : (
+        <ul className="space-y-1">
+          {[...lignes].reverse().map((w) => (
+            <li key={w.id} className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
+              <span>
+                <span className={`jeton ${['menacant', 'phishing', 'injurieux'].includes(w.tonalite) ? 'text-chaud' : 'text-sourdine'}`}>{w.tonalite}</span>
+                {' '}{w.message_original?.slice(0, 40)}{w.action_prise && <> · {w.action_prise}</>}
+              </span>
+              <BoutonDiscret onClick={() => supprimer(w.id)}>×</BoutonDiscret>
+            </li>
+          ))}
+        </ul>
+      )}
+    </BlocD5>
+  )
+}
+
+function SectionPcOpsRoles({ incidentId }) {
+  const { lignes, chargement, erreur, creer, supprimer } = useCrudSimpleIncident('pc_ops_roles', incidentId)
+  const [role, setRole] = useState('dir_si')
+  const [personne, setPersonne] = useState('')
+  const [contact, setContact] = useState('')
+
+  async function ajouter(e) {
+    e.preventDefault()
+    if (!personne.trim()) return
+    const { error } = await creer({ role, personne: personne.trim(), contact: contact.trim() || null })
+    if (!error) {
+      setPersonne('')
+      setContact('')
+    }
+  }
+
+  return (
+    <div>
+      <h2 className="font-medium text-encre mb-1">Rôles PC-OPS (terrain)</h2>
+      <p className="text-xs text-sourdine mb-3">
+        Directeurs de discipline (D1-D5) et fonctions clés sur le poste de commandement opérationnel.
+      </p>
+      {erreur && <p className="text-xs text-chaud mb-2">{erreur}</p>}
+      <form onSubmit={ajouter} className="flex flex-wrap gap-1.5 mb-3">
+        <select value={role} onChange={(e) => setRole(e.target.value)} className="text-sm">
+          {ROLES_PC_OPS.map((r) => <option key={r.valeur} value={r.valeur}>{r.libelle}</option>)}
+        </select>
+        <input value={personne} onChange={(e) => setPersonne(e.target.value)} placeholder="personne" className="text-sm flex-1 min-w-[8rem]" />
+        <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="contact" className="text-sm flex-1 min-w-[8rem]" />
+        <BoutonDiscret type="submit">Ajouter</BoutonDiscret>
+      </form>
+      {chargement ? (
+        <p className="text-sm text-sourdine">Chargement…</p>
+      ) : lignes.length === 0 ? (
+        <p className="vide border border-dashed border-trait text-center p-4">Aucun rôle PC-OPS attribué.</p>
+      ) : (
+        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden bg-surface">
+          {lignes.map((r) => (
+            <li key={r.id} className="flex items-center justify-between px-4 py-2 text-sm">
+              <span>
+                {ROLES_PC_OPS.find((x) => x.valeur === r.role)?.libelle ?? r.role} — {r.personne}
+                {r.contact && <span className="text-xs text-sourdine"> ({r.contact})</span>}
+              </span>
+              <BoutonDiscret onClick={() => supprimer(r.id)}>Retirer</BoutonDiscret>
             </li>
           ))}
         </ul>

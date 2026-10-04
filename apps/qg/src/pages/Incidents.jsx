@@ -129,6 +129,7 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
   const [degreCriticite, setDegreCriticite] = useState('')
   const [phaseCycleVie, setPhaseCycleVie] = useState('alerte')
   const [complexiteType, setComplexiteType] = useState('')
+  const [dynamiqueEvenement, setDynamiqueEvenement] = useState('')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -143,6 +144,7 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
       degre_criticite: degreCriticite === '' ? null : Number(degreCriticite),
       phase_cycle_vie: phaseCycleVie,
       complexite_type: complexiteType || null,
+      dynamique_evenement: dynamiqueEvenement || null,
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -210,6 +212,20 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
           <option value="">—</option>
           <option value="A">Type A — problème unique</option>
           <option value="B">Type B — cascade multisectorielle</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Dynamique de l'événement</label>
+        <p className="text-xs text-sourdine mb-1">
+          Flash = sans préavis. Évolutif = aggravation progressive. Prévisible = anticipable
+          (météo, etc.). Axe indépendant du type d'événement.
+        </p>
+        <select value={dynamiqueEvenement} onChange={(e) => setDynamiqueEvenement(e.target.value)} className="w-full sm:w-64">
+          <option value="">—</option>
+          <option value="flash">Flash</option>
+          <option value="evolutif">Évolutif</option>
+          <option value="previsible">Prévisible</option>
         </select>
       </div>
 

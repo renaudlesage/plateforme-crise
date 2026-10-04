@@ -37,6 +37,7 @@ const SECTIONS = [
       { to: '/instances-coordination', libelle: 'Instances' },
       { to: '/checklists', libelle: 'Checklists' },
       { to: '/exercices', libelle: 'Exercices' },
+      { to: '/conformite-legale', libelle: 'Conformité légale (AR 2019)' },
     ],
   },
   {
@@ -57,6 +58,7 @@ const SECTIONS = [
       { to: '/alertes-publiques', libelle: 'Alertes publiques' },
       { to: '/canaux-diffusion', libelle: 'Canaux de diffusion' },
       { to: '/soutien-psychologique', libelle: 'Soutien psychologique' },
+      { to: '/checklist-d5', libelle: 'Checklist D5' },
     ],
   },
 ]
