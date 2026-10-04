@@ -139,11 +139,13 @@ function FormulaireCreation({ contexteId, onCree }) {
     }
     setEnCours(true)
     setErreur(null)
-    const { data, error } = await supabase
-      .from('plans_urgence_menages')
-      .insert({ contexte_id: contexteId, adresse: adresse.trim(), consentement_rgpd: true })
-      .select()
-      .single()
+    // Passe par une RPC security definer plutôt qu'un insert().select() direct : un
+    // citoyen anonyme n'a pas d'accès en lecture directe à la table (RLS staff-only),
+    // donc le retour implicite de l'insert (RETURNING) échouait avec une erreur RLS.
+    const { data, error } = await supabase.rpc('creer_plan_urgence_menage', {
+      p_contexte_id: contexteId,
+      p_adresse: adresse.trim(),
+    })
     setEnCours(false)
     if (error) setErreur(error.message)
     else onCree(data.jeton_acces, data)
