@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, useSearchParams, Link } from 'react-router-dom'
 import { SelecteurLocalisation } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
@@ -12,6 +12,11 @@ export default function IncidentDetail() {
   const [incident, setIncident] = useState(null)
   const [chargementIncident, setChargementIncident] = useState(true)
   const [localisationOuverte, setLocalisationOuverte] = useState(false)
+  const [parametresOuverts, setParametresOuverts] = useState(false)
+  // L'onglet actif vit dans l'URL (?onglet=...) : un rechargement ou un
+  // retour arrière ramène sur le même écran, et un lien peut pointer
+  // directement sur une discipline.
+  const [paramsUrl, setParamsUrl] = useSearchParams()
   const { lignes: sitesQG } = useTableContexte('sites_qg', contexteId, { tri: 'priorite' })
 
   const chargerIncident = useCallback(async () => {
@@ -70,6 +75,13 @@ export default function IncidentDetail() {
   if (chargementIncident) return <p className="text-sm text-sourdine">Chargement…</p>
   if (!incident) return <p className="text-sm text-chaud">Incident introuvable.</p>
 
+  // Une section masquée par la phase du cycle de vie (PHASES_MODULES) l'est
+  // aussi dans son onglet ; un onglet dont toutes les sections sont masquées
+  // disparaît de la barre plutôt que d'afficher une page vide.
+  const afficher = (module) => PHASES_MODULES[incident.phase_cycle_vie]?.[module] !== false
+  const ongletsVisibles = ONGLETS.filter((o) => o.modules.some(afficher))
+  const ongletActif = ongletsVisibles.find((o) => o.cle === paramsUrl.get('onglet')) ?? ongletsVisibles[0]
+
   return (
     <div>
       <Link to="/" className="text-sm text-sourdine hover:text-encre">← retour aux incidents</Link>
@@ -96,6 +108,13 @@ export default function IncidentDetail() {
               <option value="4">4 — majeur</option>
             </select>
           </div>
+          <div className="mt-1.5">
+            <button type="button" className="text-xs text-sourdine lien" onClick={() => setParametresOuverts((v) => !v)}>
+              Paramètres de l'incident — {parametresOuverts ? 'masquer' : 'afficher'}
+            </button>
+          </div>
+          {parametresOuverts && (
+          <>
           <div className="flex items-center gap-2 mt-1.5">
             <label className="text-xs text-sourdine">Site QG actuel :</label>
             <select
@@ -169,114 +188,146 @@ export default function IncidentDetail() {
               </div>
             )}
           </div>
+          </>
+          )}
         </div>
         {incident.statut !== 'cloture' && (
           <BoutonDiscret onClick={cloturer}>Clôturer l'incident</BoutonDiscret>
         )}
       </div>
 
-      {PHASES_MODULES[incident.phase_cycle_vie]?.activation_30min !== false && (
-        <div className="mb-6">
-          <SectionActivation30Minutes incidentId={id} contexteId={contexteId} />
-        </div>
-      )}
-
-      {PHASES_MODULES[incident.phase_cycle_vie]?.seuils_action !== false && (
-        <div className="mb-6">
-          <SectionSeuilsAction incidentId={id} contexteId={contexteId} />
-        </div>
-      )}
-
-      {PHASES_MODULES[incident.phase_cycle_vie]?.requisitions !== false && (
-        <div className="mb-6">
-          <SectionRequisitions incidentId={id} contexteId={contexteId} />
-        </div>
-      )}
-
-      {PHASES_MODULES[incident.phase_cycle_vie]?.retablissement !== false && (
-        <div className="mb-6">
-          <SectionSuiviRetablissement incidentId={id} contexteId={contexteId} />
-        </div>
-      )}
-
-      {PHASES_MODULES[incident.phase_cycle_vie]?.zones !== false && (
-        <div className="mb-6">
-          <SectionZonesIntervention incidentId={id} />
-        </div>
-      )}
-
-      <div className="mb-6">
-        <SectionPhaseCycleVie
-          incidentId={id}
-          contexteId={contexteId}
-          phaseActuelle={incident.phase_cycle_vie}
-          onChangement={chargerIncident}
-        />
+      <div className="onglets" role="tablist" aria-label="Disciplines de la fiche incident">
+        {ongletsVisibles.map((o) => (
+          <button
+            key={o.cle}
+            type="button"
+            role="tab"
+            aria-selected={o.cle === ongletActif?.cle}
+            className={`module ${o.cle === ongletActif?.cle ? 'actif' : ''}`.trim()}
+            onClick={() => setParamsUrl({ onglet: o.cle }, { replace: true })}
+          >
+            {o.libelle}
+          </button>
+        ))}
       </div>
 
-      {PHASES_MODULES[incident.phase_cycle_vie]?.escalade !== false && (
-        <div className="mb-6">
-          <SectionPhasesEscalade incidentId={id} contexteId={contexteId} niveauActuelId={incident.niveau_actuel_id} onChangement={chargerIncident} />
-        </div>
+      {ongletActif?.cle === 'pilotage' && (
+        <>
+          <div className="mb-6">
+            <SectionPhaseCycleVie
+              incidentId={id}
+              contexteId={contexteId}
+              phaseActuelle={incident.phase_cycle_vie}
+              onChangement={chargerIncident}
+            />
+          </div>
+          {afficher('escalade') && (
+            <div className="mb-6">
+              <SectionPhasesEscalade incidentId={id} contexteId={contexteId} niveauActuelId={incident.niveau_actuel_id} onChangement={chargerIncident} />
+            </div>
+          )}
+          {afficher('activation_30min') && (
+            <div className="mb-6">
+              <SectionActivation30Minutes incidentId={id} contexteId={contexteId} />
+            </div>
+          )}
+          {afficher('seuils_action') && (
+            <div className="mb-6">
+              <SectionSeuilsAction incidentId={id} contexteId={contexteId} />
+            </div>
+          )}
+          {afficher('organes') && (
+            <div className="mb-6">
+              <SectionOrganesCrise incidentId={id} contexteId={contexteId} degreCriticiteIncident={incident.degre_criticite} />
+            </div>
+          )}
+        </>
       )}
 
-      {PHASES_MODULES[incident.phase_cycle_vie]?.checklist !== false && (
-        <div className="mb-6">
-          <SectionChecklist incidentId={id} contexteId={contexteId} />
-        </div>
+      {ongletActif?.cle === 'operations' && (
+        <>
+          {afficher('zones') && (
+            <div className="mb-6">
+              <SectionZonesIntervention incidentId={id} />
+            </div>
+          )}
+          {afficher('pc_ops') && (
+            <div className="mb-6">
+              <SectionPcOpsRoles incidentId={id} />
+            </div>
+          )}
+          {afficher('suivi_intervenants') && (
+            <div className="mb-6">
+              <SectionSuiviIntervenants incidentId={id} contexteId={contexteId} />
+            </div>
+          )}
+          {afficher('requisitions') && (
+            <div className="mb-6">
+              <SectionRequisitions incidentId={id} contexteId={contexteId} />
+            </div>
+          )}
+        </>
       )}
 
-      {PHASES_MODULES[incident.phase_cycle_vie]?.organes !== false && (
-        <div className="mb-6">
-          <SectionOrganesCrise incidentId={id} contexteId={contexteId} degreCriticiteIncident={incident.degre_criticite} />
-        </div>
+      {ongletActif?.cle === 'journal' && (
+        <>
+          {afficher('suivi_operationnel') && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <SectionSitReps incidentId={id} contexteId={contexteId} />
+              <SectionLivreDeBord incidentId={id} contexteId={contexteId} />
+            </div>
+          )}
+          {afficher('checklist') && (
+            <div className="mb-6">
+              <SectionChecklist incidentId={id} contexteId={contexteId} />
+            </div>
+          )}
+        </>
       )}
 
-      {PHASES_MODULES[incident.phase_cycle_vie]?.suivi_operationnel !== false && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <SectionSitReps incidentId={id} contexteId={contexteId} />
-          <SectionLivreDeBord incidentId={id} contexteId={contexteId} />
-        </div>
+      {ongletActif?.cle === 'communication' && afficher('communication_d5') && (
+        <SectionCommunicationD5 incidentId={id} />
       )}
 
-      {PHASES_MODULES[incident.phase_cycle_vie]?.suivi_intervenants !== false && (
-        <div className="mb-6">
-          <SectionSuiviIntervenants incidentId={id} contexteId={contexteId} />
-        </div>
+      {ongletActif?.cle === 'psychosocial' && afficher('psychosocial_d2') && (
+        <SectionPsychosocialD2 incidentId={id} />
       )}
 
-      {PHASES_MODULES[incident.phase_cycle_vie]?.phase_transitoire !== false && (
-        <div className="mb-6">
-          <SectionPhaseTransitoire incidentId={id} contexteId={contexteId} />
-        </div>
-      )}
-
-      {PHASES_MODULES[incident.phase_cycle_vie]?.rex !== false && (
-        <div>
-          <SectionRex incidentId={id} contexteId={contexteId} />
-        </div>
-      )}
-
-      {PHASES_MODULES[incident.phase_cycle_vie]?.pc_ops !== false && (
-        <div className="mt-6">
-          <SectionPcOpsRoles incidentId={id} />
-        </div>
-      )}
-
-      {PHASES_MODULES[incident.phase_cycle_vie]?.communication_d5 !== false && (
-        <div className="mt-6">
-          <SectionCommunicationD5 incidentId={id} />
-        </div>
-      )}
-
-      {PHASES_MODULES[incident.phase_cycle_vie]?.psychosocial_d2 !== false && (
-        <div className="mt-6">
-          <SectionPsychosocialD2 incidentId={id} />
-        </div>
+      {ongletActif?.cle === 'retablissement' && (
+        <>
+          {afficher('retablissement') && (
+            <div className="mb-6">
+              <SectionSuiviRetablissement incidentId={id} contexteId={contexteId} />
+            </div>
+          )}
+          {afficher('phase_transitoire') && (
+            <div className="mb-6">
+              <SectionPhaseTransitoire incidentId={id} contexteId={contexteId} />
+            </div>
+          )}
+          {afficher('rex') && (
+            <div>
+              <SectionRex incidentId={id} contexteId={contexteId} />
+            </div>
+          )}
+        </>
       )}
     </div>
   )
 }
+
+// Découpage de la fiche incident en sous-pages par discipline/fonction, au
+// lieu d'un empilement continu de 17 sections. `modules` = clés de
+// PHASES_MODULES (la section "phase_cycle_vie" n'y figure pas : toujours
+// visible, donc l'onglet Pilotage ne disparaît jamais).
+const ONGLETS = [
+  { cle: 'pilotage', libelle: 'Pilotage', modules: ['phase_cycle_vie', 'escalade', 'activation_30min', 'seuils_action', 'organes'] },
+  { cle: 'operations', libelle: 'Opérations', modules: ['zones', 'pc_ops', 'suivi_intervenants', 'requisitions'] },
+  { cle: 'journal', libelle: 'Journal & suivi', modules: ['suivi_operationnel', 'checklist'] },
+  { cle: 'communication', libelle: 'Communication (D5)', modules: ['communication_d5'] },
+  { cle: 'psychosocial', libelle: 'Psychosocial (D2)', modules: ['psychosocial_d2'] },
+  { cle: 'retablissement', libelle: 'Rétablissement & REX', modules: ['retablissement', 'phase_transitoire', 'rex'] },
+]
 
 // Quelles sections de la fiche incident sont pertinentes selon la phase du
 // cycle de vie — une section non listée pour une phase est masquée plutôt
