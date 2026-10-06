@@ -1,10 +1,13 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import BasculeTheme from './BasculeTheme'
 
 export default function MisEnPageQG() {
   const { utilisateur, contexteActuel, deconnexion, selectionnerContexte } = useAuth()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const actif = (to) =>
+    to === '/' ? pathname === '/' || pathname.startsWith('/incidents') : pathname === to || pathname.startsWith(to + '/')
 
   function changerDeContexte() {
     selectionnerContexte(null)
@@ -33,13 +36,13 @@ export default function MisEnPageQG() {
         </div>
 
         <div className="barre-bas plaques">
-          <Link to="/" className="plaque-nav actif">
+          <Link to="/" className={`plaque-nav${actif('/') ? ' actif' : ''}`}>
             Incidents
           </Link>
-          <Link to="/signalements-citoyens" className="plaque-nav">
+          <Link to="/signalements-citoyens" className={`plaque-nav${actif('/signalements-citoyens') ? ' actif' : ''}`}>
             Signalements citoyens
           </Link>
-          <Link to="/carte" className="plaque-nav">
+          <Link to="/carte" className={`plaque-nav${actif('/carte') ? ' actif' : ''}`}>
             Carte
           </Link>
         </div>
