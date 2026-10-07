@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CarteCrise, FiltreIncidentsCarte, DISCIPLINES, disciplineDe } from '@plateforme-crise/shared'
+import { CarteCrise, FiltreIncidentsCarte, DISCIPLINES, disciplineDe, Symbole, PaletteSymboles, LegendeSymboles } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
@@ -9,26 +9,26 @@ import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
 const CENTRE_BELGIQUE = { lat: 50.5039, lon: 4.4699 }
 
 export const TYPES_OBSERVATION = [
-  { valeur: 'danger', libelle: 'Danger', couleur: '#b91c1c' },
-  { valeur: 'route_coupee', libelle: 'Route coupée', couleur: '#ea580c' },
-  { valeur: 'inondation', libelle: 'Inondation', couleur: '#0284c7' },
-  { valeur: 'degats', libelle: 'Dégâts', couleur: '#a16207' },
-  { valeur: 'victimes', libelle: 'Victimes / personnes en danger', couleur: '#be123c' },
-  { valeur: 'besoin', libelle: 'Besoin (aide, matériel)', couleur: '#7c3aed' },
-  { valeur: 'point_rassemblement', libelle: 'Point de rassemblement', couleur: '#059669' },
-  { valeur: 'acces', libelle: 'Accès / barrage', couleur: '#475569' },
-  { valeur: 'autre', libelle: 'Autre', couleur: '#64748b' },
+  { valeur: 'danger', libelle: 'Danger', couleur: '#b91c1c', symbole: 'danger_noir' },
+  { valeur: 'route_coupee', libelle: 'Route coupée', couleur: '#ea580c', symbole: 'route_barree' },
+  { valeur: 'inondation', libelle: 'Inondation', couleur: '#0284c7', symbole: 'danger_eau' },
+  { valeur: 'degats', libelle: 'Dégâts', couleur: '#a16207', symbole: 'danger_risque' },
+  { valeur: 'victimes', libelle: 'Victimes / personnes en danger', couleur: '#be123c', symbole: 'danger_humain' },
+  { valeur: 'besoin', libelle: 'Besoin (aide, matériel)', couleur: '#7c3aed', symbole: 'point_particulier' },
+  { valeur: 'point_rassemblement', libelle: 'Point de rassemblement', couleur: '#059669', symbole: 'infra_pr' },
+  { valeur: 'acces', libelle: 'Accès / barrage', couleur: '#475569', symbole: 'isolement' },
+  { valeur: 'autre', libelle: 'Autre', couleur: '#64748b', symbole: 'point_particulier' },
 ]
 
 // Couches de référentiel : lecture pour tous, et "à localiser" quand
 // la fiche existe mais n'a pas encore de coordonnées.
 const COUCHES = [
-  { cle: 'incidents', libelle: 'Incidents en cours', couleur: '#b91c1c', table: null },
+  { cle: 'incidents', libelle: 'Incidents en cours', couleur: '#b91c1c', table: null, symbole: 'sinistre_foyer' },
   { cle: 'observations', libelle: 'Points terrain', couleur: '#be123c', table: null },
-  { cle: 'objets_a_risque', libelle: 'Objets à risque', couleur: '#dc5a3c', table: 'objets_a_risque', champNom: 'identification', champSous: 'categorie' },
-  { cle: 'centres_accueil', libelle: "Centres d'accueil", couleur: '#2563eb', table: 'centres_accueil', champNom: 'nom', champSous: 'type_lieu' },
-  { cle: 'sites_qg', libelle: 'Sites QG', couleur: '#7c3aed', table: 'sites_qg', champNom: 'nom' },
-  { cle: 'infrastructures_critiques', libelle: 'Infrastructures critiques', couleur: '#b45309', table: 'infrastructures_critiques', champNom: 'nom', champSous: 'type' },
+  { cle: 'objets_a_risque', libelle: 'Objets à risque', couleur: '#dc5a3c', symbole: 'danger_risque', table: 'objets_a_risque', champNom: 'identification', champSous: 'categorie' },
+  { cle: 'centres_accueil', libelle: "Centres d'accueil", couleur: '#2563eb', symbole: 'infra_ca', table: 'centres_accueil', champNom: 'nom', champSous: 'type_lieu' },
+  { cle: 'sites_qg', libelle: 'Sites QG', couleur: '#7c3aed', symbole: 'pc_ops', table: 'sites_qg', champNom: 'nom' },
+  { cle: 'infrastructures_critiques', libelle: 'Infrastructures critiques', couleur: '#b45309', symbole: 'sensible_noir', table: 'infrastructures_critiques', champNom: 'nom', champSous: 'type' },
   { cle: 'signalements_citoyens', libelle: 'Signalements citoyens', couleur: '#059669', table: null },
 ]
 const REFERENTIELS = COUCHES.filter((c) => c.table)
@@ -84,7 +84,7 @@ export default function Carte() {
       supabase.from('incidents').select('id, nom, type_evenement, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'en_cours').order('date_debut', { ascending: false }),
       supabase
         .from('observations_terrain')
-        .select('id, type, description, discipline, incident_id, latitude, longitude, created_at')
+        .select('id, type, description, discipline, symbole, incident_id, latitude, longitude, created_at')
         .eq('contexte_id', contexteId)
         .eq('statut', 'ouvert'),
       sansCoord('objets_a_risque', 'id, identification'),
@@ -173,6 +173,8 @@ export default function Carte() {
             titre: t?.libelle ?? 'Point terrain',
             sousTitre: [d?.court, p.description].filter(Boolean).join(' · ') || undefined,
             couleur: d?.couleur ?? t?.couleur ?? c.couleur,
+            symbole: p.symbole ?? t?.symbole ?? 'point_particulier',
+            badge: d?.couleur,
           })
           continue
         }
@@ -183,6 +185,7 @@ export default function Carte() {
           titre: p.identification ?? p.nom ?? p.reference ?? c.libelle,
           sousTitre: p.categorie ?? p.type_lieu ?? p.type ?? p.type_evenement ?? undefined,
           couleur: c.couleur,
+          symbole: c.symbole,
         })
       }
     }
@@ -330,6 +333,8 @@ export default function Carte() {
         />
       )}
 
+      {!mode && <div className="mt-3"><LegendeSymboles /></div>}
+
       {!mode && (
         <div className="mt-3 space-y-2">
           <BoutonPrincipal className="bouton-terrain" onClick={() => { setInfo(null); setMode({ type: 'observation' }) }}>
@@ -439,6 +444,7 @@ function BoutonMaPosition({ onPosition }) {
 
 function FormulaireObservation({ contexteId, incidentId, selection, onPosition, onAnnuler, onEnvoyer }) {
   const [type, setType] = useState('danger')
+  const [symbole, setSymbole] = useState(TYPES_OBSERVATION[0].symbole)
   const [discipline, setDiscipline] = useState(null)
   const [description, setDescription] = useState('')
   const [enCours, setEnCours] = useState(false)
@@ -454,6 +460,7 @@ function FormulaireObservation({ contexteId, incidentId, selection, onPosition, 
         contexte_id: contexteId,
         incident_id: incidentId,
         type,
+        symbole,
         discipline,
         description: description.trim() || null,
         latitude: selection.lat,
@@ -469,11 +476,20 @@ function FormulaireObservation({ contexteId, incidentId, selection, onPosition, 
   return (
     <form onSubmit={envoyer} className="mt-3 space-y-3 border border-trait rounded p-3 bg-surface">
       <p className="etiquette">Nouveau point terrain</p>
-      <select value={type} onChange={(e) => setType(e.target.value)} className="w-full">
+      <select
+        value={type}
+        onChange={(e) => {
+          setType(e.target.value)
+          // Le symbole suit le type tant qu'on n'en a pas choisi un autre à la main.
+          setSymbole(TYPES_OBSERVATION.find((t) => t.valeur === e.target.value)?.symbole ?? null)
+        }}
+        className="w-full"
+      >
         {TYPES_OBSERVATION.map((t) => (
           <option key={t.valeur} value={t.valeur}>{t.libelle}</option>
         ))}
       </select>
+      <PaletteSymboles valeur={symbole} onChange={(code) => setSymbole(code ?? TYPES_OBSERVATION.find((t) => t.valeur === type)?.symbole ?? null)} />
       <div>
         <p className="text-xs text-sourdine mb-1">Discipline concernée (facultatif)</p>
         <ChoixDiscipline valeur={discipline} onChange={setDiscipline} />
@@ -578,7 +594,8 @@ function PointsAFlaguer({ points, onFlaguer }) {
             const t = TYPES_OBSERVATION.find((x) => x.valeur === p.type)
             return (
               <li key={p.id}>
-                <p className="text-sm text-encre">
+                <p className="text-sm text-encre flex items-center gap-2">
+                  <Symbole code={p.symbole ?? t?.symbole ?? 'point_particulier'} taille={22} badge={disciplineDe(p.discipline)?.couleur} />
                   {t?.libelle ?? 'Point terrain'}
                   {p.description && <span className="text-xs text-sourdine"> · {p.description}</span>}
                 </p>

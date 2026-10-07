@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useSearchParams, Link } from 'react-router-dom'
-import { SelecteurLocalisation } from '@plateforme-crise/shared'
+import { SelecteurLocalisation, DISCIPLINES } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
@@ -2777,6 +2777,51 @@ function FormulaireRecommandation({ evaluationCriseId, contacts = [], onValider,
   )
 }
 
+/**
+ * Rapport CAN(AL) — trame de SITREP de la procédure ICS (KCCE) : Conditions,
+ * Actions, Needs, Anticipation, Logistique. Version « Je suis / Je vois / Je fais /
+ * Je demande / Je prévois » en indice.
+ */
+const CHAMPS_CANAL = [
+  { champ: 'canal_conditions', lettre: 'C', libelle: 'Conditions', aide: 'Je suis (qui, où) · Je vois (description du sinistre)' },
+  { champ: 'canal_actions', lettre: 'A', libelle: 'Actions', aide: 'Je fais : actions entreprises' },
+  { champ: 'canal_besoins', lettre: 'N', libelle: 'Needs (besoins)', aide: 'Je demande : renforts quantifiés' },
+  { champ: 'canal_anticipation', lettre: 'A', libelle: 'Anticipation', aide: 'Je prévois : évolution attendue' },
+  { champ: 'canal_logistique', lettre: 'L', libelle: 'Logistique', aide: 'Moyens, ravitaillement, relèves' },
+]
+
+const LIBELLE_POINT_TERRAIN = {
+  danger: 'Danger',
+  route_coupee: 'Route coupée',
+  inondation: 'Inondation',
+  degats: 'Dégâts',
+  victimes: 'Victimes / personnes en danger',
+  besoin: 'Besoin',
+  point_rassemblement: 'Point de rassemblement',
+  acces: 'Accès / barrage',
+  autre: 'Autre',
+}
+
+/** Compose des brouillons CAN(AL) à partir des points posés sur la carte pour cet incident. */
+async function brouillonDepuisCarte(incidentId) {
+  const { data, error } = await supabase
+    .from('observations_terrain')
+    .select('type, description, discipline, created_at')
+    .eq('incident_id', incidentId)
+    .eq('statut', 'ouvert')
+    .order('created_at')
+  if (error) return { erreur: error.message }
+  const lignes = data ?? []
+  const ligne = (p) => `• ${LIBELLE_POINT_TERRAIN[p.type] ?? p.type}${p.description ? ` — ${p.description}` : ''}${p.discipline ? ` (${DISCIPLINES.find((d) => d.valeur === p.discipline)?.court})` : ''}`
+  const conditions = lignes.filter((p) => ['danger', 'inondation', 'route_coupee', 'degats', 'acces'].includes(p.type))
+  const besoins = lignes.filter((p) => ['besoin', 'victimes'].includes(p.type))
+  return {
+    nb: lignes.length,
+    canal_conditions: conditions.map(ligne).join('\n'),
+    canal_besoins: besoins.map(ligne).join('\n'),
+  }
+}
+
 function SectionSitReps({ incidentId, contexteId }) {
   const [sitreps, setSitreps] = useState([])
   const [chargement, setChargement] = useState(true)
@@ -2857,6 +2902,17 @@ function SectionSitReps({ incidentId, contexteId }) {
               {s.mesures_reflexes && (
                 <p className="text-xs text-sourdine italic mt-1">{s.mesures_reflexes}</p>
               )}
+              {s.facade_alfa && <p className="text-xs text-sourdine">façade Alfa : {s.facade_alfa}</p>}
+              {CHAMPS_CANAL.some((c) => s[c.champ]) && (
+                <dl className="mt-2 space-y-1">
+                  {CHAMPS_CANAL.filter((c) => s[c.champ]).map((c) => (
+                    <div key={c.champ} className="text-xs">
+                      <dt className="inline font-medium text-encre">{c.lettre} · {c.libelle} </dt>
+                      <dd className="inline text-sourdine whitespace-pre-line">{s[c.champ]}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
 
               <SectionDisciplinesSitrep sitrepId={s.id} contexteId={contexteId} />
             </li>
@@ -2878,7 +2934,7 @@ function SectionDisciplinesSitrep({ sitrepId, contexteId }) {
     setChargement(true)
     const { data, error } = await supabase
       .from('sitrep_disciplines')
-      .select('*, disciplines(id, libelle)')
+      .select('*, disciplines(id, libelle, code)')
       .eq('sitrep_id', sitrepId)
     if (error) setErreur(error.message)
     else setLignesDisciplines(data ?? [])
@@ -2927,7 +2983,11 @@ function SectionDisciplinesSitrep({ sitrepId, contexteId }) {
       ) : (
         <ul className="mt-1 space-y-1">
           {lignesDisciplines.map((d) => (
-            <li key={d.id} className="bg-fond rounded px-2 py-1.5 text-xs">
+            <li
+              key={d.id}
+              className="bg-fond rounded px-2 py-1.5 text-xs"
+              style={{ borderLeft: `4px solid ${DISCIPLINES.find((x) => x.court.toLowerCase() === String(d.disciplines?.code ?? '').toLowerCase())?.couleur ?? 'transparent'}` }}
+            >
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-medium text-sourdine">{d.disciplines?.libelle ?? '—'}</p>
@@ -3048,13 +3108,38 @@ function FormulaireSitRep({ incidentId, niveaux, contacts = [], centresAccueil =
   const [dirPcOpsContactId, setDirPcOpsContactId] = useState('')
   const [localisationCentreAccueilId, setLocalisationCentreAccueilId] = useState('')
   const [mesuresReflexes, setMesuresReflexes] = useState('')
+  const [canal, setCanal] = useState({})
+  const [facadeAlfa, setFacadeAlfa] = useState('')
+  const [infoCarte, setInfoCarte] = useState(null)
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
+
+  async function remplirDepuisCarte() {
+    setInfoCarte(null)
+    const b = await brouillonDepuisCarte(incidentId)
+    if (b.erreur) {
+      setInfoCarte(b.erreur)
+      return
+    }
+    if (b.nb === 0) {
+      setInfoCarte('Aucun point terrain ouvert pour cet incident.')
+      return
+    }
+    // On ne remplace jamais ce qui a déjà été écrit à la main : on complète les champs vides.
+    setCanal((prev) => ({
+      ...prev,
+      canal_conditions: prev.canal_conditions?.trim() ? prev.canal_conditions : b.canal_conditions,
+      canal_besoins: prev.canal_besoins?.trim() ? prev.canal_besoins : b.canal_besoins,
+    }))
+    setInfoCarte(`${b.nb} point${b.nb > 1 ? 's' : ''} terrain repris (champs vides seulement) — à relire avant d'enregistrer.`)
+  }
 
   async function soumettre(e) {
     e.preventDefault()
     setEnCours(true)
     const { error } = await supabase.from('sitreps').insert({
+      ...Object.fromEntries(CHAMPS_CANAL.map((c) => [c.champ, canal[c.champ]?.trim() || null])),
+      facade_alfa: facadeAlfa.trim() || null,
       incident_id: incidentId,
       numero: prochainNumero,
       niveau_id: niveauId || null,
@@ -3140,6 +3225,31 @@ function FormulaireSitRep({ incidentId, niveaux, contacts = [], centresAccueil =
       <div>
         <label className="block text-xs font-medium text-sourdine mb-1">Mesures réflexes</label>
         <textarea value={mesuresReflexes} onChange={(e) => setMesuresReflexes(e.target.value)} rows={2} className="w-full" />
+      </div>
+
+      <div className="border-t border-trait pt-3 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-medium text-sourdine">Rapport CAN(AL) — Je suis · Je vois · Je fais · Je demande · Je prévois</p>
+          <BoutonDiscret type="button" onClick={remplirDepuisCarte}>Reprendre les points de la carte</BoutonDiscret>
+        </div>
+        {infoCarte && <p className="text-xs text-sourdine">{infoCarte}</p>}
+        {CHAMPS_CANAL.map((c) => (
+          <div key={c.champ}>
+            <label className="block text-xs font-medium text-sourdine mb-1">{c.lettre} · {c.libelle}</label>
+            <textarea
+              value={canal[c.champ] ?? ''}
+              onChange={(e) => setCanal((prev) => ({ ...prev, [c.champ]: e.target.value }))}
+              placeholder={c.aide}
+              rows={2}
+              className="w-full"
+            />
+          </div>
+        ))}
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Façade Alfa (côté où la 1re autopompe commence)</label>
+          <input value={facadeAlfa} onChange={(e) => setFacadeAlfa(e.target.value)} placeholder="ex. côté rue de la Gare" className="w-full" />
+          <p className="text-xs text-sourdine mt-1">Fixée une fois pour toutes dès que l'intervention a commencé : Bravo, Charlie et Delta en découlent.</p>
+        </div>
       </div>
 
       {erreur && <p className="text-sm text-chaud">{erreur}</p>}

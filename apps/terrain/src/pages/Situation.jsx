@@ -153,6 +153,12 @@ export default function Situation() {
                   Victimes — U0 : {d.sitrep.victimes_u0 ?? 0} · U1 : {d.sitrep.victimes_u1 ?? 0} · U2 : {d.sitrep.victimes_u2 ?? 0} · U3 : {d.sitrep.victimes_u3 ?? 0}
                 </p>
                 {d.sitrep.mesures_reflexes && <p className="text-sm text-sourdine mt-1">{d.sitrep.mesures_reflexes}</p>}
+                {[['C · Conditions', d.sitrep.canal_conditions], ['A · Actions', d.sitrep.canal_actions], ['N · Besoins', d.sitrep.canal_besoins], ['A · Anticipation', d.sitrep.canal_anticipation], ['L · Logistique', d.sitrep.canal_logistique]]
+                  .filter(([, v]) => v)
+                  .map(([k, v]) => (
+                    <p key={k} className="text-xs text-sourdine mt-1 whitespace-pre-line"><strong className="text-encre">{k}</strong> {v}</p>
+                  ))}
+                {d.sitrep.facade_alfa && <p className="text-xs text-sourdine mt-1">Façade Alfa : {d.sitrep.facade_alfa}</p>}
                 {[['Incident', d.sitrep.localisation_incident], ['PC-Ops', d.sitrep.localisation_pc_ops], ['PMA', d.sitrep.localisation_pma], ['PPD', d.sitrep.localisation_ppd]]
                   .filter(([, v]) => v)
                   .map(([k, v]) => (

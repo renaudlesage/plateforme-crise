@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CarteCrise, FiltreIncidentsCarte, DISCIPLINES, disciplineDe } from '@plateforme-crise/shared'
+import { CarteCrise, FiltreIncidentsCarte, DISCIPLINES, disciplineDe, LegendeSymboles } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { BoutonDiscret } from '../components/Boutons'
@@ -9,14 +9,27 @@ import { BoutonDiscret } from '../components/Boutons'
 const CENTRE_BELGIQUE = { lat: 50.5039, lon: 4.4699 }
 
 const COUCHES = [
-  { cle: 'incidents', libelle: 'Incidents en cours', couleur: '#b91c1c' },
-  { cle: 'objets_a_risque', libelle: 'Objets à risque', couleur: '#dc5a3c' },
-  { cle: 'centres_accueil', libelle: "Centres d'accueil", couleur: '#2563eb' },
-  { cle: 'sites_qg', libelle: 'Sites QG', couleur: '#7c3aed' },
-  { cle: 'infrastructures_critiques', libelle: 'Infrastructures critiques', couleur: '#b45309' },
+  { cle: 'incidents', libelle: 'Incidents en cours', couleur: '#b91c1c', symbole: 'sinistre_foyer' },
+  { cle: 'objets_a_risque', libelle: 'Objets à risque', couleur: '#dc5a3c', symbole: 'danger_risque' },
+  { cle: 'centres_accueil', libelle: "Centres d'accueil", couleur: '#2563eb', symbole: 'infra_ca' },
+  { cle: 'sites_qg', libelle: 'Sites QG', couleur: '#7c3aed', symbole: 'pc_ops' },
+  { cle: 'infrastructures_critiques', libelle: 'Infrastructures critiques', couleur: '#b45309', symbole: 'sensible_noir' },
   { cle: 'signalements_citoyens', libelle: 'Signalements citoyens (ouverts)', couleur: '#059669' },
   { cle: 'observations', libelle: 'Points terrain (ouverts)', couleur: '#be123c' },
 ]
+
+// Symbole par défaut d'un point terrain posé avant l'arrivée des symboles (même table que Terrain).
+const SYMBOLE_PAR_TYPE = {
+  danger: 'danger_noir',
+  route_coupee: 'route_barree',
+  inondation: 'danger_eau',
+  degats: 'danger_risque',
+  victimes: 'danger_humain',
+  besoin: 'point_particulier',
+  point_rassemblement: 'infra_pr',
+  acces: 'isolement',
+  autre: 'point_particulier',
+}
 
 const LIBELLE_OBSERVATION = {
   danger: 'Danger',
@@ -61,7 +74,7 @@ export default function Carte() {
       supabase.from('infrastructures_critiques').select('id, nom, type, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
       supabase.from('signalements_citoyens').select('id, reference, type, statut, incident_id, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null).not('statut', 'in', '(clos,sans_suite)'),
       supabase.from('incidents').select('id, nom, type_evenement, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'en_cours').order('date_debut', { ascending: false }),
-      supabase.from('observations_terrain').select('id, type, description, discipline, incident_id, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'ouvert'),
+      supabase.from('observations_terrain').select('id, type, description, discipline, symbole, incident_id, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'ouvert'),
     ])
 
     const premierErreur = [objets, centres, sites, infra, signalements, incidentsActifs, observations].find((r) => r.error)
@@ -138,6 +151,8 @@ export default function Carte() {
           titre: c.cle === 'observations' ? LIBELLE_OBSERVATION[p.type] ?? c.libelle : p.identification ?? p.nom ?? p.reference ?? c.libelle,
           sousTitre: c.cle === 'observations' ? [d?.court, p.description].filter(Boolean).join(' · ') || undefined : p.categorie ?? p.type_lieu ?? p.type ?? p.type_evenement ?? LIBELLE_TYPE_SIGNALEMENT[p.type] ?? undefined,
           couleur: d?.couleur ?? c.couleur,
+          symbole: c.cle === 'observations' ? p.symbole ?? SYMBOLE_PAR_TYPE[p.type] ?? 'point_particulier' : c.symbole,
+          badge: d?.couleur,
         })
       }
     }
@@ -267,6 +282,7 @@ export default function Carte() {
             cercles={cercles}
             hauteur="65vh"
           />
+          <div className="mt-3"><LegendeSymboles /></div>
         </>
       )}
     </div>

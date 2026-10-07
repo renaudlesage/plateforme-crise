@@ -1,6 +1,7 @@
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, useMapEvents } from 'react-leaflet'
 import { divIcon, latLngBounds } from 'leaflet'
 import { useEffect } from 'react'
+import { svgSymbole } from './symboles.js'
 
 /**
  * Carte Leaflet/OpenStreetMap générique, partagée par les apps Admin et
@@ -19,7 +20,7 @@ import { useEffect } from 'react'
  *
  * @param {{lat:number, lon:number}} centre
  * @param {number} [zoom]
- * @param {Array<{id:string, lat:number, lon:number, titre:string, sousTitre?:string, couleur?:string}>} [marqueurs]
+ * @param {Array<{id:string, lat:number, lon:number, titre:string, sousTitre?:string, couleur?:string, symbole?:string, badge?:string}>} [marqueurs]  symbole = code de la bibliothèque (symboles.js), badge = couleur de la discipline
  * @param {Array<{id:string, lat:number, lon:number, rayonM:number, couleur?:string, libelle?:string}>} [cercles]
  * @param {{lat:number, lon:number}|null} [selection] - pastille de sélection, en mode édition
  * @param {(point: {lat:number, lon:number}) => void} [onClicCarte] - présence = active le mode sélection (clic + curseur adapté)
@@ -66,7 +67,7 @@ export default function CarteCrise({
         ))}
 
         {marqueurs.map((m) => (
-          <Marker key={`${m.id}-${onClicCarte ? 'sel' : 'lec'}`} position={[m.lat, m.lon]} icon={icone(m.couleur)} interactive={!onClicCarte}>
+          <Marker key={`${m.id}-${onClicCarte ? 'sel' : 'lec'}`} position={[m.lat, m.lon]} icon={m.symbole ? iconeSymbole(m.symbole, m.badge) : icone(m.couleur)} interactive={!onClicCarte}>
             <Popup>
               <strong>{m.titre}</strong>
               {m.sousTitre && (
@@ -118,6 +119,17 @@ function RecentrerSiChangement({ centre, cle, zoom, ajusterSur }) {
  * cassées par les bundlers (chemin d'image non résolu), et permet un
  * code couleur par type de point sans jeu d'icônes à maintenir.
  */
+/** Marqueur en symbole de la charte (bibliothèque symboles.js), pastille de discipline en coin. */
+function iconeSymbole(code, badge = null) {
+  return divIcon({
+    className: '',
+    html: svgSymbole(code, { taille: 34, badge }),
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+    popupAnchor: [0, -14],
+  })
+}
+
 function icone(couleur = '#2563eb') {
   return divIcon({
     className: '',
