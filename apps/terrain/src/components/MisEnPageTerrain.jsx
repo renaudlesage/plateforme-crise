@@ -31,6 +31,9 @@ export default function MisEnPageTerrain() {
           <Link to="/" className={`plaque-nav${pathname === '/' ? ' actif' : ''}`}>
             Intervention
           </Link>
+          <Link to="/situation" className={`plaque-nav${pathname.startsWith('/situation') ? ' actif' : ''}`}>
+            Situation
+          </Link>
           <Link to="/carte" className={`plaque-nav${pathname.startsWith('/carte') ? ' actif' : ''}`}>
             Carte
           </Link>

@@ -7,6 +7,7 @@ import Connexion from './pages/Connexion'
 import SelectionContexte from './pages/SelectionContexte'
 import Terrain from './pages/Terrain'
 import Carte from './pages/Carte'
+import Situation from './pages/Situation'
 import { fileEcritures } from './lib/fileEcritures'
 
 export default function App() {
@@ -41,6 +42,7 @@ export default function App() {
             }
           >
             <Route index element={<Terrain />} />
+            <Route path="situation" element={<Situation />} />
             <Route path="carte" element={<Carte />} />
           </Route>
         </Routes>

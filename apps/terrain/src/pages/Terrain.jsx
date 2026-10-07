@@ -4,6 +4,8 @@ import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret } from '../components/Boutons'
 import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
+import { useIncidentsEnCours, SelecteurIncident } from '../hooks/useIncidentsEnCours'
+import { Link } from 'react-router-dom'
 
 const STORAGE_KEY_ROLE = 'terrain_role_id_selectionne'
 
@@ -77,26 +79,7 @@ export default function Terrain() {
 }
 
 function IncidentActif({ contexteId, roleId }) {
-  const [incident, setIncident] = useState(null)
-  const [chargement, setChargement] = useState(true)
-
-  const charger = useCallback(async () => {
-    setChargement(true)
-    const { data } = await supabase
-      .from('incidents')
-      .select('id, nom, type_evenement, statut, degre_criticite, phase_cycle_vie')
-      .eq('contexte_id', contexteId)
-      .eq('statut', 'en_cours')
-      .order('date_debut', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    setIncident(data)
-    setChargement(false)
-  }, [contexteId])
-
-  useEffect(() => {
-    charger()
-  }, [charger])
+  const { incidents, incident, choisir, chargement } = useIncidentsEnCours(contexteId)
 
   if (chargement) return <p className="vide text-center mt-6">Chargement…</p>
 
@@ -110,6 +93,7 @@ function IncidentActif({ contexteId, roleId }) {
 
   return (
     <div className="space-y-6">
+      <SelecteurIncident incidents={incidents} incident={incident} onChoisir={choisir} />
       <div className="bandeau-alerte niv-urgence">
         <div className="niv">Incident</div>
         <div className="contenu">
@@ -125,6 +109,10 @@ function IncidentActif({ contexteId, roleId }) {
           {incident.type_evenement && <p className="msg">{incident.type_evenement}</p>}
         </div>
       </div>
+
+      <Link to="/situation" className="bouton-terrain principal" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+        Voir la situation (QG)
+      </Link>
 
       <ChecklistRole incidentId={incident.id} contexteId={contexteId} roleId={roleId} />
       <SignalementRapide incidentId={incident.id} roleId={roleId} />

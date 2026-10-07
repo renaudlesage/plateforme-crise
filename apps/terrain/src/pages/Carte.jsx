@@ -3,6 +3,7 @@ import { CarteCrise } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
+import { useIncidentsEnCours } from '../hooks/useIncidentsEnCours'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
 
 const CENTRE_BELGIQUE = { lat: 50.5039, lon: 4.4699 }
@@ -47,7 +48,8 @@ export default function Carte() {
   const [donnees, setDonnees] = useState({})
   const [manquants, setManquants] = useState([])
   const [zones, setZones] = useState([])
-  const [incidentId, setIncidentId] = useState(null)
+  const { incident: incidentChoisi } = useIncidentsEnCours(contexteId)
+  const incidentId = incidentChoisi?.id ?? null
   const [chargement, setChargement] = useState(true)
   const [erreur, setErreur] = useState(null)
 
@@ -97,7 +99,6 @@ export default function Carte() {
     }
 
     const incidents = inc.data ?? []
-    setIncidentId(incidents[0]?.id ?? null)
     setDonnees({
       incidents: incidents.filter((i) => i.latitude != null),
       observations: obs.data ?? [],
@@ -178,12 +179,12 @@ export default function Carte() {
   // Point d'intérêt : l'incident en cours (le plus récent géolocalisé), sinon le
   // centre de sa zone d'intervention. Cadre la carte à l'ouverture et via le bouton.
   const focusIncident = useMemo(() => {
-    const inc = (donnees.incidents ?? [])[0]
+    const inc = (donnees.incidents ?? []).find((i) => i.id === incidentId) ?? (donnees.incidents ?? [])[0]
     if (inc) return { lat: Number(inc.latitude), lon: Number(inc.longitude) }
     const z = zones[0]
     if (z) return { lat: Number(z.centre_latitude), lon: Number(z.centre_longitude) }
     return null
-  }, [donnees, zones])
+  }, [donnees, zones, incidentId])
 
   const [cleRecentrage, setCleRecentrage] = useState(0)
 
