@@ -16,6 +16,7 @@ const COUCHES = [
   { cle: 'infrastructures_critiques', libelle: 'Infrastructures critiques', couleur: '#b45309', symbole: 'sensible_noir' },
   { cle: 'signalements_citoyens', libelle: 'Signalements citoyens (ouverts)', couleur: '#059669' },
   { cle: 'observations', libelle: 'Points terrain (ouverts)', couleur: '#be123c' },
+  { cle: 'moyens', libelle: 'Moyens engagés', couleur: '#8e2a8e', symbole: 'moyen_autre' },
 ]
 
 // Symbole par défaut d'un point terrain posé avant l'arrivée des symboles (même table que Terrain).
@@ -30,6 +31,8 @@ const SYMBOLE_PAR_TYPE = {
   acces: 'isolement',
   autre: 'point_particulier',
 }
+
+const STATUT_MOYEN = { en_route: 'En route', sur_place: 'Sur place', disponible: 'Disponible', retire: 'Retiré' }
 
 const LIBELLE_OBSERVATION = {
   danger: 'Danger',
@@ -67,17 +70,18 @@ export default function Carte() {
     setChargement(true)
     setErreur(null)
 
-    const [objets, centres, sites, infra, signalements, incidentsActifs, observations] = await Promise.all([
+    const [objets, centres, sites, infra, signalements, incidentsActifs, moyens, observations] = await Promise.all([
       supabase.from('objets_a_risque').select('id, identification, categorie, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
       supabase.from('centres_accueil').select('id, nom, type_lieu, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
       supabase.from('sites_qg').select('id, nom, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
       supabase.from('infrastructures_critiques').select('id, nom, type, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
       supabase.from('signalements_citoyens').select('id, reference, type, statut, incident_id, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null).not('statut', 'in', '(clos,sans_suite)'),
       supabase.from('incidents').select('id, nom, type_evenement, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'en_cours').order('date_debut', { ascending: false }),
+      supabase.from('moyens_engages').select('id, symbole, libelle, discipline, effectif, statut, remarque, incident_id, latitude, longitude').eq('contexte_id', contexteId).neq('statut', 'retire').not('latitude', 'is', null),
       supabase.from('observations_terrain').select('id, type, description, discipline, symbole, incident_id, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'ouvert'),
     ])
 
-    const premierErreur = [objets, centres, sites, infra, signalements, incidentsActifs, observations].find((r) => r.error)
+    const premierErreur = [objets, centres, sites, infra, signalements, incidentsActifs, moyens, observations].find((r) => r.error)
     if (premierErreur) {
       setErreur(premierErreur.error.message)
       setChargement(false)
@@ -93,6 +97,7 @@ export default function Carte() {
       infrastructures_critiques: infra.data ?? [],
       signalements_citoyens: signalements.data ?? [],
       observations: observations.data ?? [],
+      moyens: moyens.data ?? [],
     })
 
     if (liste.length > 0) {
@@ -141,17 +146,17 @@ export default function Carte() {
       const source =
         c.cle === 'incidents'
           ? incidentsAffiches.filter((i) => i.latitude != null)
-          : (points[c.cle] ?? []).filter((p) => c.cle !== 'signalements_citoyens' && c.cle !== 'observations' ? true : visible(p) && (c.cle !== 'observations' || disciplineVisible(p.discipline)))
+          : (points[c.cle] ?? []).filter((p) => c.cle !== 'signalements_citoyens' && c.cle !== 'observations' && c.cle !== 'moyens' ? true : visible(p) && (c.cle !== 'observations' || disciplineVisible(p.discipline)))
       for (const p of source) {
-        const d = c.cle === 'observations' ? disciplineDe(p.discipline) : null
+        const d = c.cle === 'observations' || c.cle === 'moyens' ? disciplineDe(p.discipline) : null
         tous.push({
           id: `${c.cle}-${p.id}`,
           lat: Number(p.latitude),
           lon: Number(p.longitude),
-          titre: c.cle === 'observations' ? LIBELLE_OBSERVATION[p.type] ?? c.libelle : p.identification ?? p.nom ?? p.reference ?? c.libelle,
-          sousTitre: c.cle === 'observations' ? [d?.court, p.description].filter(Boolean).join(' · ') || undefined : p.categorie ?? p.type_lieu ?? p.type ?? p.type_evenement ?? LIBELLE_TYPE_SIGNALEMENT[p.type] ?? undefined,
+          titre: c.cle === 'moyens' ? p.libelle : c.cle === 'observations' ? LIBELLE_OBSERVATION[p.type] ?? c.libelle : p.identification ?? p.nom ?? p.reference ?? c.libelle,
+          sousTitre: c.cle === 'moyens' ? [STATUT_MOYEN[p.statut], p.effectif != null ? `${p.effectif} pers.` : null, d?.court, p.remarque].filter(Boolean).join(' · ') : c.cle === 'observations' ? [d?.court, p.description].filter(Boolean).join(' · ') || undefined : p.categorie ?? p.type_lieu ?? p.type ?? p.type_evenement ?? LIBELLE_TYPE_SIGNALEMENT[p.type] ?? undefined,
           couleur: d?.couleur ?? c.couleur,
-          symbole: c.cle === 'observations' ? p.symbole ?? SYMBOLE_PAR_TYPE[p.type] ?? 'point_particulier' : c.symbole,
+          symbole: c.cle === 'observations' ? p.symbole ?? SYMBOLE_PAR_TYPE[p.type] ?? 'point_particulier' : c.cle === 'moyens' ? p.symbole : c.symbole,
           badge: d?.couleur,
         })
       }

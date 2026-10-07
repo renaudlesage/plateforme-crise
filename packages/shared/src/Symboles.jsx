@@ -12,20 +12,25 @@ export function Symbole({ code, taille = 32, badge = null, style }) {
 }
 
 /** Sélecteur : grille de symboles groupés par catégorie, repliable. */
-export function PaletteSymboles({ valeur, onChange, titre = 'Symbole', ouvertParDefaut = false }) {
+export function PaletteSymboles({ valeur, onChange, titre = 'Symbole', ouvertParDefaut = false, categories = null, sansDefaut = false }) {
   const [ouvert, setOuvert] = useState(ouvertParDefaut)
   const courant = symboleDe(valeur)
   return (
     <div>
       <button type="button" className="lien text-sm" onClick={() => setOuvert((o) => !o)} aria-expanded={ouvert}>
-        {titre} : {courant ? courant.libelle : 'selon le type'} {ouvert ? '▴' : '▾'}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          {courant && <span style={{ background: '#fff', borderRadius: 6, padding: 2, lineHeight: 0 }}><Symbole code={courant.code} taille={26} /></span>}
+          {titre} : {courant ? courant.libelle : 'selon le type'} {ouvert ? '▴' : '▾'}
+        </span>
       </button>
       {ouvert && (
         <div className="mt-2 space-y-3">
-          <button type="button" className="discret" onClick={() => onChange(null)} style={{ fontSize: 12, padding: '3px 8px' }}>
-            Revenir au symbole du type
-          </button>
-          {CATEGORIES_SYMBOLES.map((cat) => (
+          {!sansDefaut && (
+            <button type="button" className="discret" onClick={() => onChange(null)} style={{ fontSize: 12, padding: '3px 8px' }}>
+              Revenir au symbole du type
+            </button>
+          )}
+          {CATEGORIES_SYMBOLES.filter((cat) => !categories || categories.includes(cat.cle)).map((cat) => (
             <div key={cat.cle}>
               <p className="etiquette mb-1">{cat.libelle}</p>
               <div className="flex flex-wrap gap-1.5">

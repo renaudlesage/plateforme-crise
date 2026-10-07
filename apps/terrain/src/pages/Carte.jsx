@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CarteCrise, FiltreIncidentsCarte, DISCIPLINES, disciplineDe, Symbole, PaletteSymboles, LegendeSymboles } from '@plateforme-crise/shared'
+import { CarteCrise, FiltreIncidentsCarte, DISCIPLINES, disciplineDe, symboleDe, Symbole, PaletteSymboles, LegendeSymboles } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
@@ -25,12 +25,20 @@ export const TYPES_OBSERVATION = [
 const COUCHES = [
   { cle: 'incidents', libelle: 'Incidents en cours', couleur: '#b91c1c', table: null, symbole: 'sinistre_foyer' },
   { cle: 'observations', libelle: 'Points terrain', couleur: '#be123c', table: null },
+  { cle: 'moyens', libelle: 'Moyens engagés', couleur: '#8e2a8e', table: null, symbole: 'moyen_autre' },
   { cle: 'objets_a_risque', libelle: 'Objets à risque', couleur: '#dc5a3c', symbole: 'danger_risque', table: 'objets_a_risque', champNom: 'identification', champSous: 'categorie' },
   { cle: 'centres_accueil', libelle: "Centres d'accueil", couleur: '#2563eb', symbole: 'infra_ca', table: 'centres_accueil', champNom: 'nom', champSous: 'type_lieu' },
   { cle: 'sites_qg', libelle: 'Sites QG', couleur: '#7c3aed', symbole: 'pc_ops', table: 'sites_qg', champNom: 'nom' },
   { cle: 'infrastructures_critiques', libelle: 'Infrastructures critiques', couleur: '#b45309', symbole: 'sensible_noir', table: 'infrastructures_critiques', champNom: 'nom', champSous: 'type' },
   { cle: 'signalements_citoyens', libelle: 'Signalements citoyens', couleur: '#059669', table: null },
 ]
+export const STATUTS_MOYEN = {
+  en_route: 'En route',
+  sur_place: 'Sur place',
+  disponible: 'Disponible',
+  retire: 'Retiré',
+}
+
 const REFERENTIELS = COUCHES.filter((c) => c.table)
 
 /**
@@ -59,6 +67,7 @@ export default function Carte() {
   const [selection, setSelection] = useState(null)
   const [info, setInfo] = useState(null)
   const [disciplinesVues, setDisciplinesVues] = useState(null) // null = toutes ; sinon tableau de valeurs (+ 'aucune')
+  const [filtresOuverts, setFiltresOuverts] = useState(false)
 
   const charger = useCallback(async () => {
     if (!contexteId) return
@@ -70,7 +79,7 @@ export default function Carte() {
     const sansCoord = (table, colonnes) =>
       supabase.from(table).select(colonnes).eq('contexte_id', contexteId).is('latitude', null)
 
-    const [obj, cen, sit, inf, sig, inc, obs, objSans, cenSans, sitSans, infSans] = await Promise.all([
+    const [obj, cen, sit, inf, sig, inc, obs, moy, objSans, cenSans, sitSans, infSans] = await Promise.all([
       avecCoord('objets_a_risque', 'id, identification, categorie, latitude, longitude'),
       avecCoord('centres_accueil', 'id, nom, type_lieu, latitude, longitude'),
       avecCoord('sites_qg', 'id, nom, latitude, longitude'),
@@ -87,13 +96,19 @@ export default function Carte() {
         .select('id, type, description, discipline, symbole, incident_id, latitude, longitude, created_at')
         .eq('contexte_id', contexteId)
         .eq('statut', 'ouvert'),
+      supabase
+        .from('moyens_engages')
+        .select('id, symbole, libelle, discipline, effectif, statut, remarque, incident_id, latitude, longitude, maj_le')
+        .eq('contexte_id', contexteId)
+        .neq('statut', 'retire')
+        .order('maj_le', { ascending: false }),
       sansCoord('objets_a_risque', 'id, identification'),
       sansCoord('centres_accueil', 'id, nom'),
       sansCoord('sites_qg', 'id, nom'),
       sansCoord('infrastructures_critiques', 'id, nom'),
     ])
 
-    const premiereErreur = [obj, cen, sit, inf, sig, inc, obs, objSans, cenSans, sitSans, infSans].find((r) => r.error)
+    const premiereErreur = [obj, cen, sit, inf, sig, inc, obs, moy, objSans, cenSans, sitSans, infSans].find((r) => r.error)
     if (premiereErreur) {
       setErreur(premiereErreur.error.message)
       setChargement(false)
@@ -104,6 +119,7 @@ export default function Carte() {
     setDonnees({
       incidents,
       observations: obs.data ?? [],
+      moyens: moy.data ?? [],
       objets_a_risque: obj.data ?? [],
       centres_accueil: cen.data ?? [],
       sites_qg: sit.data ?? [],
@@ -158,6 +174,8 @@ export default function Carte() {
       const source =
         c.cle === 'observations'
           ? (donnees.observations ?? []).filter((p) => (!p.incident_id || ids.has(p.incident_id)) && disciplineVisible(p.discipline))
+          : c.cle === 'moyens'
+          ? (donnees.moyens ?? []).filter((m) => m.latitude != null && (!m.incident_id || ids.has(m.incident_id)))
           : c.cle === 'incidents'
           ? (donnees.incidents ?? []).filter((i) => i.latitude != null && ids.has(i.id))
           : (donnees[c.cle] ?? []).filter((p) => (c.cle === 'signalements_citoyens' ? !p.incident_id || ids.has(p.incident_id) : true))
@@ -174,6 +192,20 @@ export default function Carte() {
             sousTitre: [d?.court, p.description].filter(Boolean).join(' · ') || undefined,
             couleur: d?.couleur ?? t?.couleur ?? c.couleur,
             symbole: p.symbole ?? t?.symbole ?? 'point_particulier',
+            badge: d?.couleur,
+          })
+          continue
+        }
+        if (c.cle === 'moyens') {
+          const d = disciplineDe(p.discipline)
+          tous.push({
+            id: `moy-${p.id}`,
+            lat: Number(p.latitude),
+            lon: Number(p.longitude),
+            titre: p.libelle,
+            sousTitre: [STATUTS_MOYEN[p.statut], p.effectif != null ? `${p.effectif} pers.` : null, d?.court, p.remarque].filter(Boolean).join(' · '),
+            couleur: d?.couleur ?? c.couleur,
+            symbole: p.symbole,
             badge: d?.couleur,
           })
           continue
@@ -252,116 +284,21 @@ export default function Carte() {
     return true
   }
 
-  return (
-    <div>
-      <h1 className="text-lg font-semibold text-encre mb-1">Carte</h1>
-
-      <FiltreIncidentsCarte
-        incidents={(donnees.incidents ?? []).map((i) => ({ id: i.id, nom: i.nom, geolocalise: i.latitude != null }))}
-        selectionnes={affiches ?? []}
-        onChange={(liste) => {
-          setAffiches(liste)
-          setCleRecentrage((n) => n + 1)
-          // Un seul incident coché = celui qu'on suit (accueil, situation, points terrain).
-          if (liste.length === 1) choisir(liste[0])
-        }}
-      />
-
-      <div className="flex flex-wrap gap-3 mb-3">
-        {COUCHES.map((c) => (
-          <label key={c.cle} className="flex items-center gap-1.5 text-xs text-sourdine">
-            <input
-              type="checkbox"
-              checked={couches[c.cle]}
-              onChange={() => setCouches((prev) => ({ ...prev, [c.cle]: !prev[c.cle] }))}
-            />
-            <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: c.couleur }} />
-            {c.libelle}
-          </label>
-        ))}
-      </div>
-
-      {couches.observations && (
-        <div className="mb-3">
-          <p className="etiquette mb-1">Points terrain par discipline</p>
-          <div className="flex flex-wrap gap-1.5">
-            {[...DISCIPLINES, { valeur: 'aucune', court: 'Sans discipline', couleur: '#94a3b8' }].map((d) => {
-              const actif = disciplinesVues === null || disciplinesVues.includes(d.valeur)
-              return (
-                <button
-                  key={d.valeur}
-                  type="button"
-                  onClick={() => basculerDiscipline(d.valeur)}
-                  className="discret"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, opacity: actif ? 1 : 0.45, padding: '4px 8px', fontSize: 12 }}
-                  aria-pressed={actif}
-                >
-                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: d.couleur, display: 'inline-block' }} />
-                  {d.court}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
-      {info && <p className="text-sm text-ok mb-2">{info}</p>}
-
-      {pointsIncidents.length > 0 && !mode && (
-        <div className="mb-2">
-          <BoutonDiscret onClick={() => setCleRecentrage((n) => n + 1)}>
-            {pointsIncidents.length > 1 ? 'Recadrer sur les incidents affichés' : "Recentrer sur l'incident"}
-          </BoutonDiscret>
-        </div>
-      )}
-
-      {chargement ? (
-        <p className="vide">Chargement…</p>
-      ) : (
-        <CarteCrise
-          centre={centre}
-          zoom={selection || pointsIncidents.length ? 15 : marqueurs.length ? 13 : 8}
-          zoomRecentrage={pointsIncidents.length === 1 ? 15 : null}
-          ajusterSur={pointsIncidents.length > 1 ? pointsIncidents : null}
-          cleRecentrage={cleRecentrage}
-          marqueurs={marqueurs}
-          cercles={cercles}
-          selection={selection}
-          onClicCarte={mode ? (p) => setSelection(p) : null}
-          hauteur="52vh"
-        />
-      )}
-
-      {!mode && <div className="mt-3"><LegendeSymboles /></div>}
-
-      {!mode && (
-        <div className="mt-3 space-y-2">
-          <BoutonPrincipal className="bouton-terrain" onClick={() => { setInfo(null); setMode({ type: 'observation' }) }}>
-            Ajouter un point terrain
-          </BoutonPrincipal>
-          {manquants.length > 0 && <ALocaliser manquants={manquants} onChoisir={(element) => { setInfo(null); setMode({ type: 'localiser', element }) }} />}
-        </div>
-      )}
-
-      {!mode && (donnees.observations ?? []).length > 0 && (
-        <PointsAFlaguer
-          points={(donnees.observations ?? []).filter((p) => !p.incident_id || ids.has(p.incident_id))}
-          onFlaguer={async (p, discipline) => {
-            const res = await fileEcritures.ecrireOuEmpiler({
-              nature: 'update',
-              table: 'observations_terrain',
-              id: p.id,
-              champs: { discipline },
-              libelle: `Discipline · ${TYPES_OBSERVATION.find((t) => t.valeur === p.type)?.libelle}`,
-            })
-            await apresEcriture(res, discipline ? `Point flagué ${disciplineDe(discipline).court}` : 'Discipline retirée')
-          }}
-        />
-      )}
-
+  const formulaire = (
+    <>
       {mode?.type === 'observation' && (
         <FormulaireObservation
+          contexteId={contexteId}
+          incidentId={incidentId}
+          selection={selection}
+          onPosition={setSelection}
+          onAnnuler={fermer}
+          onEnvoyer={apresEcriture}
+        />
+      )}
+
+      {mode?.type === 'moyen' && (
+        <FormulaireMoyen
           contexteId={contexteId}
           incidentId={incidentId}
           selection={selection}
@@ -379,6 +316,154 @@ export default function Carte() {
           onAnnuler={fermer}
           onEnvoyer={apresEcriture}
         />
+      )}
+    </>
+  )
+
+  return (
+    <div>
+      {/* Les actions restent en haut : sur un téléphone la carte occupe presque tout l'écran
+          et un doigt posé dessus déplace la carte au lieu de faire défiler la page. */}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <h1 className="text-lg font-semibold text-encre">Carte</h1>
+        {!mode && (
+          <div className="flex flex-wrap gap-2">
+            <BoutonPrincipal onClick={() => { setInfo(null); setMode({ type: 'observation' }) }}>+ Point terrain</BoutonPrincipal>
+            <BoutonDiscret onClick={() => { setInfo(null); setMode({ type: 'moyen' }) }}>+ Moyen engagé</BoutonDiscret>
+          </div>
+        )}
+      </div>
+
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
+      {info && <p className="text-sm text-ok mb-2">{info}</p>}
+
+      {/* Formulaire AU-DESSUS de la carte : on voit les champs et on touche la carte juste dessous. */}
+      {formulaire}
+
+      {!mode && (
+        <>
+          <FiltreIncidentsCarte
+            incidents={(donnees.incidents ?? []).map((i) => ({ id: i.id, nom: i.nom, geolocalise: i.latitude != null }))}
+            selectionnes={affiches ?? []}
+            onChange={(liste) => {
+              setAffiches(liste)
+              setCleRecentrage((n) => n + 1)
+              // Un seul incident coché = celui qu'on suit (accueil, situation, points terrain).
+              if (liste.length === 1) choisir(liste[0])
+            }}
+          />
+
+          <div className="mb-2">
+            <button type="button" className="lien text-sm" onClick={() => setFiltresOuverts((o) => !o)} aria-expanded={filtresOuverts}>
+              Couches et filtres {filtresOuverts ? '▴' : '▾'}
+            </button>
+            {filtresOuverts && (
+              <div className="mt-2">
+                <div className="flex flex-wrap gap-3 mb-3">
+                  {COUCHES.map((c) => (
+                    <label key={c.cle} className="flex items-center gap-1.5 text-xs text-sourdine">
+                      <input
+                        type="checkbox"
+                        checked={couches[c.cle]}
+                        onChange={() => setCouches((prev) => ({ ...prev, [c.cle]: !prev[c.cle] }))}
+                      />
+                      <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: c.couleur }} />
+                      {c.libelle}
+                    </label>
+                  ))}
+                </div>
+
+                {couches.observations && (
+                  <div className="mb-1">
+                    <p className="etiquette mb-1">Points terrain par discipline</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[...DISCIPLINES, { valeur: 'aucune', court: 'Sans discipline', couleur: '#94a3b8' }].map((d) => {
+                        const actif = disciplinesVues === null || disciplinesVues.includes(d.valeur)
+                        return (
+                          <button
+                            key={d.valeur}
+                            type="button"
+                            onClick={() => basculerDiscipline(d.valeur)}
+                            className="discret"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, opacity: actif ? 1 : 0.45, padding: '4px 8px', fontSize: 12 }}
+                            aria-pressed={actif}
+                          >
+                            <span style={{ width: 10, height: 10, borderRadius: '50%', background: d.couleur, display: 'inline-block' }} />
+                            {d.court}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {pointsIncidents.length > 0 && (
+            <div className="mb-2">
+              <BoutonDiscret onClick={() => setCleRecentrage((n) => n + 1)}>
+                {pointsIncidents.length > 1 ? 'Recadrer sur les incidents affichés' : "Recentrer sur l'incident"}
+              </BoutonDiscret>
+            </div>
+          )}
+        </>
+      )}
+
+      {chargement ? (
+        <p className="vide">Chargement…</p>
+      ) : (
+        <CarteCrise
+          centre={centre}
+          zoom={selection || pointsIncidents.length ? 15 : marqueurs.length ? 13 : 8}
+          zoomRecentrage={pointsIncidents.length === 1 ? 15 : null}
+          ajusterSur={pointsIncidents.length > 1 ? pointsIncidents : null}
+          cleRecentrage={cleRecentrage}
+          marqueurs={marqueurs}
+          cercles={cercles}
+          selection={selection}
+          onClicCarte={mode ? (p) => setSelection(p) : null}
+          hauteur={mode ? '45vh' : '52vh'}
+        />
+      )}
+
+      {!mode && (
+        <div className="mt-3 space-y-2">
+          <MoyensEngages
+            moyens={(donnees.moyens ?? []).filter((m) => !m.incident_id || ids.has(m.incident_id))}
+            onStatut={async (m, statut) => {
+              const res = await fileEcritures.ecrireOuEmpiler({
+                nature: 'update',
+                table: 'moyens_engages',
+                id: m.id,
+                champs: { statut, maj_le: new Date().toISOString() },
+                libelle: `${m.libelle} · ${STATUTS_MOYEN[statut]}`,
+              })
+              await apresEcriture(res, `${m.libelle} : ${STATUTS_MOYEN[statut].toLowerCase()}`)
+            }}
+            onDeplacer={(m) => { setInfo(null); setMode({ type: 'localiser', element: { table: 'moyens_engages', id: m.id, libelle: m.libelle } }) }}
+          />
+
+          {(donnees.observations ?? []).length > 0 && (
+            <PointsAFlaguer
+              points={(donnees.observations ?? []).filter((p) => !p.incident_id || ids.has(p.incident_id))}
+              onFlaguer={async (p, discipline) => {
+                const res = await fileEcritures.ecrireOuEmpiler({
+                  nature: 'update',
+                  table: 'observations_terrain',
+                  id: p.id,
+                  champs: { discipline },
+                  libelle: `Discipline · ${TYPES_OBSERVATION.find((t) => t.valeur === p.type)?.libelle}`,
+                })
+                await apresEcriture(res, discipline ? `Point flagué ${disciplineDe(discipline).court}` : 'Discipline retirée')
+              }}
+            />
+          )}
+
+          {manquants.length > 0 && <ALocaliser manquants={manquants} onChoisir={(element) => { setInfo(null); setMode({ type: 'localiser', element }) }} />}
+
+          <LegendeSymboles />
+        </div>
       )}
     </div>
   )
@@ -474,7 +559,7 @@ function FormulaireObservation({ contexteId, incidentId, selection, onPosition, 
   }
 
   return (
-    <form onSubmit={envoyer} className="mt-3 space-y-3 border border-trait rounded p-3 bg-surface">
+    <form onSubmit={envoyer} className="mb-3 space-y-3 border border-trait rounded p-3 bg-surface">
       <p className="etiquette">Nouveau point terrain</p>
       <select
         value={type}
@@ -499,7 +584,7 @@ function FormulaireObservation({ contexteId, incidentId, selection, onPosition, 
       <p className="text-xs text-sourdine">
         {selection
           ? `Position : ${selection.lat.toFixed(5)}, ${selection.lon.toFixed(5)}${selection.precision_m ? ` (±${Math.round(selection.precision_m)} m)` : ''}`
-          : 'Touchez la carte à l\'endroit voulu, ou utilisez votre position.'}
+          : 'Touchez la carte à l\'endroit voulu (juste en dessous), ou utilisez votre position.'}
       </p>
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={!selection || enCours}>
@@ -529,7 +614,7 @@ function FormulaireLocalisation({ element, selection, onPosition, onAnnuler, onE
   }
 
   return (
-    <div className="mt-3 space-y-3 border border-trait rounded p-3 bg-surface">
+    <div className="mb-3 space-y-3 border border-trait rounded p-3 bg-surface">
       <p className="etiquette">Localiser : {element.libelle}</p>
       <BoutonMaPosition onPosition={onPosition} />
       <p className="text-xs text-sourdine">
@@ -589,7 +674,7 @@ function PointsAFlaguer({ points, onFlaguer }) {
         Flaguer un point dans une discipline ({points.length}) {ouvert ? '▴' : '▾'}
       </button>
       {ouvert && (
-        <ul className="mt-2 space-y-3">
+        <ul className="mt-2 space-y-3" style={{ listStyle: 'none', padding: 0 }}>
           {points.map((p) => {
             const t = TYPES_OBSERVATION.find((x) => x.valeur === p.type)
             return (
@@ -608,5 +693,131 @@ function PointsAFlaguer({ points, onFlaguer }) {
         </ul>
       )}
     </div>
+  )
+}
+
+/** Moyens engagés : changer l'état d'un moyen (en route, sur place, disponible, retiré) ou le déplacer. */
+function MoyensEngages({ moyens, onStatut, onDeplacer }) {
+  const [ouvert, setOuvert] = useState(false)
+  return (
+    <div className="border border-trait rounded p-3 bg-surface">
+      <button type="button" className="lien text-sm" onClick={() => setOuvert((o) => !o)} aria-expanded={ouvert}>
+        Moyens engagés ({moyens.length}) {ouvert ? '▴' : '▾'}
+      </button>
+      {ouvert &&
+        (moyens.length === 0 ? (
+          <p className="text-xs text-sourdine mt-2">Aucun moyen engagé. Utilisez « + Moyen engagé » en haut de la page.</p>
+        ) : (
+          <ul className="mt-2 space-y-3" style={{ listStyle: 'none', padding: 0 }}>
+            {moyens.map((m) => {
+              const d = disciplineDe(m.discipline)
+              return (
+                <li key={m.id}>
+                  <p className="text-sm text-encre flex items-center gap-2">
+                    <Symbole code={m.symbole} taille={24} badge={d?.couleur} />
+                    <span>
+                      {m.libelle}
+                      <span className="text-xs text-sourdine">
+                        {m.effectif != null ? ` · ${m.effectif} pers.` : ''}
+                        {d ? ` · ${d.court}` : ''}
+                        {m.latitude == null ? ' · sans position' : ''}
+                      </span>
+                    </span>
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <select value={m.statut} onChange={(e) => onStatut(m, e.target.value)} style={{ width: 'auto', fontSize: 13 }} aria-label={`État de ${m.libelle}`}>
+                      {Object.entries(STATUTS_MOYEN).map(([v, l]) => (
+                        <option key={v} value={v}>{l}</option>
+                      ))}
+                    </select>
+                    <BoutonDiscret type="button" onClick={() => onDeplacer(m)}>{m.latitude == null ? 'Positionner' : 'Déplacer'}</BoutonDiscret>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        ))}
+    </div>
+  )
+}
+
+function FormulaireMoyen({ contexteId, incidentId, selection, onPosition, onAnnuler, onEnvoyer }) {
+  const [symbole, setSymbole] = useState('autopompe')
+  const [libelle, setLibelle] = useState('')
+  const [discipline, setDiscipline] = useState(symboleDe('autopompe')?.discipline ?? null)
+  const [effectif, setEffectif] = useState('')
+  const [statut, setStatut] = useState('sur_place')
+  const [remarque, setRemarque] = useState('')
+  const [enCours, setEnCours] = useState(false)
+
+  async function envoyer(e) {
+    e.preventDefault()
+    if (!selection || !libelle.trim()) return
+    setEnCours(true)
+    const res = await fileEcritures.ecrireOuEmpiler({
+      nature: 'insert',
+      table: 'moyens_engages',
+      champs: {
+        contexte_id: contexteId,
+        incident_id: incidentId,
+        symbole,
+        libelle: libelle.trim(),
+        discipline,
+        effectif: effectif === '' ? null : Math.max(0, Number(effectif) || 0),
+        statut,
+        remarque: remarque.trim() || null,
+        latitude: selection.lat,
+        longitude: selection.lon,
+        precision_m: selection.precision_m ?? null,
+      },
+      libelle: `Moyen engagé · ${libelle.trim()}`,
+    })
+    setEnCours(false)
+    await onEnvoyer(res, 'Moyen engagé enregistré')
+  }
+
+  return (
+    <form onSubmit={envoyer} className="mb-3 space-y-3 border border-trait rounded p-3 bg-surface">
+      <p className="etiquette">Nouveau moyen engagé</p>
+      <PaletteSymboles
+        titre="Symbole"
+        categories={['moyen', 'poste']}
+        valeur={symbole}
+        sansDefaut
+        onChange={(code) => {
+          const choisi = code ?? 'moyen_autre'
+          setSymbole(choisi)
+          // La discipline suit le symbole (pompiers D1, médical D2…) tant qu'on ne la change pas à la main.
+          const d = symboleDe(choisi)?.discipline
+          if (d) setDiscipline(d)
+        }}
+      />
+      <input value={libelle} onChange={(e) => setLibelle(e.target.value)} placeholder="Nom du moyen (ex. P1 Visé, Amb 12)" className="w-full" required />
+      <div>
+        <p className="text-xs text-sourdine mb-1">Discipline</p>
+        <ChoixDiscipline valeur={discipline} onChange={setDiscipline} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <input type="number" min="0" inputMode="numeric" value={effectif} onChange={(e) => setEffectif(e.target.value)} placeholder="Effectif" />
+        <select value={statut} onChange={(e) => setStatut(e.target.value)} aria-label="État">
+          {Object.entries(STATUTS_MOYEN).filter(([v]) => v !== 'retire').map(([v, l]) => (
+            <option key={v} value={v}>{l}</option>
+          ))}
+        </select>
+      </div>
+      <input value={remarque} onChange={(e) => setRemarque(e.target.value)} placeholder="Remarque (facultatif)" className="w-full" />
+      <BoutonMaPosition onPosition={onPosition} />
+      <p className="text-xs text-sourdine">
+        {selection
+          ? `Position : ${selection.lat.toFixed(5)}, ${selection.lon.toFixed(5)}${selection.precision_m ? ` (±${Math.round(selection.precision_m)} m)` : ''}`
+          : "Touchez la carte à l'endroit voulu (juste en dessous), ou utilisez votre position."}
+      </p>
+      <div className="flex gap-2">
+        <BoutonPrincipal type="submit" disabled={!selection || !libelle.trim() || enCours}>
+          {enCours ? 'Envoi…' : 'Enregistrer le moyen'}
+        </BoutonPrincipal>
+        <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
+      </div>
+    </form>
   )
 }

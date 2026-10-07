@@ -2804,19 +2804,21 @@ const LIBELLE_POINT_TERRAIN = {
 
 /** Compose des brouillons CAN(AL) à partir des points posés sur la carte pour cet incident. */
 async function brouillonDepuisCarte(incidentId) {
-  const { data, error } = await supabase
-    .from('observations_terrain')
-    .select('type, description, discipline, created_at')
-    .eq('incident_id', incidentId)
-    .eq('statut', 'ouvert')
-    .order('created_at')
-  if (error) return { erreur: error.message }
-  const lignes = data ?? []
+  const [obs, moy] = await Promise.all([
+    supabase.from('observations_terrain').select('type, description, discipline, created_at').eq('incident_id', incidentId).eq('statut', 'ouvert').order('created_at'),
+    supabase.from('moyens_engages').select('libelle, discipline, effectif, statut').eq('incident_id', incidentId).neq('statut', 'retire').order('created_at'),
+  ])
+  if (obs.error || moy.error) return { erreur: (obs.error ?? moy.error).message }
+  const lignes = obs.data ?? []
+  const moyens = moy.data ?? []
+  const ETAT = { en_route: 'en route', sur_place: 'sur place', disponible: 'disponible' }
+  const ligneMoyen = (m) => `• ${m.libelle} — ${ETAT[m.statut] ?? m.statut}${m.effectif != null ? `, ${m.effectif} pers.` : ''}${m.discipline ? ` (${DISCIPLINES.find((d) => d.valeur === m.discipline)?.court})` : ''}`
   const ligne = (p) => `• ${LIBELLE_POINT_TERRAIN[p.type] ?? p.type}${p.description ? ` — ${p.description}` : ''}${p.discipline ? ` (${DISCIPLINES.find((d) => d.valeur === p.discipline)?.court})` : ''}`
   const conditions = lignes.filter((p) => ['danger', 'inondation', 'route_coupee', 'degats', 'acces'].includes(p.type))
   const besoins = lignes.filter((p) => ['besoin', 'victimes'].includes(p.type))
   return {
-    nb: lignes.length,
+    nb: lignes.length + moyens.length,
+    canal_actions: moyens.map(ligneMoyen).join('\n'),
     canal_conditions: conditions.map(ligne).join('\n'),
     canal_besoins: besoins.map(ligne).join('\n'),
   }
@@ -3122,7 +3124,7 @@ function FormulaireSitRep({ incidentId, niveaux, contacts = [], centresAccueil =
       return
     }
     if (b.nb === 0) {
-      setInfoCarte('Aucun point terrain ouvert pour cet incident.')
+      setInfoCarte('Aucun point terrain ni moyen engagé pour cet incident.')
       return
     }
     // On ne remplace jamais ce qui a déjà été écrit à la main : on complète les champs vides.
@@ -3130,8 +3132,9 @@ function FormulaireSitRep({ incidentId, niveaux, contacts = [], centresAccueil =
       ...prev,
       canal_conditions: prev.canal_conditions?.trim() ? prev.canal_conditions : b.canal_conditions,
       canal_besoins: prev.canal_besoins?.trim() ? prev.canal_besoins : b.canal_besoins,
+      canal_actions: prev.canal_actions?.trim() ? prev.canal_actions : b.canal_actions,
     }))
-    setInfoCarte(`${b.nb} point${b.nb > 1 ? 's' : ''} terrain repris (champs vides seulement) — à relire avant d'enregistrer.`)
+    setInfoCarte(`${b.nb} élément${b.nb > 1 ? 's' : ''} de la carte (points terrain, moyens engagés) repris (champs vides seulement) — à relire avant d'enregistrer.`)
   }
 
   async function soumettre(e) {
@@ -3230,7 +3233,7 @@ function FormulaireSitRep({ incidentId, niveaux, contacts = [], centresAccueil =
       <div className="border-t border-trait pt-3 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs font-medium text-sourdine">Rapport CAN(AL) — Je suis · Je vois · Je fais · Je demande · Je prévois</p>
-          <BoutonDiscret type="button" onClick={remplirDepuisCarte}>Reprendre les points de la carte</BoutonDiscret>
+          <BoutonDiscret type="button" onClick={remplirDepuisCarte}>Reprendre la carte (points et moyens)</BoutonDiscret>
         </div>
         {infoCarte && <p className="text-xs text-sourdine">{infoCarte}</p>}
         {CHAMPS_CANAL.map((c) => (
