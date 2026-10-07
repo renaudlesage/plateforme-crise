@@ -1,7 +1,7 @@
 {
-  "name": "Crisiware — QG",
-  "short_name": "QG",
-  "description": "Poste de coordination de crise Crisiware — vue QG pour la cellule de gestion.",
+  "name": "Crisiware — CC",
+  "short_name": "CC",
+  "description": "Poste de coordination de crise Crisiware — vue CC pour la cellule de gestion.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

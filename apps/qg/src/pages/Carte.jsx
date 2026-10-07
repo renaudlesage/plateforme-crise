@@ -12,7 +12,7 @@ const COUCHES = [
   { cle: 'incidents', libelle: 'Incidents en cours', couleur: '#b91c1c', symbole: 'sinistre_foyer' },
   { cle: 'objets_a_risque', libelle: 'Objets à risque', couleur: '#dc5a3c', symbole: 'danger_risque' },
   { cle: 'centres_accueil', libelle: "Centres d'accueil", couleur: '#2563eb', symbole: 'infra_ca' },
-  { cle: 'sites_qg', libelle: 'Sites QG', couleur: '#7c3aed', symbole: 'pc_ops' },
+  { cle: 'sites_qg', libelle: 'Sites CC', couleur: '#7c3aed', symbole: 'pc_ops' },
   { cle: 'infrastructures_critiques', libelle: 'Infrastructures critiques', couleur: '#b45309', symbole: 'sensible_noir' },
   { cle: 'signalements_citoyens', libelle: 'Signalements citoyens (ouverts)', couleur: '#059669' },
   { cle: 'observations', libelle: 'Points terrain (ouverts)', couleur: '#be123c' },
@@ -47,7 +47,7 @@ const LIBELLE_OBSERVATION = {
 }
 
 /**
- * Carte tactique QG. Les couches de référentiel (objets à risque, centres,
+ * Carte tactique CC. Les couches de référentiel (objets à risque, centres,
  * sites, infrastructures) concernent tout le contexte ; les couches
  * « incident » (position, zones d'intervention, points terrain, signalements
  * rattachés) suivent les incidents cochés. Par défaut : le plus récent

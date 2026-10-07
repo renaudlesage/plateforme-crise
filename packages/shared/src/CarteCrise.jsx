@@ -5,7 +5,7 @@ import { svgSymbole } from './symboles.js'
 
 /**
  * Carte Leaflet/OpenStreetMap générique, partagée par les apps Admin et
- * QG. Pas de clé API (même choix qu'Eventware, pour la cohérence entre
+ * CC. Pas de clé API (même choix qu'Eventware, pour la cohérence entre
  * les deux produits — voir briefing-eventware-pour-crisiware.md §1).
  *
  * En lecture par défaut. Passer `onClicCarte` bascule en mode

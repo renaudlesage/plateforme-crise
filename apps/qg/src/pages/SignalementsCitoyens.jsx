@@ -28,7 +28,7 @@ const SUITE_POSSIBLE = {
 }
 
 /**
- * Vue PC-Ops/QG des signalements remontés sans compte par les riverains
+ * Vue PC-Ops/CC des signalements remontés sans compte par les riverains
  * (apps/citoyen, page Signaler). Port du principe "conversion en
  * mission" d'Eventware — ici une simple progression de statut, sans
  * conversion automatique en incident (à faire à la main si pertinent).

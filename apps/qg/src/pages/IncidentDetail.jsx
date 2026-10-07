@@ -117,7 +117,7 @@ export default function IncidentDetail() {
           {parametresOuverts && (
           <>
           <div className="flex items-center gap-2 mt-1.5">
-            <label className="text-xs text-sourdine">Site QG actuel :</label>
+            <label className="text-xs text-sourdine">Site CC actuel :</label>
             <select
               value={incident.site_qg_actuel_id ?? ''}
               onChange={(e) => changerSiteQG(e.target.value)}

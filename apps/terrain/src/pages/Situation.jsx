@@ -17,7 +17,7 @@ const LIBELLE_PHASE = {
 const heure = (d) => new Date(d).toLocaleString('fr-BE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 
 /**
- * Situation : ce que le QG sait et décide, vu du terrain. Lecture seule,
+ * Situation : ce que le CC sait et décide, vu du terrain. Lecture seule,
  * rafraîchie toutes les 30 s (et à la demande). Rien de plus que ce dont
  * on a besoin debout sur place : où en est-on, qui est où, qu'a-t-on dit
  * à la population, que se passe-t-il dans le journal.
@@ -99,7 +99,7 @@ export default function Situation() {
           </p>
           {d?.siteQg && (
             <p className="msg">
-              QG : {d.siteQg.nom}
+              CC : {d.siteQg.nom}
               {d.siteQg.adresse ? ` — ${d.siteQg.adresse}` : ''}
             </p>
           )}

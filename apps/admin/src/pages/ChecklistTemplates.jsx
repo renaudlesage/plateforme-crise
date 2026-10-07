@@ -46,7 +46,7 @@ export default function ChecklistTemplates() {
       </div>
       <p className="text-sm text-sourdine mb-4">
         Actions à réaliser par rôle, regroupées par déclencheur (pré-alerte, alerte, phase
-        communale…). L'exécution en temps réel se fera depuis l'app QG.
+        communale…). L'exécution en temps réel se fera depuis l'app CC.
       </p>
 
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}

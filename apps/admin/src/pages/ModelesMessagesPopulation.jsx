@@ -36,7 +36,7 @@ export default function ModelesMessagesPopulation() {
         {!enAjout && <BoutonPrincipal onClick={() => setEnAjout(true)}>Nouveau modèle</BoutonPrincipal>}
       </div>
       <p className="text-sm text-sourdine mb-4">
-        Messages préparés à l'avance (volet préventif). En crise, le QG les reprend en un clic pour
+        Messages préparés à l'avance (volet préventif). En crise, le CC les reprend en un clic pour
         publier une alerte liée à l'incident ; ici, ils servent aussi à pré-remplir une alerte
         publique.
       </p>
@@ -171,7 +171,7 @@ function Formulaire({ valeursInitiales = {}, onValider, onAnnuler }) {
       </div>
       <label className="flex items-center gap-2 text-sm text-sourdine">
         <input type="checkbox" checked={actif} onChange={(e) => setActif(e.target.checked)} />
-        Proposé dans les listes (QG et alertes)
+        Proposé dans les listes (CC et alertes)
       </label>
       {erreur && <p className="text-sm text-chaud">{erreur}</p>}
       <div className="flex gap-2">

@@ -8,14 +8,14 @@ const CENTRE_BELGIQUE = { lat: 50.5039, lon: 4.4699 }
 const COUCHES = [
   { cle: 'objets_a_risque', libelle: 'Objets à risque', couleur: '#dc5a3c', genre: 'Objet à risque', champNom: 'identification' },
   { cle: 'centres_accueil', libelle: "Centres d'accueil", couleur: '#2563eb', genre: "Centre d'accueil", champNom: 'nom' },
-  { cle: 'sites_qg', libelle: 'Sites QG', couleur: '#7c3aed', genre: 'Site QG', champNom: 'nom' },
+  { cle: 'sites_qg', libelle: 'Sites CC', couleur: '#7c3aed', genre: 'Site CC', champNom: 'nom' },
   { cle: 'infrastructures_critiques', libelle: 'Infrastructures critiques', couleur: '#b45309', genre: 'Infrastructure critique', champNom: 'nom' },
 ]
 
 /**
  * Cartographie des référentiels — voir où tombent les coordonnées déjà
  * saisies à la main dans chaque module, avant d'envisager une édition
- * par clic sur la carte. Même composant partagé que la carte QG
+ * par clic sur la carte. Même composant partagé que la carte CC
  * (packages/shared/src/CarteCrise.jsx).
  */
 export default function Carte() {
@@ -184,7 +184,7 @@ function SectionALocaliser({ elements, choisi, onChoisir, onFini }) {
     <section className="mt-6">
       <h2 className="text-base font-semibold text-encre mb-1">À localiser ({elements.length})</h2>
       <p className="text-sm text-sourdine mb-3">
-        Fiches sans coordonnées : elles n'apparaissent pas sur les cartes (QG, Terrain) tant qu'elles ne sont pas placées.
+        Fiches sans coordonnées : elles n'apparaissent pas sur les cartes (CC, Terrain) tant qu'elles ne sont pas placées.
       </p>
 
       {elements.length === 0 ? (

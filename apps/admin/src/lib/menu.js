@@ -33,7 +33,7 @@ export const SECTIONS = [
       { to: '/risques', libelle: 'Objets à risque' },
       { to: '/ressources', libelle: 'Ressources' },
       { to: '/conventions', libelle: 'Conventions' },
-      { to: '/sites-qg', libelle: 'Sites QG' },
+      { to: '/sites-qg', libelle: 'Sites CC' },
       { to: '/centres-accueil', libelle: "Centres d'accueil" },
       { to: '/canaux-radio', libelle: 'Canaux radio' },
       { to: '/plans-reference', libelle: 'Plans de référence' },

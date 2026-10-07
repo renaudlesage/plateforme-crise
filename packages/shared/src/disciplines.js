@@ -1,6 +1,6 @@
 /**
  * Code couleur des disciplines (planification d'urgence belge), identique
- * partout : Terrain, QG. D1 rouge, D2 vert, D3 bleu, D4 orange, D5 noir,
+ * partout : Terrain, CC. D1 rouge, D2 vert, D3 bleu, D4 orange, D5 noir,
  * PC-Ops violet (couleur « commandement » de la charte graphique belge).
  */
 export const DISCIPLINES = [

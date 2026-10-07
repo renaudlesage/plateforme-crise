@@ -23,7 +23,7 @@
    Parti pris : un tableau de bord d'instruments, pas un site.
 
    Deux thèmes, pour une raison opérationnelle et non esthétique :
-   le QG tourne la nuit sous chapiteau, où un fond clair aveugle ;
+   le CC tourne la nuit sous chapiteau, où un fond clair aveugle ;
    le terrain tourne en plein soleil, où un fond sombre est illisible.
 
    La couleur ne décore rien : chaque teinte porte un sens fixe —
@@ -1432,7 +1432,7 @@ button.grand-lien:hover .grand { text-decoration-color: currentColor; }
    --------------------------------------------------------------------
    Repris de la logique du dashboard v18 : tailles de 9 à 12 px, un seul
    niveau de gros chiffre, panneaux à hauteur fixe avec défilement
-   interne. L'écran du QG doit tout montrer d'un coup ; une page qui
+   interne. L'écran du CC doit tout montrer d'un coup ; une page qui
    s'allonge oblige à faire défiler pendant qu'on répond à la radio.
    ==================================================================== */
 

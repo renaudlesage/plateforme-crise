@@ -20,7 +20,7 @@ export default function SitesQG() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h1 className="text-xl font-semibold text-encre">Sites QG</h1>
+        <h1 className="text-xl font-semibold text-encre">Sites CC</h1>
         {!enAjout && (
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter un site</BoutonPrincipal>
         )}
@@ -48,7 +48,7 @@ export default function SitesQG() {
         <p className="text-sm text-sourdine">Chargement…</p>
       ) : sites.length === 0 && !enAjout ? (
         <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
-          Aucun site QG enregistré.
+          Aucun site CC enregistré.
         </p>
       ) : (
         <ol className="space-y-2">

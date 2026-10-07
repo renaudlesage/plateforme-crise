@@ -28,7 +28,7 @@ const COUCHES = [
   { cle: 'moyens', libelle: 'Moyens engagés', couleur: '#8e2a8e', table: null, symbole: 'moyen_autre' },
   { cle: 'objets_a_risque', libelle: 'Objets à risque', couleur: '#dc5a3c', symbole: 'danger_risque', table: 'objets_a_risque', champNom: 'identification', champSous: 'categorie' },
   { cle: 'centres_accueil', libelle: "Centres d'accueil", couleur: '#2563eb', symbole: 'infra_ca', table: 'centres_accueil', champNom: 'nom', champSous: 'type_lieu' },
-  { cle: 'sites_qg', libelle: 'Sites QG', couleur: '#7c3aed', symbole: 'pc_ops', table: 'sites_qg', champNom: 'nom' },
+  { cle: 'sites_qg', libelle: 'Sites CC', couleur: '#7c3aed', symbole: 'pc_ops', table: 'sites_qg', champNom: 'nom' },
   { cle: 'infrastructures_critiques', libelle: 'Infrastructures critiques', couleur: '#b45309', symbole: 'sensible_noir', table: 'infrastructures_critiques', champNom: 'nom', champSous: 'type' },
   { cle: 'signalements_citoyens', libelle: 'Signalements citoyens', couleur: '#059669', table: null },
 ]
@@ -40,7 +40,7 @@ export const STATUTS_MOYEN = {
 }
 
 /**
- * Carte Terrain : même outil que le QG (composant partagé CarteCrise), avec
+ * Carte Terrain : même outil que le CC (composant partagé CarteCrise), avec
  * en plus ce qu'on peut compléter depuis le terrain :
  *  - ajouter un point (danger, route coupée, besoin…) à l'endroit où l'on se trouve
  *    ou touché sur la carte ;
