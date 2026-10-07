@@ -23,6 +23,8 @@ import { useEffect } from 'react'
  * @param {Array<{id:string, lat:number, lon:number, rayonM:number, couleur?:string, libelle?:string}>} [cercles]
  * @param {{lat:number, lon:number}|null} [selection] - pastille de sélection, en mode édition
  * @param {(point: {lat:number, lon:number}) => void} [onClicCarte] - présence = active le mode sélection (clic + curseur adapté)
+ * @param {number} [cleRecentrage] - changer cette valeur recentre la carte sur `centre` même si celui-ci n'a pas bougé (bouton « recentrer »)
+ * @param {number|null} [zoomRecentrage] - zoom appliqué lors d'un recentrage (sinon on garde le zoom courant)
  * @param {string} [hauteur] - toute valeur CSS valide, ex. '420px' ou '60vh'
  */
 export default function CarteCrise({
@@ -32,6 +34,8 @@ export default function CarteCrise({
   cercles = [],
   selection = null,
   onClicCarte = null,
+  cleRecentrage = 0,
+  zoomRecentrage = null,
   hauteur = '420px',
 }) {
   return (
@@ -43,7 +47,7 @@ export default function CarteCrise({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <RecentrerSiChangement centre={centre} />
+        <RecentrerSiChangement centre={centre} cle={cleRecentrage} zoom={zoomRecentrage} />
         {onClicCarte && <CaptureClic onClicCarte={onClicCarte} />}
 
         {cercles.map((c) => (
@@ -88,12 +92,13 @@ function CaptureClic({ onClicCarte }) {
 }
 
 /** Recentre la carte quand `centre` change de référence (changement de contexte, par ex.) — Leaflet ne le fait pas de lui-même. */
-function RecentrerSiChangement({ centre }) {
+function RecentrerSiChangement({ centre, cle, zoom }) {
   const carte = useMap()
   useEffect(() => {
-    carte.setView([centre.lat, centre.lon])
+    carte.setView([centre.lat, centre.lon], zoom ?? carte.getZoom())
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [centre.lat, centre.lon])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [centre.lat, centre.lon, cle, zoom])
   return null
 }
 

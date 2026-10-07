@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CarteCrise } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import { BoutonDiscret } from '../components/Boutons'
 
 // Centre de la Belgique — repli quand aucun point n'est encore géolocalisé
 // pour ce contexte, pour ne jamais ouvrir sur une carte vide et sans repère.
@@ -54,7 +55,7 @@ export default function Carte() {
       supabase.from('sites_qg').select('id, nom, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
       supabase.from('infrastructures_critiques').select('id, nom, type, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
       supabase.from('signalements_citoyens').select('id, reference, type, statut, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null).not('statut', 'in', '(clos,sans_suite)'),
-      supabase.from('incidents').select('id, nom, type_evenement, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'en_cours'),
+      supabase.from('incidents').select('id, nom, type_evenement, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'en_cours').order('date_debut', { ascending: false }),
       supabase.from('observations_terrain').select('id, type, description, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'ouvert'),
     ])
 
@@ -125,12 +126,26 @@ export default function Carte() {
     [zonesIntervention]
   )
 
+  // Point d'intérêt : l'incident en cours (le plus récent géolocalisé), sinon
+  // le centre de sa zone d'intervention. C'est lui qui cadre la carte, pas la
+  // moyenne de tout ce qui est géolocalisé dans le contexte.
+  const focusIncident = useMemo(() => {
+    const inc = (points.incidents ?? [])[0]
+    if (inc) return { lat: Number(inc.latitude), lon: Number(inc.longitude), nom: inc.nom }
+    const z = zonesIntervention[0]
+    if (z) return { lat: Number(z.centre_latitude), lon: Number(z.centre_longitude), nom: 'zone d\'intervention' }
+    return null
+  }, [points, zonesIntervention])
+
+  const [cleRecentrage, setCleRecentrage] = useState(0)
+
   const centre = useMemo(() => {
+    if (focusIncident) return { lat: focusIncident.lat, lon: focusIncident.lon }
     if (marqueurs.length === 0) return CENTRE_BELGIQUE
     const lat = marqueurs.reduce((s, m) => s + m.lat, 0) / marqueurs.length
     const lon = marqueurs.reduce((s, m) => s + m.lon, 0) / marqueurs.length
     return { lat, lon }
-  }, [marqueurs])
+  }, [focusIncident, marqueurs])
 
   return (
     <div>
@@ -159,7 +174,22 @@ export default function Carte() {
       {chargement ? (
         <p className="text-sm text-sourdine">Chargement…</p>
       ) : (
-        <CarteCrise centre={centre} zoom={marqueurs.length ? 13 : 8} marqueurs={marqueurs} cercles={cercles} hauteur="65vh" />
+        <>
+          {focusIncident && (
+            <div className="mb-2">
+              <BoutonDiscret onClick={() => setCleRecentrage((n) => n + 1)}>Recentrer sur l'incident</BoutonDiscret>
+            </div>
+          )}
+          <CarteCrise
+            centre={centre}
+            zoom={focusIncident ? 15 : marqueurs.length ? 13 : 8}
+            zoomRecentrage={focusIncident ? 15 : null}
+            cleRecentrage={cleRecentrage}
+            marqueurs={marqueurs}
+            cercles={cercles}
+            hauteur="65vh"
+          />
+        </>
       )}
     </div>
   )

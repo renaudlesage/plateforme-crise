@@ -77,7 +77,7 @@ export default function Carte() {
         .eq('contexte_id', contexteId)
         .not('latitude', 'is', null)
         .not('statut', 'in', '(clos,sans_suite)'),
-      supabase.from('incidents').select('id, nom, type_evenement, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'en_cours'),
+      supabase.from('incidents').select('id, nom, type_evenement, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'en_cours').order('date_debut', { ascending: false }),
       supabase
         .from('observations_terrain')
         .select('id, type, description, latitude, longitude, created_at')
@@ -108,6 +108,7 @@ export default function Carte() {
       signalements_citoyens: sig.data ?? [],
     })
     setManquants([
+      ...incidents.filter((i) => i.latitude == null).map((i) => ({ table: 'incidents', id: i.id, libelle: i.nom, genre: 'Incident en cours' })),
       ...(objSans.data ?? []).map((r) => ({ table: 'objets_a_risque', id: r.id, libelle: r.identification, genre: "Objet à risque" })),
       ...(cenSans.data ?? []).map((r) => ({ table: 'centres_accueil', id: r.id, libelle: r.nom, genre: "Centre d'accueil" })),
       ...(sitSans.data ?? []).map((r) => ({ table: 'sites_qg', id: r.id, libelle: r.nom, genre: 'Site QG' })),
@@ -174,14 +175,27 @@ export default function Carte() {
     [zones]
   )
 
+  // Point d'intérêt : l'incident en cours (le plus récent géolocalisé), sinon le
+  // centre de sa zone d'intervention. Cadre la carte à l'ouverture et via le bouton.
+  const focusIncident = useMemo(() => {
+    const inc = (donnees.incidents ?? [])[0]
+    if (inc) return { lat: Number(inc.latitude), lon: Number(inc.longitude) }
+    const z = zones[0]
+    if (z) return { lat: Number(z.centre_latitude), lon: Number(z.centre_longitude) }
+    return null
+  }, [donnees, zones])
+
+  const [cleRecentrage, setCleRecentrage] = useState(0)
+
   const centre = useMemo(() => {
     if (selection) return selection
+    if (focusIncident) return focusIncident
     if (marqueurs.length === 0) return CENTRE_BELGIQUE
     return {
       lat: marqueurs.reduce((s, m) => s + m.lat, 0) / marqueurs.length,
       lon: marqueurs.reduce((s, m) => s + m.lon, 0) / marqueurs.length,
     }
-  }, [marqueurs, selection])
+  }, [marqueurs, selection, focusIncident])
 
   function fermer() {
     setMode(null)
@@ -221,12 +235,20 @@ export default function Carte() {
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
       {info && <p className="text-sm text-ok mb-2">{info}</p>}
 
+      {focusIncident && !mode && (
+        <div className="mb-2">
+          <BoutonDiscret onClick={() => setCleRecentrage((n) => n + 1)}>Recentrer sur l'incident</BoutonDiscret>
+        </div>
+      )}
+
       {chargement ? (
         <p className="vide">Chargement…</p>
       ) : (
         <CarteCrise
           centre={centre}
-          zoom={selection || marqueurs.length ? 14 : 8}
+          zoom={selection || focusIncident ? 15 : marqueurs.length ? 13 : 8}
+          zoomRecentrage={focusIncident ? 15 : null}
+          cleRecentrage={cleRecentrage}
           marqueurs={marqueurs}
           cercles={cercles}
           selection={selection}
