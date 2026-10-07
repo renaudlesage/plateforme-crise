@@ -19,7 +19,7 @@ export default function MisEnPageQG() {
       <header className="tete">
         <div className="barre-haut">
           <div className="marque compacte">
-            <span className="marque-nom">CC</span>
+            <span className="marque-nom" title="Comité de Coordination" aria-label="Comité de Coordination">CC</span>
             <span className="marque-suite">
               {contexteActuel?.contextes?.nom ?? 'Aucun contexte'}
             </span>

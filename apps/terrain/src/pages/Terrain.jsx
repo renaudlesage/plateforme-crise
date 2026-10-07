@@ -111,7 +111,7 @@ function IncidentActif({ contexteId, roleId }) {
       </div>
 
       <Link to="/situation" className="bouton-terrain principal" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
-        Voir la situation (CC)
+        Voir la situation (Comité de Coordination)
       </Link>
 
       <ChecklistRole incidentId={incident.id} contexteId={contexteId} roleId={roleId} />

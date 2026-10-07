@@ -36,7 +36,7 @@ export default function ModelesMessagesPopulation() {
         {!enAjout && <BoutonPrincipal onClick={() => setEnAjout(true)}>Nouveau modèle</BoutonPrincipal>}
       </div>
       <p className="text-sm text-sourdine mb-4">
-        Messages préparés à l'avance (volet préventif). En crise, le CC les reprend en un clic pour
+        Messages préparés à l'avance (volet préventif). En crise, le Comité de Coordination les reprend en un clic pour
         publier une alerte liée à l'incident ; ici, ils servent aussi à pré-remplir une alerte
         publique.
       </p>
