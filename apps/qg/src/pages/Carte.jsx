@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CarteCrise, FiltreIncidentsCarte } from '@plateforme-crise/shared'
+import { CarteCrise, FiltreIncidentsCarte, DISCIPLINES, disciplineDe } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { BoutonDiscret } from '../components/Boutons'
@@ -47,6 +47,7 @@ export default function Carte() {
   const [chargement, setChargement] = useState(true)
   const [erreur, setErreur] = useState(null)
   const [cleRecentrage, setCleRecentrage] = useState(0)
+  const [disciplinesVues, setDisciplinesVues] = useState(null) // null = toutes
 
   const charger = useCallback(async () => {
     if (!contexteId) return
@@ -60,7 +61,7 @@ export default function Carte() {
       supabase.from('infrastructures_critiques').select('id, nom, type, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
       supabase.from('signalements_citoyens').select('id, reference, type, statut, incident_id, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null).not('statut', 'in', '(clos,sans_suite)'),
       supabase.from('incidents').select('id, nom, type_evenement, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'en_cours').order('date_debut', { ascending: false }),
-      supabase.from('observations_terrain').select('id, type, description, incident_id, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'ouvert'),
+      supabase.from('observations_terrain').select('id, type, description, discipline, incident_id, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'ouvert'),
     ])
 
     const premierErreur = [objets, centres, sites, infra, signalements, incidentsActifs, observations].find((r) => r.error)
@@ -111,6 +112,14 @@ export default function Carte() {
   // Un point rattaché à un incident n'apparaît que si cet incident est coché ;
   // un point sans incident (signalement non encore rattaché…) reste visible.
   const visible = (p) => !p.incident_id || ids.has(p.incident_id)
+  const disciplineVisible = (d) => disciplinesVues === null || disciplinesVues.includes(d ?? 'aucune')
+  const basculerDiscipline = (v) =>
+    setDisciplinesVues((prev) => {
+      const tout = [...DISCIPLINES.map((d) => d.valeur), 'aucune']
+      const actuel = prev ?? tout
+      const suite = actuel.includes(v) ? actuel.filter((x) => x !== v) : [...actuel, v]
+      return suite.length === tout.length ? null : suite
+    })
 
   const marqueurs = useMemo(() => {
     const tous = []
@@ -119,21 +128,22 @@ export default function Carte() {
       const source =
         c.cle === 'incidents'
           ? incidentsAffiches.filter((i) => i.latitude != null)
-          : (points[c.cle] ?? []).filter((p) => c.cle !== 'signalements_citoyens' && c.cle !== 'observations' ? true : visible(p))
+          : (points[c.cle] ?? []).filter((p) => c.cle !== 'signalements_citoyens' && c.cle !== 'observations' ? true : visible(p) && (c.cle !== 'observations' || disciplineVisible(p.discipline)))
       for (const p of source) {
+        const d = c.cle === 'observations' ? disciplineDe(p.discipline) : null
         tous.push({
           id: `${c.cle}-${p.id}`,
           lat: Number(p.latitude),
           lon: Number(p.longitude),
           titre: c.cle === 'observations' ? LIBELLE_OBSERVATION[p.type] ?? c.libelle : p.identification ?? p.nom ?? p.reference ?? c.libelle,
-          sousTitre: c.cle === 'observations' ? p.description ?? undefined : p.categorie ?? p.type_lieu ?? p.type ?? p.type_evenement ?? LIBELLE_TYPE_SIGNALEMENT[p.type] ?? undefined,
-          couleur: c.couleur,
+          sousTitre: c.cle === 'observations' ? [d?.court, p.description].filter(Boolean).join(' · ') || undefined : p.categorie ?? p.type_lieu ?? p.type ?? p.type_evenement ?? LIBELLE_TYPE_SIGNALEMENT[p.type] ?? undefined,
+          couleur: d?.couleur ?? c.couleur,
         })
       }
     }
     return tous
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [points, couches, incidentsAffiches, ids])
+  }, [points, couches, incidentsAffiches, ids, disciplinesVues])
 
   const cercles = useMemo(
     () =>
@@ -209,6 +219,30 @@ export default function Carte() {
           </label>
         ))}
       </div>
+
+      {couches.observations && (
+        <div className="mb-3">
+          <p className="etiquette mb-1">Points terrain par discipline</p>
+          <div className="flex flex-wrap gap-1.5">
+            {[...DISCIPLINES, { valeur: 'aucune', court: 'Sans discipline', couleur: '#94a3b8' }].map((d) => {
+              const actif = disciplinesVues === null || disciplinesVues.includes(d.valeur)
+              return (
+                <button
+                  key={d.valeur}
+                  type="button"
+                  onClick={() => basculerDiscipline(d.valeur)}
+                  className="discret"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, opacity: actif ? 1 : 0.45, padding: '4px 8px', fontSize: 12 }}
+                  aria-pressed={actif}
+                >
+                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: d.couleur, display: 'inline-block' }} />
+                  {d.court}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 

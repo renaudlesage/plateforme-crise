@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CarteCrise, FiltreIncidentsCarte } from '@plateforme-crise/shared'
+import { CarteCrise, FiltreIncidentsCarte, DISCIPLINES, disciplineDe } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
@@ -58,6 +58,7 @@ export default function Carte() {
   const [mode, setMode] = useState(null)
   const [selection, setSelection] = useState(null)
   const [info, setInfo] = useState(null)
+  const [disciplinesVues, setDisciplinesVues] = useState(null) // null = toutes ; sinon tableau de valeurs (+ 'aucune')
 
   const charger = useCallback(async () => {
     if (!contexteId) return
@@ -83,7 +84,7 @@ export default function Carte() {
       supabase.from('incidents').select('id, nom, type_evenement, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'en_cours').order('date_debut', { ascending: false }),
       supabase
         .from('observations_terrain')
-        .select('id, type, description, incident_id, latitude, longitude, created_at')
+        .select('id, type, description, discipline, incident_id, latitude, longitude, created_at')
         .eq('contexte_id', contexteId)
         .eq('statut', 'ouvert'),
       sansCoord('objets_a_risque', 'id, identification'),
@@ -141,24 +142,37 @@ export default function Carte() {
   }, [affiches, incidentChoisi])
   const ids = useMemo(() => new Set(affiches ?? []), [affiches])
 
+  const disciplineVisible = (d) => disciplinesVues === null || disciplinesVues.includes(d ?? 'aucune')
+  const basculerDiscipline = (v) =>
+    setDisciplinesVues((prev) => {
+      const tout = [...DISCIPLINES.map((d) => d.valeur), 'aucune']
+      const actuel = prev ?? tout
+      const suite = actuel.includes(v) ? actuel.filter((x) => x !== v) : [...actuel, v]
+      return suite.length === tout.length ? null : suite
+    })
+
   const marqueurs = useMemo(() => {
     const tous = []
     for (const c of COUCHES) {
       if (!couches[c.cle]) continue
       const source =
-        c.cle === 'incidents'
+        c.cle === 'observations'
+          ? (donnees.observations ?? []).filter((p) => (!p.incident_id || ids.has(p.incident_id)) && disciplineVisible(p.discipline))
+          : c.cle === 'incidents'
           ? (donnees.incidents ?? []).filter((i) => i.latitude != null && ids.has(i.id))
-          : (donnees[c.cle] ?? []).filter((p) => (c.cle === 'signalements_citoyens' || c.cle === 'observations' ? !p.incident_id || ids.has(p.incident_id) : true))
+          : (donnees[c.cle] ?? []).filter((p) => (c.cle === 'signalements_citoyens' ? !p.incident_id || ids.has(p.incident_id) : true))
       for (const p of source) {
         if (c.cle === 'observations') {
           const t = TYPES_OBSERVATION.find((x) => x.valeur === p.type)
+          const d = disciplineDe(p.discipline)
+          // La discipline, quand elle est posée, impose sa couleur.
           tous.push({
             id: `obs-${p.id}`,
             lat: Number(p.latitude),
             lon: Number(p.longitude),
             titre: t?.libelle ?? 'Point terrain',
-            sousTitre: p.description ?? undefined,
-            couleur: t?.couleur ?? c.couleur,
+            sousTitre: [d?.court, p.description].filter(Boolean).join(' · ') || undefined,
+            couleur: d?.couleur ?? t?.couleur ?? c.couleur,
           })
           continue
         }
@@ -174,7 +188,7 @@ export default function Carte() {
     }
     return tous
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [donnees, couches, ids])
+  }, [donnees, couches, ids, disciplinesVues])
 
   const cercles = useMemo(
     () =>
@@ -264,6 +278,30 @@ export default function Carte() {
         ))}
       </div>
 
+      {couches.observations && (
+        <div className="mb-3">
+          <p className="etiquette mb-1">Points terrain par discipline</p>
+          <div className="flex flex-wrap gap-1.5">
+            {[...DISCIPLINES, { valeur: 'aucune', court: 'Sans discipline', couleur: '#94a3b8' }].map((d) => {
+              const actif = disciplinesVues === null || disciplinesVues.includes(d.valeur)
+              return (
+                <button
+                  key={d.valeur}
+                  type="button"
+                  onClick={() => basculerDiscipline(d.valeur)}
+                  className="discret"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, opacity: actif ? 1 : 0.45, padding: '4px 8px', fontSize: 12 }}
+                  aria-pressed={actif}
+                >
+                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: d.couleur, display: 'inline-block' }} />
+                  {d.court}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
       {info && <p className="text-sm text-ok mb-2">{info}</p>}
 
@@ -299,6 +337,22 @@ export default function Carte() {
           </BoutonPrincipal>
           {manquants.length > 0 && <ALocaliser manquants={manquants} onChoisir={(element) => { setInfo(null); setMode({ type: 'localiser', element }) }} />}
         </div>
+      )}
+
+      {!mode && (donnees.observations ?? []).length > 0 && (
+        <PointsAFlaguer
+          points={(donnees.observations ?? []).filter((p) => !p.incident_id || ids.has(p.incident_id))}
+          onFlaguer={async (p, discipline) => {
+            const res = await fileEcritures.ecrireOuEmpiler({
+              nature: 'update',
+              table: 'observations_terrain',
+              id: p.id,
+              champs: { discipline },
+              libelle: `Discipline · ${TYPES_OBSERVATION.find((t) => t.valeur === p.type)?.libelle}`,
+            })
+            await apresEcriture(res, discipline ? `Point flagué ${disciplineDe(discipline).court}` : 'Discipline retirée')
+          }}
+        />
       )}
 
       {mode?.type === 'observation' && (
@@ -385,6 +439,7 @@ function BoutonMaPosition({ onPosition }) {
 
 function FormulaireObservation({ contexteId, incidentId, selection, onPosition, onAnnuler, onEnvoyer }) {
   const [type, setType] = useState('danger')
+  const [discipline, setDiscipline] = useState(null)
   const [description, setDescription] = useState('')
   const [enCours, setEnCours] = useState(false)
 
@@ -399,6 +454,7 @@ function FormulaireObservation({ contexteId, incidentId, selection, onPosition, 
         contexte_id: contexteId,
         incident_id: incidentId,
         type,
+        discipline,
         description: description.trim() || null,
         latitude: selection.lat,
         longitude: selection.lon,
@@ -418,6 +474,10 @@ function FormulaireObservation({ contexteId, incidentId, selection, onPosition, 
           <option key={t.valeur} value={t.valeur}>{t.libelle}</option>
         ))}
       </select>
+      <div>
+        <p className="text-xs text-sourdine mb-1">Discipline concernée (facultatif)</p>
+        <ChoixDiscipline valeur={discipline} onChange={setDiscipline} />
+      </div>
       <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ce que vous constatez (facultatif)" className="w-full" />
       <BoutonMaPosition onPosition={onPosition} />
       <p className="text-xs text-sourdine">
@@ -467,6 +527,69 @@ function FormulaireLocalisation({ element, selection, onPosition, onAnnuler, onE
         </BoutonPrincipal>
         <BoutonDiscret onClick={onAnnuler}>Annuler</BoutonDiscret>
       </div>
+    </div>
+  )
+}
+
+/** Pastilles de discipline : un toucher pose, un second toucher retire. */
+function ChoixDiscipline({ valeur, onChange, compact = false }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {DISCIPLINES.map((d) => {
+        const actif = valeur === d.valeur
+        return (
+          <button
+            key={d.valeur}
+            type="button"
+            aria-pressed={actif}
+            onClick={() => onChange(actif ? null : d.valeur)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: compact ? '3px 8px' : '6px 12px',
+              fontSize: 13,
+              borderRadius: 999,
+              border: `2px solid ${d.couleur}`,
+              background: actif ? d.couleur : 'transparent',
+              color: actif ? '#fff' : 'inherit',
+              fontWeight: 600,
+            }}
+          >
+            {d.court}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Flaguer (ou re-flaguer) un point déjà posé dans une discipline. */
+function PointsAFlaguer({ points, onFlaguer }) {
+  const [ouvert, setOuvert] = useState(false)
+  return (
+    <div className="mt-3 border border-trait rounded p-3 bg-surface">
+      <button type="button" className="lien text-sm" onClick={() => setOuvert((o) => !o)}>
+        Flaguer un point dans une discipline ({points.length}) {ouvert ? '▴' : '▾'}
+      </button>
+      {ouvert && (
+        <ul className="mt-2 space-y-3">
+          {points.map((p) => {
+            const t = TYPES_OBSERVATION.find((x) => x.valeur === p.type)
+            return (
+              <li key={p.id}>
+                <p className="text-sm text-encre">
+                  {t?.libelle ?? 'Point terrain'}
+                  {p.description && <span className="text-xs text-sourdine"> · {p.description}</span>}
+                </p>
+                <div className="mt-1">
+                  <ChoixDiscipline compact valeur={p.discipline} onChange={(d) => onFlaguer(p, d)} />
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </div>
   )
 }
