@@ -50,7 +50,7 @@ export function AuthProvider({ children }) {
       setAcces(data ?? [])
     }
     setChargementAcces(false)
-  }, [session?.user])
+  }, [session?.user?.id])
 
   useEffect(() => {
     rafraichirAcces()

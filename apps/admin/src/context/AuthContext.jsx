@@ -53,7 +53,7 @@ export function AuthProvider({ children }) {
       setAcces(data ?? [])
     }
     setChargementAcces(false)
-  }, [session?.user])
+  }, [session?.user?.id])
 
   useEffect(() => {
     rafraichirAcces()
@@ -67,7 +67,7 @@ export function AuthProvider({ children }) {
     supabase.rpc('est_super_admin').then(({ data, error }) => {
       setEstSuperAdmin(!error && data === true)
     })
-  }, [session?.user])
+  }, [session?.user?.id])
 
   // Si le contexte sélectionné en storage n'est plus dans la liste d'accès
   // (changement de compte, accès révoqué...), on le réinitialise.
