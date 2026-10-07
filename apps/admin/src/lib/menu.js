@@ -70,6 +70,7 @@ export const SECTIONS = [
     titre: 'Communication',
     resume: "Alertes publiques, canaux, D5, BE-Alert et soutien psychologique.",
     liens: [
+      { to: '/modeles-messages', libelle: 'Messages à la population (modèles)' },
       { to: '/alertes-publiques', libelle: 'Alertes publiques' },
       { to: '/canaux-diffusion', libelle: 'Canaux de diffusion' },
       { to: '/soutien-psychologique', libelle: 'Soutien psychologique' },

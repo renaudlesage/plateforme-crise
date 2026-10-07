@@ -17,6 +17,7 @@ import InstancesCoordination from './pages/InstancesCoordination'
 import ChecklistTemplates from './pages/ChecklistTemplates'
 import Exercices from './pages/Exercices'
 import AlertesPubliques from './pages/AlertesPubliques'
+import ModelesMessagesPopulation from './pages/ModelesMessagesPopulation'
 import CanauxDiffusion from './pages/CanauxDiffusion'
 import FonctionsCritiques from './pages/FonctionsCritiques'
 import SeuilsAction from './pages/SeuilsAction'
@@ -92,6 +93,7 @@ export default function App() {
             <Route path="checklists" element={<ChecklistTemplates />} />
             <Route path="exercices" element={<Exercices />} />
             <Route path="alertes-publiques" element={<AlertesPubliques />} />
+            <Route path="modeles-messages" element={<ModelesMessagesPopulation />} />
             <Route path="canaux-diffusion" element={<CanauxDiffusion />} />
             <Route path="fonctions-critiques" element={<FonctionsCritiques />} />
             <Route path="seuils-action" element={<SeuilsAction />} />

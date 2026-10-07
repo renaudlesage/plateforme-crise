@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
 import { supabase } from '../lib/supabase'
+import MessagesPopulation from '../components/MessagesPopulation'
 
 export default function IncidentDetail() {
   const { id } = useParams()
@@ -285,8 +286,11 @@ export default function IncidentDetail() {
         </>
       )}
 
-      {ongletActif?.cle === 'communication' && afficher('communication_d5') && (
-        <SectionCommunicationD5 incidentId={id} />
+      {ongletActif?.cle === 'communication' && (
+        <>
+          {afficher('messages_population') && <MessagesPopulation incidentId={id} />}
+          {afficher('communication_d5') && <SectionCommunicationD5 incidentId={id} />}
+        </>
       )}
 
       {ongletActif?.cle === 'psychosocial' && afficher('psychosocial_d2') && (
@@ -324,7 +328,7 @@ const ONGLETS = [
   { cle: 'pilotage', libelle: 'Pilotage', modules: ['phase_cycle_vie', 'escalade', 'activation_30min', 'seuils_action', 'organes'] },
   { cle: 'operations', libelle: 'Opérations', modules: ['zones', 'pc_ops', 'suivi_intervenants', 'requisitions'] },
   { cle: 'journal', libelle: 'Journal & suivi', modules: ['suivi_operationnel', 'checklist'] },
-  { cle: 'communication', libelle: 'Communication (D5)', modules: ['communication_d5'] },
+  { cle: 'communication', libelle: 'Communication (D5)', modules: ['messages_population', 'communication_d5'] },
   { cle: 'psychosocial', libelle: 'Psychosocial (D2)', modules: ['psychosocial_d2'] },
   { cle: 'retablissement', libelle: 'Rétablissement & REX', modules: ['retablissement', 'phase_transitoire', 'rex'] },
 ]

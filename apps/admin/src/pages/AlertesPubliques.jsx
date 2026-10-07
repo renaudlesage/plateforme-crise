@@ -156,6 +156,8 @@ function BoutonDiffusion({ alerteId }) {
 }
 
 function FormulaireAlerte({ valeursInitiales = {}, onValider, onAnnuler }) {
+  const { contexteId } = useAuth()
+  const { lignes: modeles } = useTableContexte('modeles_messages_population', contexteId, { tri: 'titre' })
   const [titre, setTitre] = useState(valeursInitiales.titre ?? '')
   const [message, setMessage] = useState(valeursInitiales.message ?? '')
   const [consignes, setConsignes] = useState(valeursInitiales.consignes ?? '')
@@ -167,6 +169,15 @@ function FormulaireAlerte({ valeursInitiales = {}, onValider, onAnnuler }) {
   )
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
+
+  function appliquerModele(id) {
+    const m = modeles.find((x) => x.id === id)
+    if (!m) return
+    setTitre(m.titre)
+    setMessage(m.message)
+    setConsignes(m.consignes ?? '')
+    setNiveauAlerte(m.niveau_alerte)
+  }
 
   async function soumettre(e) {
     e.preventDefault()
@@ -186,6 +197,17 @@ function FormulaireAlerte({ valeursInitiales = {}, onValider, onAnnuler }) {
 
   return (
     <form onSubmit={soumettre} className="space-y-3">
+      {!valeursInitiales.id && modeles.some((m) => m.actif) && (
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Partir d'un modèle (optionnel)</label>
+          <select defaultValue="" onChange={(e) => appliquerModele(e.target.value)} className="w-full">
+            <option value="">— message libre —</option>
+            {modeles.filter((m) => m.actif).map((m) => (
+              <option key={m.id} value={m.id}>{m.titre}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <div>
         <label className="block text-xs font-medium text-sourdine mb-1">Titre</label>
         <input
