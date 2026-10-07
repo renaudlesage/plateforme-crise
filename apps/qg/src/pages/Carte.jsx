@@ -14,7 +14,20 @@ const COUCHES = [
   { cle: 'sites_qg', libelle: 'Sites QG', couleur: '#7c3aed' },
   { cle: 'infrastructures_critiques', libelle: 'Infrastructures critiques', couleur: '#b45309' },
   { cle: 'signalements_citoyens', libelle: 'Signalements citoyens (ouverts)', couleur: '#059669' },
+  { cle: 'observations', libelle: 'Points terrain (ouverts)', couleur: '#be123c' },
 ]
+
+const LIBELLE_OBSERVATION = {
+  danger: 'Danger',
+  route_coupee: 'Route coupée',
+  inondation: 'Inondation',
+  degats: 'Dégâts',
+  victimes: 'Victimes / personnes en danger',
+  besoin: 'Besoin (aide, matériel)',
+  point_rassemblement: 'Point de rassemblement',
+  acces: 'Accès / barrage',
+  autre: 'Point terrain',
+}
 
 /**
  * Carte tactique QG — port du principe de la carte "Situation" d'Eventware
@@ -35,16 +48,17 @@ export default function Carte() {
     setChargement(true)
     setErreur(null)
 
-    const [objets, centres, sites, infra, signalements, incidentsActifs] = await Promise.all([
+    const [objets, centres, sites, infra, signalements, incidentsActifs, observations] = await Promise.all([
       supabase.from('objets_a_risque').select('id, identification, categorie, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
       supabase.from('centres_accueil').select('id, nom, type_lieu, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
       supabase.from('sites_qg').select('id, nom, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
       supabase.from('infrastructures_critiques').select('id, nom, type, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
       supabase.from('signalements_citoyens').select('id, reference, type, statut, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null).not('statut', 'in', '(clos,sans_suite)'),
       supabase.from('incidents').select('id, nom, type_evenement, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'en_cours'),
+      supabase.from('observations_terrain').select('id, type, description, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'ouvert'),
     ])
 
-    const premierErreur = [objets, centres, sites, infra, signalements, incidentsActifs].find((r) => r.error)
+    const premierErreur = [objets, centres, sites, infra, signalements, incidentsActifs, observations].find((r) => r.error)
     if (premierErreur) {
       setErreur(premierErreur.error.message)
       setChargement(false)
@@ -58,6 +72,7 @@ export default function Carte() {
       sites_qg: sites.data ?? [],
       infrastructures_critiques: infra.data ?? [],
       signalements_citoyens: signalements.data ?? [],
+      observations: observations.data ?? [],
     })
 
     const idsIncidents = (incidentsActifs.data ?? []).map((i) => i.id)
@@ -89,8 +104,8 @@ export default function Carte() {
           id: `${c.cle}-${p.id}`,
           lat: Number(p.latitude),
           lon: Number(p.longitude),
-          titre: p.identification ?? p.nom ?? p.reference ?? c.libelle,
-          sousTitre: p.categorie ?? p.type_lieu ?? p.type ?? p.type_evenement ?? LIBELLE_TYPE_SIGNALEMENT[p.type] ?? undefined,
+          titre: c.cle === 'observations' ? LIBELLE_OBSERVATION[p.type] ?? c.libelle : p.identification ?? p.nom ?? p.reference ?? c.libelle,
+          sousTitre: c.cle === 'observations' ? p.description ?? undefined : p.categorie ?? p.type_lieu ?? p.type ?? p.type_evenement ?? LIBELLE_TYPE_SIGNALEMENT[p.type] ?? undefined,
           couleur: c.couleur,
         })
       }

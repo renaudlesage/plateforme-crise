@@ -6,6 +6,7 @@ import MisEnPageTerrain from './components/MisEnPageTerrain'
 import Connexion from './pages/Connexion'
 import SelectionContexte from './pages/SelectionContexte'
 import Terrain from './pages/Terrain'
+import Carte from './pages/Carte'
 import { fileEcritures } from './lib/fileEcritures'
 
 export default function App() {
@@ -40,6 +41,7 @@ export default function App() {
             }
           >
             <Route index element={<Terrain />} />
+            <Route path="carte" element={<Carte />} />
           </Route>
         </Routes>
       </AuthProvider>

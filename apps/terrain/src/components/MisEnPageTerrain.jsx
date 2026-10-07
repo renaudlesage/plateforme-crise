@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import BasculeTheme from './BasculeTheme'
 import IndicateurFile from './IndicateurFile'
@@ -6,6 +6,7 @@ import IndicateurFile from './IndicateurFile'
 export default function MisEnPageTerrain() {
   const { contexteActuel, deconnexion, selectionnerContexte } = useAuth()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
 
   function changerDeContexte() {
     selectionnerContexte(null)
@@ -24,6 +25,15 @@ export default function MisEnPageTerrain() {
           <button type="button" className="sortie discret" onClick={deconnexion}>
             Déconnexion
           </button>
+        </div>
+
+        <div className="barre-bas plaques">
+          <Link to="/" className={`plaque-nav${pathname === '/' ? ' actif' : ''}`}>
+            Intervention
+          </Link>
+          <Link to="/carte" className={`plaque-nav${pathname.startsWith('/carte') ? ' actif' : ''}`}>
+            Carte
+          </Link>
         </div>
       </header>
 
