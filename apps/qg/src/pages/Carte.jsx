@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CarteCrise } from '@plateforme-crise/shared'
+import { CarteCrise, FiltreIncidentsCarte } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { BoutonDiscret } from '../components/Boutons'
@@ -31,18 +31,22 @@ const LIBELLE_OBSERVATION = {
 }
 
 /**
- * Carte tactique QG — port du principe de la carte "Situation" d'Eventware
- * (briefing-eventware-pour-crisiware.md §3.1/§3.7), en lecture pour cette
- * première itération : ce qui est déjà saisi en coordonnées dans les
- * référentiels, superposé sur une même carte.
+ * Carte tactique QG. Les couches de référentiel (objets à risque, centres,
+ * sites, infrastructures) concernent tout le contexte ; les couches
+ * « incident » (position, zones d'intervention, points terrain, signalements
+ * rattachés) suivent les incidents cochés. Par défaut : le plus récent
+ * seulement — « Tous » pour une catastrophe à plusieurs incidents.
  */
 export default function Carte() {
   const { contexteId } = useAuth()
   const [couches, setCouches] = useState(() => Object.fromEntries(COUCHES.map((c) => [c.cle, true])))
   const [points, setPoints] = useState({})
+  const [incidents, setIncidents] = useState([])
   const [zonesIntervention, setZonesIntervention] = useState([])
+  const [affiches, setAffiches] = useState(null) // null = pas encore initialisé
   const [chargement, setChargement] = useState(true)
   const [erreur, setErreur] = useState(null)
+  const [cleRecentrage, setCleRecentrage] = useState(0)
 
   const charger = useCallback(async () => {
     if (!contexteId) return
@@ -54,9 +58,9 @@ export default function Carte() {
       supabase.from('centres_accueil').select('id, nom, type_lieu, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
       supabase.from('sites_qg').select('id, nom, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
       supabase.from('infrastructures_critiques').select('id, nom, type, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
-      supabase.from('signalements_citoyens').select('id, reference, type, statut, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null).not('statut', 'in', '(clos,sans_suite)'),
+      supabase.from('signalements_citoyens').select('id, reference, type, statut, incident_id, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null).not('statut', 'in', '(clos,sans_suite)'),
       supabase.from('incidents').select('id, nom, type_evenement, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'en_cours').order('date_debut', { ascending: false }),
-      supabase.from('observations_terrain').select('id, type, description, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'ouvert'),
+      supabase.from('observations_terrain').select('id, type, description, incident_id, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'ouvert'),
     ])
 
     const premierErreur = [objets, centres, sites, infra, signalements, incidentsActifs, observations].find((r) => r.error)
@@ -66,8 +70,9 @@ export default function Carte() {
       return
     }
 
+    const liste = incidentsActifs.data ?? []
+    setIncidents(liste)
     setPoints({
-      incidents: (incidentsActifs.data ?? []).filter((i) => i.latitude != null),
       objets_a_risque: objets.data ?? [],
       centres_accueil: centres.data ?? [],
       sites_qg: sites.data ?? [],
@@ -76,12 +81,11 @@ export default function Carte() {
       observations: observations.data ?? [],
     })
 
-    const idsIncidents = (incidentsActifs.data ?? []).map((i) => i.id)
-    if (idsIncidents.length > 0) {
+    if (liste.length > 0) {
       const { data: zones } = await supabase
         .from('zones_intervention')
-        .select('id, type_zone, centre_latitude, centre_longitude, rayon_metres')
-        .in('incident_id', idsIncidents)
+        .select('id, incident_id, type_zone, centre_latitude, centre_longitude, rayon_metres')
+        .in('incident_id', liste.map((i) => i.id))
         .not('centre_latitude', 'is', null)
         .is('date_levee', null)
       setZonesIntervention(zones ?? [])
@@ -89,6 +93,12 @@ export default function Carte() {
       setZonesIntervention([])
     }
 
+    // Premier chargement : l'incident le plus récent (géolocalisé de préférence).
+    setAffiches((precedent) => {
+      if (precedent !== null) return precedent.filter((id) => liste.some((i) => i.id === id))
+      const premier = liste.find((i) => i.latitude != null) ?? liste[0]
+      return premier ? [premier.id] : []
+    })
     setChargement(false)
   }, [contexteId])
 
@@ -96,11 +106,21 @@ export default function Carte() {
     charger()
   }, [charger])
 
+  const ids = useMemo(() => new Set(affiches ?? []), [affiches])
+  const incidentsAffiches = useMemo(() => incidents.filter((i) => ids.has(i.id)), [incidents, ids])
+  // Un point rattaché à un incident n'apparaît que si cet incident est coché ;
+  // un point sans incident (signalement non encore rattaché…) reste visible.
+  const visible = (p) => !p.incident_id || ids.has(p.incident_id)
+
   const marqueurs = useMemo(() => {
     const tous = []
     for (const c of COUCHES) {
       if (!couches[c.cle]) continue
-      for (const p of points[c.cle] ?? []) {
+      const source =
+        c.cle === 'incidents'
+          ? incidentsAffiches.filter((i) => i.latitude != null)
+          : (points[c.cle] ?? []).filter((p) => c.cle !== 'signalements_citoyens' && c.cle !== 'observations' ? true : visible(p))
+      for (const p of source) {
         tous.push({
           id: `${c.cle}-${p.id}`,
           lat: Number(p.latitude),
@@ -112,48 +132,69 @@ export default function Carte() {
       }
     }
     return tous
-  }, [points, couches])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [points, couches, incidentsAffiches, ids])
 
   const cercles = useMemo(
     () =>
-      zonesIntervention.map((z) => ({
-        id: z.id,
-        lat: Number(z.centre_latitude),
-        lon: Number(z.centre_longitude),
-        rayonM: Number(z.rayon_metres) || 100,
-        libelle: z.type_zone,
-      })),
-    [zonesIntervention]
+      couches.incidents
+        ? zonesIntervention
+            .filter((z) => ids.has(z.incident_id))
+            .map((z) => ({
+              id: z.id,
+              lat: Number(z.centre_latitude),
+              lon: Number(z.centre_longitude),
+              rayonM: Number(z.rayon_metres) || 100,
+              libelle: z.type_zone,
+            }))
+        : [],
+    [zonesIntervention, ids, couches.incidents]
   )
 
-  // Point d'intérêt : l'incident en cours (le plus récent géolocalisé), sinon
-  // le centre de sa zone d'intervention. C'est lui qui cadre la carte, pas la
-  // moyenne de tout ce qui est géolocalisé dans le contexte.
-  const focusIncident = useMemo(() => {
-    const inc = (points.incidents ?? [])[0]
-    if (inc) return { lat: Number(inc.latitude), lon: Number(inc.longitude), nom: inc.nom }
-    const z = zonesIntervention[0]
-    if (z) return { lat: Number(z.centre_latitude), lon: Number(z.centre_longitude), nom: 'zone d\'intervention' }
-    return null
-  }, [points, zonesIntervention])
-
-  const [cleRecentrage, setCleRecentrage] = useState(0)
+  // Cadrage : sur les incidents cochés (leur position, à défaut le centre de
+  // leurs zones) — pas sur la moyenne de tout ce qui est géolocalisé.
+  const pointsIncidents = useMemo(() => {
+    const pts = []
+    for (const i of incidentsAffiches) {
+      if (i.latitude != null) pts.push({ lat: Number(i.latitude), lon: Number(i.longitude) })
+      else {
+        const z = zonesIntervention.find((x) => x.incident_id === i.id)
+        if (z) pts.push({ lat: Number(z.centre_latitude), lon: Number(z.centre_longitude) })
+      }
+    }
+    return pts
+  }, [incidentsAffiches, zonesIntervention])
 
   const centre = useMemo(() => {
-    if (focusIncident) return { lat: focusIncident.lat, lon: focusIncident.lon }
+    if (pointsIncidents.length > 0) {
+      return {
+        lat: pointsIncidents.reduce((s, p) => s + p.lat, 0) / pointsIncidents.length,
+        lon: pointsIncidents.reduce((s, p) => s + p.lon, 0) / pointsIncidents.length,
+      }
+    }
     if (marqueurs.length === 0) return CENTRE_BELGIQUE
-    const lat = marqueurs.reduce((s, m) => s + m.lat, 0) / marqueurs.length
-    const lon = marqueurs.reduce((s, m) => s + m.lon, 0) / marqueurs.length
-    return { lat, lon }
-  }, [focusIncident, marqueurs])
+    return {
+      lat: marqueurs.reduce((s, m) => s + m.lat, 0) / marqueurs.length,
+      lon: marqueurs.reduce((s, m) => s + m.lon, 0) / marqueurs.length,
+    }
+  }, [pointsIncidents, marqueurs])
 
   return (
     <div>
       <h1 className="text-lg font-semibold text-encre mb-1">Carte</h1>
       <p className="text-sm text-sourdine mb-3">
-        Ce qui est déjà géolocalisé dans les référentiels de ce contexte, superposé sur une
-        même carte — en lecture pour l'instant.
+        Cochez les incidents à voir : un seul pour le suivre de près, tous pour une catastrophe à plusieurs
+        incidents. Les référentiels du contexte restent affichés dans les deux cas.
       </p>
+
+      <FiltreIncidentsCarte
+        incidents={incidents.map((i) => ({ id: i.id, nom: i.nom, geolocalise: i.latitude != null }))}
+        selectionnes={affiches ?? []}
+        onChange={(liste) => {
+          setAffiches(liste)
+          setCleRecentrage((n) => n + 1)
+        }}
+      />
 
       <div className="flex flex-wrap gap-3 mb-3">
         {COUCHES.map((c) => (
@@ -175,15 +216,18 @@ export default function Carte() {
         <p className="text-sm text-sourdine">Chargement…</p>
       ) : (
         <>
-          {focusIncident && (
+          {pointsIncidents.length > 0 && (
             <div className="mb-2">
-              <BoutonDiscret onClick={() => setCleRecentrage((n) => n + 1)}>Recentrer sur l'incident</BoutonDiscret>
+              <BoutonDiscret onClick={() => setCleRecentrage((n) => n + 1)}>
+                {pointsIncidents.length > 1 ? 'Recadrer sur les incidents affichés' : "Recentrer sur l'incident"}
+              </BoutonDiscret>
             </div>
           )}
           <CarteCrise
             centre={centre}
-            zoom={focusIncident ? 15 : marqueurs.length ? 13 : 8}
-            zoomRecentrage={focusIncident ? 15 : null}
+            zoom={pointsIncidents.length ? 15 : marqueurs.length ? 13 : 8}
+            zoomRecentrage={pointsIncidents.length === 1 ? 15 : null}
+            ajusterSur={pointsIncidents.length > 1 ? pointsIncidents : null}
             cleRecentrage={cleRecentrage}
             marqueurs={marqueurs}
             cercles={cercles}

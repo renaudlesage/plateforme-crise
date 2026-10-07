@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CarteCrise } from '@plateforme-crise/shared'
+import { CarteCrise, FiltreIncidentsCarte } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
@@ -48,7 +48,8 @@ export default function Carte() {
   const [donnees, setDonnees] = useState({})
   const [manquants, setManquants] = useState([])
   const [zones, setZones] = useState([])
-  const { incident: incidentChoisi } = useIncidentsEnCours(contexteId)
+  const { incident: incidentChoisi, choisir } = useIncidentsEnCours(contexteId)
+  const [affiches, setAffiches] = useState(null) // null = pas encore initialisé
   const incidentId = incidentChoisi?.id ?? null
   const [chargement, setChargement] = useState(true)
   const [erreur, setErreur] = useState(null)
@@ -75,14 +76,14 @@ export default function Carte() {
       avecCoord('infrastructures_critiques', 'id, nom, type, latitude, longitude'),
       supabase
         .from('signalements_citoyens')
-        .select('id, reference, type, latitude, longitude')
+        .select('id, reference, type, incident_id, latitude, longitude')
         .eq('contexte_id', contexteId)
         .not('latitude', 'is', null)
         .not('statut', 'in', '(clos,sans_suite)'),
       supabase.from('incidents').select('id, nom, type_evenement, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'en_cours').order('date_debut', { ascending: false }),
       supabase
         .from('observations_terrain')
-        .select('id, type, description, latitude, longitude, created_at')
+        .select('id, type, description, incident_id, latitude, longitude, created_at')
         .eq('contexte_id', contexteId)
         .eq('statut', 'ouvert'),
       sansCoord('objets_a_risque', 'id, identification'),
@@ -100,7 +101,7 @@ export default function Carte() {
 
     const incidents = inc.data ?? []
     setDonnees({
-      incidents: incidents.filter((i) => i.latitude != null),
+      incidents,
       observations: obs.data ?? [],
       objets_a_risque: obj.data ?? [],
       centres_accueil: cen.data ?? [],
@@ -119,7 +120,7 @@ export default function Carte() {
     if (incidents.length > 0) {
       const { data: z } = await supabase
         .from('zones_intervention')
-        .select('id, type_zone, centre_latitude, centre_longitude, rayon_metres')
+        .select('id, incident_id, type_zone, centre_latitude, centre_longitude, rayon_metres')
         .in('incident_id', incidents.map((i) => i.id))
         .not('centre_latitude', 'is', null)
         .is('date_levee', null)
@@ -134,11 +135,21 @@ export default function Carte() {
     charger()
   }, [charger])
 
+  // Incidents cochés : par défaut celui qui est suivi sur cet appareil.
+  useEffect(() => {
+    if (affiches === null && incidentChoisi) setAffiches([incidentChoisi.id])
+  }, [affiches, incidentChoisi])
+  const ids = useMemo(() => new Set(affiches ?? []), [affiches])
+
   const marqueurs = useMemo(() => {
     const tous = []
     for (const c of COUCHES) {
       if (!couches[c.cle]) continue
-      for (const p of donnees[c.cle] ?? []) {
+      const source =
+        c.cle === 'incidents'
+          ? (donnees.incidents ?? []).filter((i) => i.latitude != null && ids.has(i.id))
+          : (donnees[c.cle] ?? []).filter((p) => (c.cle === 'signalements_citoyens' || c.cle === 'observations' ? !p.incident_id || ids.has(p.incident_id) : true))
+      for (const p of source) {
         if (c.cle === 'observations') {
           const t = TYPES_OBSERVATION.find((x) => x.valeur === p.type)
           tous.push({
@@ -162,41 +173,50 @@ export default function Carte() {
       }
     }
     return tous
-  }, [donnees, couches])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [donnees, couches, ids])
 
   const cercles = useMemo(
     () =>
-      zones.map((z) => ({
+      (couches.incidents ? zones.filter((z) => ids.has(z.incident_id)) : []).map((z) => ({
         id: z.id,
         lat: Number(z.centre_latitude),
         lon: Number(z.centre_longitude),
         rayonM: Number(z.rayon_metres) || 100,
         libelle: z.type_zone,
       })),
-    [zones]
+    [zones, ids, couches.incidents]
   )
 
-  // Point d'intérêt : l'incident en cours (le plus récent géolocalisé), sinon le
-  // centre de sa zone d'intervention. Cadre la carte à l'ouverture et via le bouton.
-  const focusIncident = useMemo(() => {
-    const inc = (donnees.incidents ?? []).find((i) => i.id === incidentId) ?? (donnees.incidents ?? [])[0]
-    if (inc) return { lat: Number(inc.latitude), lon: Number(inc.longitude) }
-    const z = zones[0]
-    if (z) return { lat: Number(z.centre_latitude), lon: Number(z.centre_longitude) }
-    return null
-  }, [donnees, zones, incidentId])
+  // Cadrage : sur les incidents cochés (position, à défaut centre de leurs zones).
+  const pointsIncidents = useMemo(() => {
+    const pts = []
+    for (const i of (donnees.incidents ?? []).filter((x) => ids.has(x.id))) {
+      if (i.latitude != null) pts.push({ lat: Number(i.latitude), lon: Number(i.longitude) })
+      else {
+        const z = zones.find((x) => x.incident_id === i.id)
+        if (z) pts.push({ lat: Number(z.centre_latitude), lon: Number(z.centre_longitude) })
+      }
+    }
+    return pts
+  }, [donnees, zones, ids])
 
   const [cleRecentrage, setCleRecentrage] = useState(0)
 
   const centre = useMemo(() => {
     if (selection) return selection
-    if (focusIncident) return focusIncident
+    if (pointsIncidents.length > 0) {
+      return {
+        lat: pointsIncidents.reduce((s, p) => s + p.lat, 0) / pointsIncidents.length,
+        lon: pointsIncidents.reduce((s, p) => s + p.lon, 0) / pointsIncidents.length,
+      }
+    }
     if (marqueurs.length === 0) return CENTRE_BELGIQUE
     return {
       lat: marqueurs.reduce((s, m) => s + m.lat, 0) / marqueurs.length,
       lon: marqueurs.reduce((s, m) => s + m.lon, 0) / marqueurs.length,
     }
-  }, [marqueurs, selection, focusIncident])
+  }, [marqueurs, selection, pointsIncidents])
 
   function fermer() {
     setMode(null)
@@ -219,6 +239,17 @@ export default function Carte() {
     <div>
       <h1 className="text-lg font-semibold text-encre mb-1">Carte</h1>
 
+      <FiltreIncidentsCarte
+        incidents={(donnees.incidents ?? []).map((i) => ({ id: i.id, nom: i.nom, geolocalise: i.latitude != null }))}
+        selectionnes={affiches ?? []}
+        onChange={(liste) => {
+          setAffiches(liste)
+          setCleRecentrage((n) => n + 1)
+          // Un seul incident coché = celui qu'on suit (accueil, situation, points terrain).
+          if (liste.length === 1) choisir(liste[0])
+        }}
+      />
+
       <div className="flex flex-wrap gap-3 mb-3">
         {COUCHES.map((c) => (
           <label key={c.cle} className="flex items-center gap-1.5 text-xs text-sourdine">
@@ -236,9 +267,11 @@ export default function Carte() {
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
       {info && <p className="text-sm text-ok mb-2">{info}</p>}
 
-      {focusIncident && !mode && (
+      {pointsIncidents.length > 0 && !mode && (
         <div className="mb-2">
-          <BoutonDiscret onClick={() => setCleRecentrage((n) => n + 1)}>Recentrer sur l'incident</BoutonDiscret>
+          <BoutonDiscret onClick={() => setCleRecentrage((n) => n + 1)}>
+            {pointsIncidents.length > 1 ? 'Recadrer sur les incidents affichés' : "Recentrer sur l'incident"}
+          </BoutonDiscret>
         </div>
       )}
 
@@ -247,8 +280,9 @@ export default function Carte() {
       ) : (
         <CarteCrise
           centre={centre}
-          zoom={selection || focusIncident ? 15 : marqueurs.length ? 13 : 8}
-          zoomRecentrage={focusIncident ? 15 : null}
+          zoom={selection || pointsIncidents.length ? 15 : marqueurs.length ? 13 : 8}
+          zoomRecentrage={pointsIncidents.length === 1 ? 15 : null}
+          ajusterSur={pointsIncidents.length > 1 ? pointsIncidents : null}
           cleRecentrage={cleRecentrage}
           marqueurs={marqueurs}
           cercles={cercles}
