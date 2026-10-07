@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Symbole, disciplineDe } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { BoutonDiscret } from '../components/Boutons'
@@ -13,6 +14,8 @@ const LIBELLE_PHASE = {
   levee: 'Levée',
   post_crise: 'Post-crise',
 }
+
+const ETAT_MOYEN = { en_route: 'En route', sur_place: 'Sur place', disponible: 'Disponible' }
 
 const heure = (d) => new Date(d).toLocaleString('fr-BE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 
@@ -32,7 +35,7 @@ export default function Situation() {
   const charger = useCallback(async () => {
     if (!incident) return
     const id = incident.id
-    const [niveau, siteQg, sitrep, zones, alertes, pcops, journal, points] = await Promise.all([
+    const [niveau, siteQg, sitrep, zones, alertes, pcops, journal, points, moyens] = await Promise.all([
       incident.niveau_actuel_id
         ? supabase.from('niveaux_escalade').select('code, libelle').eq('id', incident.niveau_actuel_id).maybeSingle()
         : Promise.resolve({ data: null }),
@@ -45,8 +48,14 @@ export default function Situation() {
       supabase.from('pc_ops_roles').select('id, role, personne, contact').eq('incident_id', id).eq('actif', true),
       supabase.from('livre_de_bord').select('id, numero_ordre, horodatage, message, decision').eq('incident_id', id).order('numero_ordre', { ascending: false }).limit(8),
       supabase.from('observations_terrain').select('id, type, description, created_at').eq('incident_id', id).eq('statut', 'ouvert').order('created_at', { ascending: false }),
+      supabase
+        .from('moyens_engages')
+        .select('id, symbole, libelle, discipline, effectif, statut, remarque, maj_le')
+        .eq('incident_id', id)
+        .neq('statut', 'retire')
+        .order('maj_le', { ascending: false }),
     ])
-    const premiere = [niveau, siteQg, sitrep, zones, alertes, pcops, journal, points].find((r) => r.error)
+    const premiere = [niveau, siteQg, sitrep, zones, alertes, pcops, journal, points, moyens].find((r) => r.error)
     setErreur(premiere ? premiere.error.message : null)
     setDonnees({
       niveau: niveau.data,
@@ -57,6 +66,7 @@ export default function Situation() {
       pcops: pcops.data ?? [],
       journal: journal.data ?? [],
       points: points.data ?? [],
+      moyens: moyens.data ?? [],
     })
     setMajLe(new Date())
   }, [incident])
@@ -184,6 +194,27 @@ export default function Situation() {
                 )}
               </li>
             )}
+          </Bloc>
+
+          <Bloc titre="Moyens engagés" vide="Aucun moyen engagé." items={d.moyens}>
+            {(m) => {
+              const disc = disciplineDe(m.discipline)
+              return (
+                <li key={m.id} className="carte" style={disc ? { borderLeft: `4px solid ${disc.couleur}` } : undefined}>
+                  <div className="flex items-center gap-2">
+                    {m.symbole && <span style={{ background: '#fff', borderRadius: 6, padding: 2, lineHeight: 0, flexShrink: 0 }}><Symbole code={m.symbole} taille={28} badge={disc?.couleur ?? null} /></span>}
+                    <p className="text-sm text-encre">
+                      {m.libelle}
+                      {m.effectif ? <span className="text-xs text-sourdine"> · {m.effectif} pers.</span> : null}
+                      <span className="jeton ml-2">{ETAT_MOYEN[m.statut] ?? m.statut}</span>
+                      {disc && <span className="text-xs text-sourdine ml-2">{disc.court}</span>}
+                    </p>
+                  </div>
+                  {m.remarque && <p className="text-xs text-sourdine mt-1">{m.remarque}</p>}
+                  <p className="text-xs text-sourdine mt-1">mis à jour {heure(m.maj_le)}</p>
+                </li>
+              )
+            }}
           </Bloc>
 
           <Bloc titre="Points terrain ouverts" vide="Aucun point ouvert." items={d.points}>

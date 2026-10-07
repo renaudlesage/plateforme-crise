@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
@@ -50,10 +50,21 @@ const METHODES_DELIMITATION_RS = [
   { valeur: 'pas_de_delimitation', libelle: 'Pas de délimitation' },
 ]
 
+// Un plan d'urgence = beaucoup de matière : une section à la fois, l'onglet reste dans l'URL (?onglet=).
+const ONGLETS = [
+  { cle: 'document', libelle: 'Document' },
+  { cle: 'fiches', libelle: 'Fiches' },
+  { cle: 'modifications', libelle: 'Modifications' },
+  { cle: 'risques', libelle: 'Risques' },
+  { cle: 'seveso', libelle: 'Seveso (PPUI)' },
+]
+
 export default function PlanUrgenceDetail() {
   const { id } = useParams()
   const { contexteId } = useAuth()
   const navigate = useNavigate()
+  const [paramsUrl, setParamsUrl] = useSearchParams()
+  const ongletActif = ONGLETS.find((o) => o.cle === paramsUrl.get('onglet'))?.cle ?? ONGLETS[0].cle
   const [plan, setPlan] = useState(null)
   const [chargement, setChargement] = useState(true)
   const [erreur, setErreur] = useState(null)
@@ -91,25 +102,26 @@ export default function PlanUrgenceDetail() {
       </div>
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
-      <div className="mb-6">
-        <SectionDocumentPlan plan={plan} contexteId={contexteId} onChange={chargerPlan} />
+      <div className="onglets" role="tablist" aria-label="Sections du plan d'urgence">
+        {ONGLETS.map((o) => (
+          <button
+            key={o.cle}
+            type="button"
+            role="tab"
+            aria-selected={o.cle === ongletActif}
+            className={`module ${o.cle === ongletActif ? 'actif' : ''}`.trim()}
+            onClick={() => setParamsUrl({ onglet: o.cle }, { replace: true })}
+          >
+            {o.libelle}
+          </button>
+        ))}
       </div>
 
-      <div className="mb-6">
-        <SectionFichesPlan planId={plan.id} />
-      </div>
-
-      <div className="mb-6">
-        <SectionPropositionsModification planId={plan.id} contexteId={contexteId} />
-      </div>
-
-      <div className="mb-6">
-        <SectionRisquesIdentifies planId={plan.id} contexteId={contexteId} />
-      </div>
-
-      <div>
-        <SectionEntreprisesSeveso planId={plan.id} contexteId={contexteId} />
-      </div>
+      {ongletActif === 'document' && <SectionDocumentPlan plan={plan} contexteId={contexteId} onChange={chargerPlan} />}
+      {ongletActif === 'fiches' && <SectionFichesPlan planId={plan.id} />}
+      {ongletActif === 'modifications' && <SectionPropositionsModification planId={plan.id} contexteId={contexteId} />}
+      {ongletActif === 'risques' && <SectionRisquesIdentifies planId={plan.id} contexteId={contexteId} />}
+      {ongletActif === 'seveso' && <SectionEntreprisesSeveso planId={plan.id} contexteId={contexteId} />}
     </div>
   )
 }

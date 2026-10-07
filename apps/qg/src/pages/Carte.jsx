@@ -1,8 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CarteCrise, FiltreIncidentsCarte, DISCIPLINES, disciplineDe, LegendeSymboles } from '@plateforme-crise/shared'
+import {
+  CarteCrise,
+  FiltreIncidentsCarte,
+  DISCIPLINES,
+  disciplineDe,
+  LegendeSymboles,
+  STATUTS_MOYEN,
+  FormulaireObservation,
+  FormulaireMoyen,
+  FormulaireLocalisation,
+  PointsAFlaguer,
+  MoyensEngages,
+} from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import { BoutonDiscret } from '../components/Boutons'
+import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
 
 // Centre de la Belgique — repli quand aucun point n'est encore géolocalisé
 // pour ce contexte, pour ne jamais ouvrir sur une carte vide et sans repère.
@@ -32,7 +44,14 @@ const SYMBOLE_PAR_TYPE = {
   autre: 'point_particulier',
 }
 
-const STATUT_MOYEN = { en_route: 'En route', sur_place: 'Sur place', disponible: 'Disponible', retire: 'Retiré' }
+const STATUT_MOYEN = STATUTS_MOYEN
+
+// Au CC on est en ligne : les écritures partent directement (pas de file hors ligne comme sur le terrain).
+async function ecrire({ nature, table, champs, id }) {
+  const requete = nature === 'insert' ? supabase.from(table).insert(champs) : supabase.from(table).update(champs).eq('id', id)
+  const { error } = await requete
+  return error ? { statut: 'refus', message: error.message } : { statut: 'ok' }
+}
 
 const LIBELLE_OBSERVATION = {
   danger: 'Danger',
@@ -64,6 +83,10 @@ export default function Carte() {
   const [erreur, setErreur] = useState(null)
   const [cleRecentrage, setCleRecentrage] = useState(0)
   const [disciplinesVues, setDisciplinesVues] = useState(null) // null = toutes
+  const [mode, setMode] = useState(null) // null | { type: 'observation'|'moyen', existant? } | { type: 'localiser', element }
+  const [selection, setSelection] = useState(null)
+  const [info, setInfo] = useState(null)
+  const [incidentCible, setIncidentCible] = useState(null)
 
   const charger = useCallback(async () => {
     if (!contexteId) return
@@ -77,7 +100,7 @@ export default function Carte() {
       supabase.from('infrastructures_critiques').select('id, nom, type, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
       supabase.from('signalements_citoyens').select('id, reference, type, statut, incident_id, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null).not('statut', 'in', '(clos,sans_suite)'),
       supabase.from('incidents').select('id, nom, type_evenement, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'en_cours').order('date_debut', { ascending: false }),
-      supabase.from('moyens_engages').select('id, symbole, libelle, discipline, effectif, statut, remarque, incident_id, latitude, longitude').eq('contexte_id', contexteId).neq('statut', 'retire').not('latitude', 'is', null),
+      supabase.from('moyens_engages').select('id, symbole, libelle, discipline, effectif, statut, remarque, incident_id, latitude, longitude, maj_le').eq('contexte_id', contexteId).neq('statut', 'retire').order('maj_le', { ascending: false }),
       supabase.from('observations_terrain').select('id, type, description, discipline, symbole, incident_id, latitude, longitude').eq('contexte_id', contexteId).eq('statut', 'ouvert'),
     ])
 
@@ -146,7 +169,7 @@ export default function Carte() {
       const source =
         c.cle === 'incidents'
           ? incidentsAffiches.filter((i) => i.latitude != null)
-          : (points[c.cle] ?? []).filter((p) => c.cle !== 'signalements_citoyens' && c.cle !== 'observations' && c.cle !== 'moyens' ? true : visible(p) && (c.cle !== 'observations' || disciplineVisible(p.discipline)))
+          : (points[c.cle] ?? []).filter((p) => c.cle !== 'signalements_citoyens' && c.cle !== 'observations' && c.cle !== 'moyens' ? true : visible(p) && (c.cle !== 'observations' || disciplineVisible(p.discipline)) && (c.cle !== 'moyens' || p.latitude != null))
       for (const p of source) {
         const d = c.cle === 'observations' || c.cle === 'moyens' ? disciplineDe(p.discipline) : null
         tous.push({
@@ -158,12 +181,46 @@ export default function Carte() {
           couleur: d?.couleur ?? c.couleur,
           symbole: c.cle === 'observations' ? p.symbole ?? SYMBOLE_PAR_TYPE[p.type] ?? 'point_particulier' : c.cle === 'moyens' ? p.symbole : c.symbole,
           badge: d?.couleur,
+          onModifier: c.cle === 'observations' ? () => modifierObservation(p) : c.cle === 'moyens' ? () => modifierMoyen(p) : undefined,
         })
       }
     }
-    return tous
+    // Le point en cours de modification est remplacé par la pastille de sélection.
+    const enEdition = mode?.existant ? `${mode.type === 'moyen' ? 'moyens' : 'observations'}-${mode.existant.id}` : null
+    return enEdition ? tous.filter((m) => m.id !== enEdition) : tous
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [points, couches, incidentsAffiches, ids, disciplinesVues])
+  }, [points, couches, incidentsAffiches, ids, disciplinesVues, mode])
+
+  // Incident auquel rattacher un nouveau point : le seul affiché, sinon celui choisi dans la liste.
+  const incidentId = incidentsAffiches.length === 1 ? incidentsAffiches[0].id : (incidentsAffiches.find((i) => i.id === incidentCible) ?? incidentsAffiches[0])?.id ?? null
+
+  function fermer() {
+    setMode(null)
+    setSelection(null)
+  }
+  function modifierObservation(p) {
+    setInfo(null)
+    setSelection({ lat: Number(p.latitude), lon: Number(p.longitude) })
+    setMode({ type: 'observation', existant: p })
+    window.scrollTo?.({ top: 0, behavior: 'smooth' })
+  }
+  function modifierMoyen(m) {
+    setInfo(null)
+    setSelection(m.latitude != null ? { lat: Number(m.latitude), lon: Number(m.longitude) } : null)
+    setMode({ type: 'moyen', existant: m })
+    window.scrollTo?.({ top: 0, behavior: 'smooth' })
+  }
+  async function apresEcriture(res, message) {
+    if (res.statut === 'refus') {
+      setErreur(res.message)
+      return false
+    }
+    setErreur(null)
+    setInfo(message)
+    fermer()
+    await charger()
+    return true
+  }
 
   const cercles = useMemo(
     () =>
@@ -211,12 +268,74 @@ export default function Carte() {
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-encre mb-1">Carte</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+        <h1 className="text-lg font-semibold text-encre">Carte</h1>
+        {!mode && (
+          <div className="flex flex-wrap gap-2">
+            <BoutonPrincipal onClick={() => { setInfo(null); setMode({ type: 'observation' }) }}>+ Point terrain</BoutonPrincipal>
+            <BoutonDiscret onClick={() => { setInfo(null); setMode({ type: 'moyen' }) }}>+ Moyen engagé</BoutonDiscret>
+          </div>
+        )}
+      </div>
       <p className="text-sm text-sourdine mb-3">
         Cochez les incidents à voir : un seul pour le suivre de près, tous pour une catastrophe à plusieurs
-        incidents. Les référentiels du contexte restent affichés dans les deux cas.
+        incidents. Les référentiels du contexte restent affichés dans les deux cas. On peut aussi poser ou
+        corriger un point terrain ou un moyen engagé d'ici.
       </p>
 
+      {info && <p className="text-sm text-ok mb-2">{info}</p>}
+
+      {mode && incidentsAffiches.length > 1 && !mode.existant && mode.type !== 'localiser' && (
+        <div className="mb-2 flex items-center gap-2 text-sm">
+          <label className="text-xs text-sourdine" htmlFor="incident-cible">Rattacher à l'incident :</label>
+          <select id="incident-cible" value={incidentId ?? ''} onChange={(e) => setIncidentCible(e.target.value)} style={{ width: 'auto' }}>
+            {incidentsAffiches.map((i) => (
+              <option key={i.id} value={i.id}>{i.nom}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {mode?.type === 'observation' && (
+        <FormulaireObservation
+          key={mode.existant?.id ?? 'nouveau'}
+          ecrire={ecrire}
+          existant={mode.existant ?? null}
+          contexteId={contexteId}
+          incidentId={mode.existant ? mode.existant.incident_id ?? null : incidentId}
+          selection={selection}
+          onPosition={setSelection}
+          onAnnuler={fermer}
+          onEnvoyer={apresEcriture}
+        />
+      )}
+      {mode?.type === 'moyen' && (
+        <FormulaireMoyen
+          key={mode.existant?.id ?? 'nouveau'}
+          ecrire={ecrire}
+          existant={mode.existant ?? null}
+          contexteId={contexteId}
+          incidentId={mode.existant ? mode.existant.incident_id ?? null : incidentId}
+          selection={selection}
+          onPosition={setSelection}
+          onAnnuler={fermer}
+          onEnvoyer={apresEcriture}
+        />
+      )}
+      {mode?.type === 'localiser' && (
+        <FormulaireLocalisation
+          ecrire={ecrire}
+          element={mode.element}
+          selection={selection}
+          onPosition={setSelection}
+          onAnnuler={fermer}
+          onEnvoyer={apresEcriture}
+        />
+      )}
+
+      {/* Pendant la pose/modification d'un point : formulaire puis carte, sans filtres entre les deux. */}
+      {!mode && (
+        <>
       <FiltreIncidentsCarte
         incidents={incidents.map((i) => ({ id: i.id, nom: i.nom, geolocalise: i.latitude != null }))}
         selectionnes={affiches ?? []}
@@ -263,6 +382,8 @@ export default function Carte() {
           </div>
         </div>
       )}
+        </>
+      )}
 
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
@@ -285,9 +406,34 @@ export default function Carte() {
             cleRecentrage={cleRecentrage}
             marqueurs={marqueurs}
             cercles={cercles}
-            hauteur="65vh"
+            selection={selection}
+            onClicCarte={mode ? (p) => setSelection(p) : null}
+            hauteur={mode ? '50vh' : '65vh'}
           />
-          <div className="mt-3"><LegendeSymboles /></div>
+          {!mode && (
+            <div className="mt-3 space-y-2">
+              <MoyensEngages
+                moyens={(points.moyens ?? []).filter(visible)}
+                onModifier={modifierMoyen}
+                onStatut={async (m, statut) => {
+                  const res = await ecrire({ nature: 'update', table: 'moyens_engages', id: m.id, champs: { statut, maj_le: new Date().toISOString() } })
+                  await apresEcriture(res, `${m.libelle} : ${STATUT_MOYEN[statut].toLowerCase()}`)
+                }}
+                onDeplacer={(m) => { setInfo(null); setSelection(m.latitude != null ? { lat: Number(m.latitude), lon: Number(m.longitude) } : null); setMode({ type: 'localiser', element: { table: 'moyens_engages', id: m.id, libelle: m.libelle } }) }}
+              />
+              {(points.observations ?? []).length > 0 && (
+                <PointsAFlaguer
+                  points={(points.observations ?? []).filter(visible)}
+                  onModifier={modifierObservation}
+                  onFlaguer={async (p, discipline) => {
+                    const res = await ecrire({ nature: 'update', table: 'observations_terrain', id: p.id, champs: { discipline } })
+                    await apresEcriture(res, discipline ? `Point flagué ${disciplineDe(discipline).court}` : 'Discipline retirée')
+                  }}
+                />
+              )}
+              <LegendeSymboles />
+            </div>
+          )}
         </>
       )}
     </div>
