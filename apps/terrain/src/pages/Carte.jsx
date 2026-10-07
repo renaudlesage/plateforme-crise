@@ -20,8 +20,8 @@ export const TYPES_OBSERVATION = [
   { valeur: 'autre', libelle: 'Autre', couleur: '#64748b', symbole: 'point_particulier' },
 ]
 
-// Couches de référentiel : lecture pour tous, et "à localiser" quand
-// la fiche existe mais n'a pas encore de coordonnées.
+// Couches de référentiel : lecture seule ici. Leur localisation (fiches sans
+// coordonnées) se fait dans l'app Admin, page « Carte » — pas sur le terrain.
 const COUCHES = [
   { cle: 'incidents', libelle: 'Incidents en cours', couleur: '#b91c1c', table: null, symbole: 'sinistre_foyer' },
   { cle: 'observations', libelle: 'Points terrain', couleur: '#be123c', table: null },
@@ -39,22 +39,20 @@ export const STATUTS_MOYEN = {
   retire: 'Retiré',
 }
 
-const REFERENTIELS = COUCHES.filter((c) => c.table)
-
 /**
  * Carte Terrain : même outil que le QG (composant partagé CarteCrise), avec
  * en plus ce qu'on peut compléter depuis le terrain :
  *  - ajouter un point (danger, route coupée, besoin…) à l'endroit où l'on se trouve
  *    ou touché sur la carte ;
- *  - localiser un élément des référentiels qui n'a pas encore de coordonnées.
- * Les deux passent par la file d'écritures hors ligne : un point saisi sans
+ *  - positionner / déplacer un moyen engagé.
+ * Les référentiels (objets à risque, centres d'accueil…) sont en lecture seule :
+ * les localiser est un travail d'Admin. Les écritures passent par la file d'écritures hors ligne : un point saisi sans
  * réseau part tout seul au retour de la couverture.
  */
 export default function Carte() {
   const { contexteId } = useAuth()
   const [couches, setCouches] = useState(() => Object.fromEntries(COUCHES.map((c) => [c.cle, true])))
   const [donnees, setDonnees] = useState({})
-  const [manquants, setManquants] = useState([])
   const [zones, setZones] = useState([])
   const { incident: incidentChoisi, choisir } = useIncidentsEnCours(contexteId)
   const [affiches, setAffiches] = useState(null) // null = pas encore initialisé
@@ -76,10 +74,8 @@ export default function Carte() {
 
     const avecCoord = (table, colonnes) =>
       supabase.from(table).select(colonnes).eq('contexte_id', contexteId).not('latitude', 'is', null)
-    const sansCoord = (table, colonnes) =>
-      supabase.from(table).select(colonnes).eq('contexte_id', contexteId).is('latitude', null)
 
-    const [obj, cen, sit, inf, sig, inc, obs, moy, objSans, cenSans, sitSans, infSans] = await Promise.all([
+    const [obj, cen, sit, inf, sig, inc, obs, moy] = await Promise.all([
       avecCoord('objets_a_risque', 'id, identification, categorie, latitude, longitude'),
       avecCoord('centres_accueil', 'id, nom, type_lieu, latitude, longitude'),
       avecCoord('sites_qg', 'id, nom, latitude, longitude'),
@@ -102,13 +98,9 @@ export default function Carte() {
         .eq('contexte_id', contexteId)
         .neq('statut', 'retire')
         .order('maj_le', { ascending: false }),
-      sansCoord('objets_a_risque', 'id, identification'),
-      sansCoord('centres_accueil', 'id, nom'),
-      sansCoord('sites_qg', 'id, nom'),
-      sansCoord('infrastructures_critiques', 'id, nom'),
     ])
 
-    const premiereErreur = [obj, cen, sit, inf, sig, inc, obs, moy, objSans, cenSans, sitSans, infSans].find((r) => r.error)
+    const premiereErreur = [obj, cen, sit, inf, sig, inc, obs, moy].find((r) => r.error)
     if (premiereErreur) {
       setErreur(premiereErreur.error.message)
       setChargement(false)
@@ -126,14 +118,6 @@ export default function Carte() {
       infrastructures_critiques: inf.data ?? [],
       signalements_citoyens: sig.data ?? [],
     })
-    setManquants([
-      ...incidents.filter((i) => i.latitude == null).map((i) => ({ table: 'incidents', id: i.id, libelle: i.nom, genre: 'Incident en cours' })),
-      ...(objSans.data ?? []).map((r) => ({ table: 'objets_a_risque', id: r.id, libelle: r.identification, genre: "Objet à risque" })),
-      ...(cenSans.data ?? []).map((r) => ({ table: 'centres_accueil', id: r.id, libelle: r.nom, genre: "Centre d'accueil" })),
-      ...(sitSans.data ?? []).map((r) => ({ table: 'sites_qg', id: r.id, libelle: r.nom, genre: 'Site QG' })),
-      ...(infSans.data ?? []).map((r) => ({ table: 'infrastructures_critiques', id: r.id, libelle: r.nom, genre: 'Infrastructure critique' })),
-    ])
-
     if (incidents.length > 0) {
       const { data: z } = await supabase
         .from('zones_intervention')
@@ -483,33 +467,8 @@ export default function Carte() {
             />
           )}
 
-          {manquants.length > 0 && <ALocaliser manquants={manquants} onChoisir={(element) => { setInfo(null); setMode({ type: 'localiser', element }) }} />}
-
           <LegendeSymboles />
         </div>
-      )}
-    </div>
-  )
-}
-
-function ALocaliser({ manquants, onChoisir }) {
-  const [ouvert, setOuvert] = useState(false)
-  return (
-    <div className="border border-trait rounded p-3 bg-surface">
-      <button type="button" className="lien text-sm" onClick={() => setOuvert((o) => !o)}>
-        {manquants.length} élément{manquants.length > 1 ? 's' : ''} sans position à localiser {ouvert ? '▴' : '▾'}
-      </button>
-      {ouvert && (
-        <ul className="mt-2 space-y-1">
-          {manquants.map((m) => (
-            <li key={`${m.table}-${m.id}`} className="flex items-center justify-between gap-2 text-sm">
-              <span className="text-encre">
-                {m.libelle} <span className="text-xs text-sourdine">· {m.genre}</span>
-              </span>
-              <BoutonDiscret onClick={() => onChoisir(m)}>Localiser</BoutonDiscret>
-            </li>
-          ))}
-        </ul>
       )}
     </div>
   )
