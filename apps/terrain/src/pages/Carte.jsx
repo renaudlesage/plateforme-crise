@@ -193,6 +193,7 @@ export default function Carte() {
             couleur: d?.couleur ?? t?.couleur ?? c.couleur,
             symbole: p.symbole ?? t?.symbole ?? 'point_particulier',
             badge: d?.couleur,
+            onModifier: () => modifierObservation(p),
           })
           continue
         }
@@ -207,6 +208,7 @@ export default function Carte() {
             couleur: d?.couleur ?? c.couleur,
             symbole: p.symbole,
             badge: d?.couleur,
+            onModifier: () => modifierMoyen(p),
           })
           continue
         }
@@ -221,9 +223,10 @@ export default function Carte() {
         })
       }
     }
-    return tous
+    const enEdition = mode?.existant ? `${mode.type === 'moyen' ? 'moy' : 'obs'}-${mode.existant.id}` : null
+    return enEdition ? tous.filter((m) => m.id !== enEdition) : tous
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [donnees, couches, ids, disciplinesVues])
+  }, [donnees, couches, ids, disciplinesVues, mode])
 
   const cercles = useMemo(
     () =>
@@ -272,6 +275,20 @@ export default function Carte() {
     setSelection(null)
   }
 
+  // Édition : on ouvre le formulaire prérempli, la pastille de sélection part de la position actuelle.
+  function modifierObservation(p) {
+    setInfo(null)
+    setSelection({ lat: Number(p.latitude), lon: Number(p.longitude) })
+    setMode({ type: 'observation', existant: p })
+    window.scrollTo?.({ top: 0, behavior: 'smooth' })
+  }
+  function modifierMoyen(m) {
+    setInfo(null)
+    setSelection(m.latitude != null ? { lat: Number(m.latitude), lon: Number(m.longitude) } : null)
+    setMode({ type: 'moyen', existant: m })
+    window.scrollTo?.({ top: 0, behavior: 'smooth' })
+  }
+
   async function apresEcriture(res, message) {
     if (res.statut === 'refus') {
       setErreur(res.message)
@@ -288,6 +305,8 @@ export default function Carte() {
     <>
       {mode?.type === 'observation' && (
         <FormulaireObservation
+          key={mode.existant?.id ?? 'nouveau'}
+          existant={mode.existant ?? null}
           contexteId={contexteId}
           incidentId={incidentId}
           selection={selection}
@@ -299,6 +318,8 @@ export default function Carte() {
 
       {mode?.type === 'moyen' && (
         <FormulaireMoyen
+          key={mode.existant?.id ?? 'nouveau'}
+          existant={mode.existant ?? null}
           contexteId={contexteId}
           incidentId={incidentId}
           selection={selection}
@@ -430,6 +451,7 @@ export default function Carte() {
       {!mode && (
         <div className="mt-3 space-y-2">
           <MoyensEngages
+            onModifier={modifierMoyen}
             moyens={(donnees.moyens ?? []).filter((m) => !m.incident_id || ids.has(m.incident_id))}
             onStatut={async (m, statut) => {
               const res = await fileEcritures.ecrireOuEmpiler({
@@ -446,6 +468,7 @@ export default function Carte() {
 
           {(donnees.observations ?? []).length > 0 && (
             <PointsAFlaguer
+              onModifier={modifierObservation}
               points={(donnees.observations ?? []).filter((p) => !p.incident_id || ids.has(p.incident_id))}
               onFlaguer={async (p, discipline) => {
                 const res = await fileEcritures.ecrireOuEmpiler({
@@ -527,17 +550,37 @@ function BoutonMaPosition({ onPosition }) {
   )
 }
 
-function FormulaireObservation({ contexteId, incidentId, selection, onPosition, onAnnuler, onEnvoyer }) {
-  const [type, setType] = useState('danger')
-  const [symbole, setSymbole] = useState(TYPES_OBSERVATION[0].symbole)
-  const [discipline, setDiscipline] = useState(null)
-  const [description, setDescription] = useState('')
+function FormulaireObservation({ contexteId, incidentId, selection, onPosition, onAnnuler, onEnvoyer, existant = null }) {
+  const [type, setType] = useState(existant?.type ?? 'danger')
+  const [symbole, setSymbole] = useState(existant ? existant.symbole ?? TYPES_OBSERVATION.find((t) => t.valeur === existant.type)?.symbole ?? null : TYPES_OBSERVATION[0].symbole)
+  const [discipline, setDiscipline] = useState(existant?.discipline ?? null)
+  const [description, setDescription] = useState(existant?.description ?? '')
   const [enCours, setEnCours] = useState(false)
 
   async function envoyer(e) {
     e.preventDefault()
     if (!selection) return
     setEnCours(true)
+    if (existant) {
+      const res = await fileEcritures.ecrireOuEmpiler({
+        nature: 'update',
+        table: 'observations_terrain',
+        id: existant.id,
+        champs: {
+          type,
+          symbole,
+          discipline,
+          description: description.trim() || null,
+          latitude: selection.lat,
+          longitude: selection.lon,
+          precision_m: selection.precision_m ?? null,
+        },
+        libelle: `Point terrain modifié · ${TYPES_OBSERVATION.find((t) => t.valeur === type)?.libelle}`,
+      })
+      setEnCours(false)
+      await onEnvoyer(res, 'Point terrain modifié')
+      return
+    }
     const res = await fileEcritures.ecrireOuEmpiler({
       nature: 'insert',
       table: 'observations_terrain',
@@ -560,7 +603,7 @@ function FormulaireObservation({ contexteId, incidentId, selection, onPosition, 
 
   return (
     <form onSubmit={envoyer} className="mb-3 space-y-3 border border-trait rounded p-3 bg-surface">
-      <p className="etiquette">Nouveau point terrain</p>
+      <p className="etiquette">{existant ? 'Modifier le point terrain' : 'Nouveau point terrain'}</p>
       <select
         value={type}
         onChange={(e) => {
@@ -588,10 +631,32 @@ function FormulaireObservation({ contexteId, incidentId, selection, onPosition, 
       </p>
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={!selection || enCours}>
-          {enCours ? 'Envoi…' : 'Enregistrer le point'}
+          {enCours ? 'Envoi…' : existant ? 'Enregistrer les modifications' : 'Enregistrer le point'}
         </BoutonPrincipal>
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
       </div>
+      {existant && (
+        <div className="border-t border-trait pt-2">
+          <BoutonDiscret
+            type="button"
+            disabled={enCours}
+            onClick={async () => {
+              setEnCours(true)
+              const res = await fileEcritures.ecrireOuEmpiler({
+                nature: 'update',
+                table: 'observations_terrain',
+                id: existant.id,
+                champs: { statut: 'traite' },
+                libelle: `Point terrain clos · ${TYPES_OBSERVATION.find((t) => t.valeur === existant.type)?.libelle}`,
+              })
+              setEnCours(false)
+              await onEnvoyer(res, 'Point clos (retiré de la carte)')
+            }}
+          >
+            Clore ce point (traité)
+          </BoutonDiscret>
+        </div>
+      )}
     </form>
   )
 }
@@ -666,12 +731,12 @@ function ChoixDiscipline({ valeur, onChange, compact = false }) {
 }
 
 /** Flaguer (ou re-flaguer) un point déjà posé dans une discipline. */
-function PointsAFlaguer({ points, onFlaguer }) {
+function PointsAFlaguer({ points, onFlaguer, onModifier }) {
   const [ouvert, setOuvert] = useState(false)
   return (
     <div className="mt-3 border border-trait rounded p-3 bg-surface">
       <button type="button" className="lien text-sm" onClick={() => setOuvert((o) => !o)}>
-        Flaguer un point dans une discipline ({points.length}) {ouvert ? '▴' : '▾'}
+        Points terrain : modifier ou flaguer ({points.length}) {ouvert ? '▴' : '▾'}
       </button>
       {ouvert && (
         <ul className="mt-2 space-y-3" style={{ listStyle: 'none', padding: 0 }}>
@@ -684,8 +749,9 @@ function PointsAFlaguer({ points, onFlaguer }) {
                   {t?.libelle ?? 'Point terrain'}
                   {p.description && <span className="text-xs text-sourdine"> · {p.description}</span>}
                 </p>
-                <div className="mt-1">
+                <div className="mt-1 flex flex-wrap items-center gap-2">
                   <ChoixDiscipline compact valeur={p.discipline} onChange={(d) => onFlaguer(p, d)} />
+                  <BoutonDiscret type="button" onClick={() => onModifier(p)}>Modifier</BoutonDiscret>
                 </div>
               </li>
             )
@@ -697,7 +763,7 @@ function PointsAFlaguer({ points, onFlaguer }) {
 }
 
 /** Moyens engagés : changer l'état d'un moyen (en route, sur place, disponible, retiré) ou le déplacer. */
-function MoyensEngages({ moyens, onStatut, onDeplacer }) {
+function MoyensEngages({ moyens, onStatut, onDeplacer, onModifier }) {
   const [ouvert, setOuvert] = useState(false)
   return (
     <div className="border border-trait rounded p-3 bg-surface">
@@ -730,6 +796,7 @@ function MoyensEngages({ moyens, onStatut, onDeplacer }) {
                         <option key={v} value={v}>{l}</option>
                       ))}
                     </select>
+                    <BoutonDiscret type="button" onClick={() => onModifier(m)}>Modifier</BoutonDiscret>
                     <BoutonDiscret type="button" onClick={() => onDeplacer(m)}>{m.latitude == null ? 'Positionner' : 'Déplacer'}</BoutonDiscret>
                   </div>
                 </li>
@@ -741,19 +808,42 @@ function MoyensEngages({ moyens, onStatut, onDeplacer }) {
   )
 }
 
-function FormulaireMoyen({ contexteId, incidentId, selection, onPosition, onAnnuler, onEnvoyer }) {
-  const [symbole, setSymbole] = useState('autopompe')
-  const [libelle, setLibelle] = useState('')
-  const [discipline, setDiscipline] = useState(symboleDe('autopompe')?.discipline ?? null)
-  const [effectif, setEffectif] = useState('')
-  const [statut, setStatut] = useState('sur_place')
-  const [remarque, setRemarque] = useState('')
+function FormulaireMoyen({ contexteId, incidentId, selection, onPosition, onAnnuler, onEnvoyer, existant = null }) {
+  const [symbole, setSymbole] = useState(existant?.symbole ?? 'autopompe')
+  const [libelle, setLibelle] = useState(existant?.libelle ?? '')
+  const [discipline, setDiscipline] = useState(existant ? existant.discipline ?? null : symboleDe('autopompe')?.discipline ?? null)
+  const [effectif, setEffectif] = useState(existant?.effectif != null ? String(existant.effectif) : '')
+  const [statut, setStatut] = useState(existant?.statut ?? 'sur_place')
+  const [remarque, setRemarque] = useState(existant?.remarque ?? '')
   const [enCours, setEnCours] = useState(false)
 
   async function envoyer(e) {
     e.preventDefault()
     if (!selection || !libelle.trim()) return
     setEnCours(true)
+    if (existant) {
+      const res = await fileEcritures.ecrireOuEmpiler({
+        nature: 'update',
+        table: 'moyens_engages',
+        id: existant.id,
+        champs: {
+          symbole,
+          libelle: libelle.trim(),
+          discipline,
+          effectif: effectif === '' ? null : Math.max(0, Number(effectif) || 0),
+          statut,
+          remarque: remarque.trim() || null,
+          latitude: selection.lat,
+          longitude: selection.lon,
+          precision_m: selection.precision_m ?? null,
+          maj_le: new Date().toISOString(),
+        },
+        libelle: `Moyen modifié · ${libelle.trim()}`,
+      })
+      setEnCours(false)
+      await onEnvoyer(res, 'Moyen modifié')
+      return
+    }
     const res = await fileEcritures.ecrireOuEmpiler({
       nature: 'insert',
       table: 'moyens_engages',
@@ -778,7 +868,7 @@ function FormulaireMoyen({ contexteId, incidentId, selection, onPosition, onAnnu
 
   return (
     <form onSubmit={envoyer} className="mb-3 space-y-3 border border-trait rounded p-3 bg-surface">
-      <p className="etiquette">Nouveau moyen engagé</p>
+      <p className="etiquette">{existant ? 'Modifier le moyen engagé' : 'Nouveau moyen engagé'}</p>
       <PaletteSymboles
         titre="Symbole"
         categories={['moyen', 'poste']}
@@ -814,10 +904,32 @@ function FormulaireMoyen({ contexteId, incidentId, selection, onPosition, onAnnu
       </p>
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={!selection || !libelle.trim() || enCours}>
-          {enCours ? 'Envoi…' : 'Enregistrer le moyen'}
+          {enCours ? 'Envoi…' : existant ? 'Enregistrer les modifications' : 'Enregistrer le moyen'}
         </BoutonPrincipal>
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
       </div>
+      {existant && (
+        <div className="border-t border-trait pt-2">
+          <BoutonDiscret
+            type="button"
+            disabled={enCours}
+            onClick={async () => {
+              setEnCours(true)
+              const res = await fileEcritures.ecrireOuEmpiler({
+                nature: 'update',
+                table: 'moyens_engages',
+                id: existant.id,
+                champs: { statut: 'retire', maj_le: new Date().toISOString() },
+                libelle: `Moyen retiré · ${existant.libelle}`,
+              })
+              setEnCours(false)
+              await onEnvoyer(res, 'Moyen retiré de la carte')
+            }}
+          >
+            Retirer ce moyen
+          </BoutonDiscret>
+        </div>
+      )}
     </form>
   )
 }
