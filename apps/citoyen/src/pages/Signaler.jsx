@@ -107,13 +107,24 @@ export default function Signaler() {
 
     if (error) {
       // Contexte inconnu (P0002) : refus définitif, inutile de réessayer.
-      // Tout le reste (droits, réseau) : on laisse en file, ça peut
-      // changer d'une minute à l'autre.
       if (error.code === 'P0002') {
         setFile(majSignalement(s.cle_client, { etat: 'echec', motif: 'Commune inconnue ou lien invalide.' }))
         return false
       }
-      setFile(majSignalement(s.cle_client, { etat: 'en_attente', motif: null }))
+      // Panne réseau : pas de code SQL/PostgREST, la requête n'a pas abouti.
+      // Dans ce cas seulement, on parle de connexion. Toute autre erreur
+      // vient du serveur : on garde le signalement en file (ça peut se
+      // réparer) mais on le dit, au lieu de la faire passer pour du réseau.
+      const panneReseau = !navigator.onLine || (!error.code && !error.status) || /failed to fetch|network|load failed/i.test(error.message ?? '')
+      if (!panneReseau) console.error('creer_signalement_citoyen', error)
+      setFile(
+        majSignalement(s.cle_client, {
+          etat: 'en_attente',
+          motif: panneReseau
+            ? null
+            : `Le serveur n'a pas pu enregistrer le signalement${error.code ? ` (code ${error.code})` : ''}.`,
+        })
+      )
       return false
     }
 
@@ -121,6 +132,7 @@ export default function Signaler() {
     setFile(
       majSignalement(s.cle_client, {
         etat: 'recu',
+        motif: null,
         reference: ligne?.reference,
         statut: ligne?.statut,
       })
@@ -207,7 +219,7 @@ export default function Signaler() {
                 {s.etat === 'en_attente' && (
                   <p className="text-xs text-sourdine mt-1">
                     {s.motif
-                      ? `${s.motif} Le signalement partira automatiquement dès que possible.`
+                      ? `${s.motif} Nouvel essai automatique toutes les 15 secondes ; si cela persiste, appelez la commune.`
                       : "Pas de réseau pour l'instant. Le signalement partira tout seul dès que la connexion revient — garde cette page ouverte."}
                   </p>
                 )}
