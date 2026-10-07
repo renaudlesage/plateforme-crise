@@ -54,17 +54,19 @@ export default function CarteCrise({
 
         {cercles.map((c) => (
           <Circle
-            key={c.id}
+            key={`${c.id}-${onClicCarte ? 'sel' : 'lec'}`} // remonté au changement de mode : `interactive` n'est lu qu'à la création
             center={[c.lat, c.lon]}
             radius={c.rayonM}
-            pathOptions={{ color: c.couleur ?? '#dc5a3c', fillOpacity: 0.12, weight: 2 }}
+            // En mode sélection, le périmètre ne doit pas intercepter le clic : on veut
+            // pouvoir poser un point DANS une zone d'intervention.
+            pathOptions={{ color: c.couleur ?? '#dc5a3c', fillOpacity: 0.12, weight: 2, interactive: !onClicCarte }}
           >
-            {c.libelle && <Popup>{c.libelle}</Popup>}
+            {c.libelle && !onClicCarte && <Popup>{c.libelle}</Popup>}
           </Circle>
         ))}
 
         {marqueurs.map((m) => (
-          <Marker key={m.id} position={[m.lat, m.lon]} icon={icone(m.couleur)}>
+          <Marker key={`${m.id}-${onClicCarte ? 'sel' : 'lec'}`} position={[m.lat, m.lon]} icon={icone(m.couleur)} interactive={!onClicCarte}>
             <Popup>
               <strong>{m.titre}</strong>
               {m.sousTitre && (
