@@ -3572,7 +3572,6 @@ function SectionCommunicationD5({ incidentId }) {
         <GestionWebcare incidentId={incidentId} />
         <GestionChecklistActionD5 incidentId={incidentId} />
         <GestionMessageUrgentMedias incidentId={incidentId} />
-        <GestionActivationsSirenes incidentId={incidentId} />
         <GestionEvaluationCommunication incidentId={incidentId} />
       </div>
     </div>
@@ -3693,95 +3692,6 @@ function GestionMessageUrgentMedias({ incidentId }) {
   )
 }
 
-function GestionActivationsSirenes({ incidentId }) {
-  const { lignes, chargement, erreur, creer, supprimer } = useCrudSimpleIncident('activations_sirenes', incidentId)
-  const [zones, setZones] = useState([])
-  const [messages, setMessages] = useState([])
-  const [zonesChoisies, setZonesChoisies] = useState([])
-  const [messagesChoisis, setMessagesChoisis] = useState([])
-  const [ordonnePar, setOrdonnePar] = useState('')
-
-  useEffect(() => {
-    supabase.from('zones_sirenes').select('id, zone_code').order('zone_code').then(({ data }) => setZones(data ?? []))
-    supabase.from('catalogue_messages_sirene').select('id, code, libelle').then(({ data }) => setMessages(data ?? []))
-  }, [])
-
-  function basculerZone(id) {
-    setZonesChoisies((liste) => (liste.includes(id) ? liste.filter((x) => x !== id) : [...liste, id]))
-  }
-
-  function basculerMessage(id) {
-    setMessagesChoisis((liste) => {
-      if (liste.includes(id)) return liste.filter((x) => x !== id)
-      return liste.length < 3 ? [...liste, id] : liste
-    })
-  }
-
-  async function activer(e) {
-    e.preventDefault()
-    if (zonesChoisies.length === 0 || messagesChoisis.length === 0) return
-    const { error } = await creer({
-      zones: zonesChoisies,
-      messages: messagesChoisis.slice(0, 3),
-      ordonne_par: ordonnePar.trim() || null,
-    })
-    if (!error) {
-      setZonesChoisies([])
-      setMessagesChoisis([])
-      setOrdonnePar('')
-    }
-  }
-
-  return (
-    <BlocD5 titre="Déclenchement sirènes" aide="Max 3 messages combinables par signal (fiche D5/7).">
-      {erreur && <p className="text-xs text-chaud">{erreur}</p>}
-      <form onSubmit={activer} className="space-y-1.5 mb-2">
-        <div className="flex flex-wrap gap-1">
-          {zones.map((z) => (
-            <button
-              type="button"
-              key={z.id}
-              onClick={() => basculerZone(z.id)}
-              className={`pastille-filtre${zonesChoisies.includes(z.id) ? ' actif' : ''}`}
-            >
-              {z.zone_code}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-1">
-          {messages.map((m) => (
-            <button
-              type="button"
-              key={m.id}
-              onClick={() => basculerMessage(m.id)}
-              disabled={!messagesChoisis.includes(m.id) && messagesChoisis.length >= 3}
-              className={`pastille-filtre${messagesChoisis.includes(m.id) ? ' actif' : ''}`}
-            >
-              {m.libelle}
-            </button>
-          ))}
-        </div>
-        <input value={ordonnePar} onChange={(e) => setOrdonnePar(e.target.value)} placeholder="ordonné par" className="text-xs w-full" />
-        <BoutonDiscret type="submit">Déclencher</BoutonDiscret>
-      </form>
-      {chargement ? (
-        <p className="text-xs text-sourdine">Chargement…</p>
-      ) : (
-        <ul className="space-y-1">
-          {[...lignes].reverse().map((a) => (
-            <li key={a.id} className="flex items-center justify-between text-xs bg-fond border border-trait rounded px-2 py-1">
-              <span>
-                {new Date(a.ordonne_le).toLocaleString('fr-BE')} — {a.zones?.length ?? 0} zone(s), {a.messages?.length ?? 0} message(s)
-                {a.ordonne_par && <> ({a.ordonne_par})</>}
-              </span>
-              <BoutonDiscret onClick={() => supprimer(a.id)}>×</BoutonDiscret>
-            </li>
-          ))}
-        </ul>
-      )}
-    </BlocD5>
-  )
-}
 
 function GestionEvaluationCommunication({ incidentId }) {
   const { lignes, chargement, erreur, creer, supprimer } = useCrudSimpleIncident('evaluations_communication', incidentId)

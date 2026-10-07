@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase'
 const CATEGORIES = [
   { valeur: 'organisation', libelle: 'Organisation' },
   { valeur: 'activation', libelle: 'Activation' },
-  { valeur: 'sirenes', libelle: 'Sirènes' },
   { valeur: 'medias', libelle: 'Médias' },
   { valeur: 'population', libelle: 'Population' },
   { valeur: 'evaluation', libelle: 'Évaluation' },

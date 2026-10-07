@@ -37,7 +37,6 @@ import CentresCrise from './pages/CentresCrise'
 import DirPcOpsAttestes from './pages/DirPcOpsAttestes'
 import FichesActionD5 from './pages/FichesActionD5'
 import AccordsMedias from './pages/AccordsMedias'
-import SirenesZones from './pages/SirenesZones'
 import FormationStressAigu from './pages/FormationStressAigu'
 import ResilienceTerritoriale from './pages/ResilienceTerritoriale'
 import SourcesExternesAlertes from './pages/SourcesExternesAlertes'
@@ -113,7 +112,6 @@ export default function App() {
             <Route path="dir-pc-ops-attestes" element={<DirPcOpsAttestes />} />
             <Route path="fiches-action-d5" element={<FichesActionD5 />} />
             <Route path="accords-medias" element={<AccordsMedias />} />
-            <Route path="sirenes-zones" element={<SirenesZones />} />
             <Route path="formation-stress-aigu" element={<FormationStressAigu />} />
             <Route path="resilience-territoriale" element={<ResilienceTerritoriale />} />
             <Route path="sources-externes-alertes" element={<SourcesExternesAlertes />} />

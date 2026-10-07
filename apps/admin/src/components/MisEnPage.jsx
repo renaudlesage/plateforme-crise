@@ -73,7 +73,6 @@ const SECTIONS = [
       { to: '/be-alert-tests', libelle: 'Tests BE-Alert' },
       { to: '/fiches-action-d5', libelle: 'Fiches d\'action D5' },
       { to: '/accords-medias', libelle: 'Accords-cadres médias' },
-      { to: '/sirenes-zones', libelle: 'Zones sirènes' },
       { to: '/sources-externes-alertes', libelle: "Sources externes d'alertes" },
     ],
   },
