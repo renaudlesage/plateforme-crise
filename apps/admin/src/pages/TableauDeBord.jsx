@@ -1,7 +1,13 @@
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { sectionsDuMenu } from '../lib/menu'
 
 export default function TableauDeBord() {
-  const { contexteActuel } = useAuth()
+  const { contexteActuel, estSuperAdmin } = useAuth()
+  // Une tuile par section du menu (même source), titres sans entrée "racine".
+  const sections = sectionsDuMenu({ typeContexte: contexteActuel?.contextes?.type, estSuperAdmin }).filter(
+    (s) => s.titre
+  )
 
   return (
     <div>
@@ -13,23 +19,22 @@ export default function TableauDeBord() {
       </p>
 
       <div className="grille-paves mt-8">
-        <div className="pave">
-          <p className="pave-titre">Configuration</p>
-          <p className="text-sm text-sourdine">Rôles, niveaux d'escalade, disciplines actives.</p>
-        </div>
-        <div className="pave">
-          <p className="pave-titre">Référentiels</p>
-          <p className="text-sm text-sourdine">Annuaire, risques, ressources, sites, plans.</p>
-        </div>
-        <div className="pave">
-          <p className="pave-titre">Gouvernance</p>
-          <p className="text-sm text-sourdine">Instances, checklists, exercices.</p>
-        </div>
+        {sections.map((s) => (
+          <div className="pave" key={s.titre}>
+            <p className="pave-titre">{s.titre}</p>
+            {s.resume && <p className="text-sm text-sourdine mb-2">{s.resume}</p>}
+            <ul className="liste-pave">
+              {s.liens.map((l) => (
+                <li key={l.to}>
+                  <Link to={l.to}>
+                    {l.libelle}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
-
-      <p className="mt-8 text-sm text-sourdine">
-        Utilisez le menu à gauche pour accéder à chaque module.
-      </p>
     </div>
   )
 }

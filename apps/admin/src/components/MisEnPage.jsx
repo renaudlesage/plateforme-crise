@@ -2,81 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import BasculeTheme from './BasculeTheme'
-
-const SECTIONS = [
-  {
-    titre: null,
-    liens: [
-      { to: '/', libelle: 'Tableau de bord' },
-      { to: '/carte', libelle: 'Carte' },
-    ],
-  },
-  {
-    titre: 'Configuration',
-    liens: [
-      { to: '/configuration', libelle: 'Rôles, niveaux, disciplines' },
-      { to: '/comptes', libelle: 'Comptes' },
-    ],
-  },
-  {
-    titre: 'Plan légal',
-    liens: [
-      { to: '/plans-urgence', libelle: "Plans d'urgence (PGUI/PPUI)" },
-      { to: '/hopitaux', libelle: 'Hôpitaux (PUH)' },
-    ],
-  },
-  {
-    titre: 'Référentiels',
-    liens: [
-      { to: '/annuaire', libelle: 'Annuaire' },
-      { to: '/risques', libelle: 'Objets à risque' },
-      { to: '/ressources', libelle: 'Ressources' },
-      { to: '/conventions', libelle: 'Conventions' },
-      { to: '/sites-qg', libelle: 'Sites QG' },
-      { to: '/centres-accueil', libelle: "Centres d'accueil" },
-      { to: '/canaux-radio', libelle: 'Canaux radio' },
-      { to: '/plans-reference', libelle: 'Plans de référence' },
-      { to: '/centres-crise', libelle: 'Centres de crise' },
-      { to: '/dir-pc-ops-attestes', libelle: 'Dir PC-Ops attestés' },
-    ],
-  },
-  {
-    titre: 'Gouvernance',
-    liens: [
-      { to: '/instances-coordination', libelle: 'Instances' },
-      { to: '/checklists', libelle: 'Checklists' },
-      { to: '/exercices', libelle: 'Exercices' },
-      { to: '/conformite-legale', libelle: 'Conformité légale (AR 2019)' },
-      { to: '/formation-stress-aigu', libelle: 'Facteur humain — stress aigu' },
-    ],
-  },
-  {
-    titre: 'Anticipation',
-    liens: [
-      { to: '/fonctions-critiques', libelle: 'Fonctions critiques' },
-      { to: '/infrastructures-critiques', libelle: 'Infrastructures critiques' },
-      { to: '/population-non-residente', libelle: 'Population non résidente' },
-      { to: '/seuils-action', libelle: "Seuils d'action" },
-      { to: '/seuils-meteo', libelle: 'Seuils météo' },
-      { to: '/registre-expertises', libelle: "Registre d'expertises" },
-      { to: '/continuite-activite', libelle: "Continuité d'activité (BCM)" },
-      { to: '/resilience-territoriale', libelle: 'Résilience territoriale' },
-    ],
-  },
-  {
-    titre: 'Communication',
-    liens: [
-      { to: '/alertes-publiques', libelle: 'Alertes publiques' },
-      { to: '/canaux-diffusion', libelle: 'Canaux de diffusion' },
-      { to: '/soutien-psychologique', libelle: 'Soutien psychologique' },
-      { to: '/checklist-d5', libelle: 'Checklist D5' },
-      { to: '/be-alert-tests', libelle: 'Tests BE-Alert' },
-      { to: '/fiches-action-d5', libelle: 'Fiches d\'action D5' },
-      { to: '/accords-medias', libelle: 'Accords-cadres médias' },
-      { to: '/sources-externes-alertes', libelle: "Sources externes d'alertes" },
-    ],
-  },
-]
+import { sectionsDuMenu } from '../lib/menu'
 
 // Un lien reste actif sur ses sous-pages (/plans-urgence/:id garde "Plans
 // d'urgence" allumé), sauf la racine qui ne correspond qu'à elle-même.
@@ -107,14 +33,7 @@ export default function MisEnPage() {
     navigate('/selection-contexte')
   }
 
-  let sections =
-    contexteActuel?.contextes?.type === 'entite_critique'
-      ? [...SECTIONS, { titre: 'Conformité', liens: [{ to: '/conformite-cer', libelle: 'Conformité CER' }] }]
-      : SECTIONS
-
-  if (estSuperAdmin) {
-    sections = [{ titre: 'Plateforme', liens: [{ to: '/clients', libelle: 'Clients' }] }, ...sections]
-  }
+  const sections = sectionsDuMenu({ typeContexte: contexteActuel?.contextes?.type, estSuperAdmin })
 
   const contientActif = (section) => section.liens.some((l) => estActif(location.pathname, l.to))
   const estOuverte = (section) => surcharges[section.titre] ?? contientActif(section)
