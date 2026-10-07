@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
+import { ORGANES_CRISE, libelleOrgane } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
 import { supabase } from '../lib/supabase'
 
-const TYPES = [
-  { valeur: 'CELLULE_SECURITE', libelle: 'Cellule de sécurité' },
-  { valeur: 'COMITE_COORDINATION', libelle: 'Comité de coordination' },
-  { valeur: 'PC_OPS', libelle: 'PC-Ops' },
-]
+const TYPES = ORGANES_CRISE
 
 export default function InstancesCoordination() {
   const { contexteId } = useAuth()
@@ -39,7 +36,7 @@ export default function InstancesCoordination() {
         )}
       </div>
       <p className="text-sm text-sourdine mb-4">
-        Cellule de sécurité, comité de coordination, PC-Ops — avec leur composition.
+        Cellule de sécurité, CC-COM, CC-PROV, NCCN, PC-OPS — avec leur composition.
       </p>
 
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
@@ -85,7 +82,7 @@ export default function InstancesCoordination() {
                 <div className="flex items-start justify-between px-4 py-3">
                   <div>
                     <p className="text-sm font-medium text-encre">
-                      {TYPES.find((t) => t.valeur === i.type)?.libelle ?? i.type}
+                      {libelleOrgane(i.type)}
                     </p>
                     <p className="text-xs text-sourdine flex flex-wrap gap-x-3 mt-0.5">
                       {i.frequence_reunion && <span>fréquence : {i.frequence_reunion}</span>}
@@ -158,6 +155,7 @@ function FormulaireInstance({ roles, niveaux, valeursInitiales = {}, onValider, 
         <div>
           <label className="block text-xs font-medium text-sourdine mb-1">Type d'instance</label>
           <select value={type} onChange={(e) => setType(e.target.value)} className="w-full">
+            {!TYPES.some((t) => t.valeur === type) && <option value={type}>{libelleOrgane(type)}</option>}
             {TYPES.map((t) => (
               <option key={t.valeur} value={t.valeur}>{t.libelle}</option>
             ))}

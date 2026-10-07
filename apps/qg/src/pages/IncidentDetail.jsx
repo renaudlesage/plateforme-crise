@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useSearchParams, Link } from 'react-router-dom'
-import { SelecteurLocalisation, DISCIPLINES } from '@plateforme-crise/shared'
+import { SelecteurLocalisation, DISCIPLINES, libelleOrgane } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
@@ -2179,7 +2179,7 @@ function SectionOrganesCrise({ incidentId, contexteId, degreCriticiteIncident })
           {historique.map((h) => (
             <li key={h.id} className="px-4 py-2.5">
               <p className="text-sm text-encre">
-                {h.instances_coordination?.type} —{' '}
+                {libelleOrgane(h.instances_coordination?.type)} —{' '}
                 <span className={h.statut === 'active' ? 'text-ok' : 'text-sourdine'}>
                   {STATUTS_ORGANE_LOG.find((s) => s.valeur === h.statut)?.libelle ?? h.statut}
                 </span>
@@ -2231,7 +2231,7 @@ function FormulaireOrganeCrise({ incidentId, instances, contacts, degreCriticite
           <select required value={instanceId} onChange={(e) => setInstanceId(e.target.value)} className="w-full">
             <option value="">—</option>
             {instances.map((i) => (
-              <option key={i.id} value={i.id}>{i.type}</option>
+              <option key={i.id} value={i.id}>{libelleOrgane(i.type)}</option>
             ))}
           </select>
         </div>
