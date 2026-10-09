@@ -6,6 +6,7 @@ import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
 import { supabase } from '../lib/supabase'
 import MessagesPopulation from '../components/MessagesPopulation'
+import { SectionDebriefings, SectionCohesionSociale } from '../components/DebriefingsEtCohesion'
 
 export default function IncidentDetail() {
   const { id } = useParams()
@@ -310,9 +311,17 @@ export default function IncidentDetail() {
             </div>
           )}
           {afficher('rex') && (
-            <div>
-              <SectionRex incidentId={id} contexteId={contexteId} />
-            </div>
+            <>
+              <div className="mb-6">
+                <SectionRex incidentId={id} contexteId={contexteId} />
+              </div>
+              <div className="mb-6">
+                <SectionDebriefings incidentId={id} contexteId={contexteId} />
+              </div>
+              <div>
+                <SectionCohesionSociale incidentId={id} contexteId={contexteId} />
+              </div>
+            </>
           )}
         </>
       )}
@@ -1810,6 +1819,13 @@ function SectionZonesIntervention({ incidentId }) {
                         {z.rayon_metres != null && <> · rayon {z.rayon_metres} m</>}
                       </p>
                     )}
+                    {(z.date_derniere_revision || z.scenario_climatique_reference) && (
+                      <p className="text-xs text-sourdine mt-0.5">
+                        {z.date_derniere_revision && <>révisée le {new Date(z.date_derniere_revision).toLocaleDateString('fr-BE')}</>}
+                        {z.date_derniere_revision && z.scenario_climatique_reference && ' · '}
+                        {z.scenario_climatique_reference && <>scénario : {z.scenario_climatique_reference}</>}
+                      </p>
+                    )}
                     <p className="text-xs text-sourdine mt-1">
                       établie le {new Date(z.date_etablissement).toLocaleString('fr-BE')}
                       {z.date_levee && <> · levée le {new Date(z.date_levee).toLocaleString('fr-BE')}</>}
@@ -1836,6 +1852,8 @@ function FormulaireZone({ valeursInitiales = {}, onValider, onAnnuler }) {
   const [centreLongitude, setCentreLongitude] = useState(valeursInitiales.centre_longitude ?? '')
   const [rayonMetres, setRayonMetres] = useState(valeursInitiales.rayon_metres ?? '')
   const [accesAutorise, setAccesAutorise] = useState(valeursInitiales.acces_autorise ?? ACCES_PAR_TYPE_ZONE.rouge)
+  const [dateRevision, setDateRevision] = useState(valeursInitiales.date_derniere_revision ?? '')
+  const [scenarioClimatique, setScenarioClimatique] = useState(valeursInitiales.scenario_climatique_reference ?? '')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -1854,6 +1872,8 @@ function FormulaireZone({ valeursInitiales = {}, onValider, onAnnuler }) {
       centre_longitude: centreLongitude === '' ? null : Number(centreLongitude),
       rayon_metres: rayonMetres === '' ? null : Number(rayonMetres),
       acces_autorise: accesAutorise.trim() || null,
+      date_derniere_revision: dateRevision || null,
+      scenario_climatique_reference: scenarioClimatique.trim() || null,
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -1888,6 +1908,17 @@ function FormulaireZone({ valeursInitiales = {}, onValider, onAnnuler }) {
       <div>
         <label className="block text-xs font-medium text-sourdine mb-1">Règles d'accès</label>
         <textarea value={accesAutorise} onChange={(e) => setAccesAutorise(e.target.value)} rows={2} className="w-full" />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Dernière révision du zonage</label>
+          <input type="date" value={dateRevision} onChange={(e) => setDateRevision(e.target.value)} className="w-full" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Scénario climatique de référence</label>
+          <input value={scenarioClimatique} onChange={(e) => setScenarioClimatique(e.target.value)} placeholder="ex. crue centennale, scénario 2021 actualisé" className="w-full" />
+        </div>
       </div>
 
       {erreur && <p className="text-sm text-chaud">{erreur}</p>}

@@ -377,6 +377,8 @@ function GestionLeviers({ demarcheId, besoins }) {
   const [libelle, setLibelle] = useState('')
   const [besoinFondamentalId, setBesoinFondamentalId] = useState('')
   const [responsable, setResponsable] = useState('')
+  const [fondeeNature, setFondeeNature] = useState(false)
+  const [exempleReference, setExempleReference] = useState('')
 
   const rafraichir = useCallback(async () => {
     setChargement(true)
@@ -401,10 +403,14 @@ function GestionLeviers({ demarcheId, besoins }) {
       libelle: libelle.trim(),
       besoin_fondamental_id: besoinFondamentalId || null,
       responsable: responsable.trim() || null,
+      est_solution_fondee_nature: fondeeNature,
+      exemple_reference: exempleReference.trim() || null,
     })
     if (!error) {
       setLibelle('')
       setResponsable('')
+      setFondeeNature(false)
+      setExempleReference('')
       await rafraichir()
     } else setErreur(error.message)
   }
@@ -430,6 +436,11 @@ function GestionLeviers({ demarcheId, besoins }) {
           {besoins.map((b) => <option key={b.id} value={b.id}>{b.libelle}</option>)}
         </select>
         <input value={responsable} onChange={(e) => setResponsable(e.target.value)} placeholder="responsable" className="text-xs flex-1 min-w-[6rem]" />
+        <input value={exempleReference} onChange={(e) => setExempleReference(e.target.value)} placeholder="exemple de référence (ville, projet…)" className="text-xs flex-1 min-w-[10rem]" />
+        <label className="flex items-center gap-1 text-xs text-sourdine">
+          <input type="checkbox" checked={fondeeNature} onChange={(e) => setFondeeNature(e.target.checked)} />
+          fondée sur la nature
+        </label>
         <BoutonDiscret type="submit">Ajouter</BoutonDiscret>
       </form>
       {chargement ? (
@@ -438,7 +449,11 @@ function GestionLeviers({ demarcheId, besoins }) {
         <ul className="space-y-1">
           {leviers.map((l) => (
             <li key={l.id} className="flex items-center justify-between text-xs bg-surface border border-trait rounded px-2 py-1">
-              <span>{l.libelle}{l.responsable && <> ({l.responsable})</>}</span>
+              <span>
+                {l.libelle}{l.responsable && <> ({l.responsable})</>}
+                {l.est_solution_fondee_nature && <span className="jeton ml-1.5 text-ok">fondée sur la nature</span>}
+                {l.exemple_reference && <span className="text-sourdine"> · réf. : {l.exemple_reference}</span>}
+              </span>
               <span className="flex gap-1">
                 <select value={l.statut} onChange={(e) => changerStatut(l.id, e.target.value)} className="text-xs">
                   {STATUTS_LEVIER.map((s) => <option key={s.valeur} value={s.valeur}>{s.libelle}</option>)}

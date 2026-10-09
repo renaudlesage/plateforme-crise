@@ -42,6 +42,7 @@ import FormationStressAigu from './pages/FormationStressAigu'
 import ResilienceTerritoriale from './pages/ResilienceTerritoriale'
 import SourcesExternesAlertes from './pages/SourcesExternesAlertes'
 import Carte from './pages/Carte'
+import CatalogueMessagesAlerte from './pages/CatalogueMessagesAlerte'
 import BeAlertTests from './pages/BeAlertTests'
 import Comptes from './pages/Comptes'
 import Clients from './pages/Clients'
@@ -118,6 +119,7 @@ export default function App() {
             <Route path="resilience-territoriale" element={<ResilienceTerritoriale />} />
             <Route path="sources-externes-alertes" element={<SourcesExternesAlertes />} />
             <Route path="carte" element={<Carte />} />
+            <Route path="catalogue-messages-alerte" element={<CatalogueMessagesAlerte />} />
             <Route path="be-alert-tests" element={<BeAlertTests />} />
             <Route path="comptes" element={<Comptes />} />
             <Route path="clients" element={<Clients />} />

@@ -223,6 +223,7 @@ function FormulaireRessource({ contacts, conventions = [], valeursInitiales = {}
     return entries.length > 0 ? entries.map(([cle, valeur]) => ({ cle, valeur: String(valeur) })) : [{ cle: '', valeur: '' }]
   })
   const [disponibleHorsContexte, setDisponibleHorsContexte] = useState(valeursInitiales.disponible_hors_contexte ?? false)
+  const [operationnelDeNuit, setOperationnelDeNuit] = useState(valeursInitiales.operationnel_de_nuit ?? false)
   const [rayonPartageKm, setRayonPartageKm] = useState(valeursInitiales.rayon_partage_km ?? '')
   const [conditionsPartage, setConditionsPartage] = useState(valeursInitiales.conditions_partage ?? '')
   const [erreur, setErreur] = useState(null)
@@ -255,6 +256,7 @@ function FormulaireRessource({ contacts, conventions = [], valeursInitiales = {}
       attributs: attributsObjet,
       dimension_capacite: dimensionCapacite || null,
       disponible_hors_contexte: disponibleHorsContexte,
+      operationnel_de_nuit: operationnelDeNuit,
       rayon_partage_km: rayonPartageKm === '' ? null : Number(rayonPartageKm),
       conditions_partage: conditionsPartage.trim() || null,
     })
@@ -359,6 +361,11 @@ function FormulaireRessource({ contacts, conventions = [], valeursInitiales = {}
           + ajouter un attribut
         </button>
       </div>
+
+      <label className="flex items-center gap-2 text-sm text-sourdine">
+        <input type="checkbox" checked={operationnelDeNuit} onChange={(e) => setOperationnelDeNuit(e.target.checked)} />
+        Opérationnel de nuit (engageable 24 h/24)
+      </label>
 
       <div className="space-y-2 border border-trait rounded p-3">
         <label className="flex items-center gap-2 text-sm text-sourdine">

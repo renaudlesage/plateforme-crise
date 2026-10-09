@@ -4,6 +4,16 @@ import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from './Boutons'
 import { supabase } from '../lib/supabase'
 
+const PHASES_CATALOGUE = [
+  { valeur: 'prevision', libelle: 'Prévision', niveau: 'vigilance' },
+  { valeur: 'preparation', libelle: 'Préparation', niveau: 'info' },
+  { valeur: 'actuation', libelle: 'Pendant la crise', niveau: 'urgence' },
+  { valeur: 'recuperation', libelle: 'Récupération', niveau: 'info' },
+]
+
+// Éléments « [à compléter] » du catalogue : à remplacer avant toute publication.
+const MOTIF_A_COMPLETER = /\[[^\]]+\]/g
+
 const NIVEAUX = [
   { valeur: 'info', libelle: 'Information', classe: 'text-sourdine' },
   { valeur: 'vigilance', libelle: 'Vigilance', classe: 'text-veille' },
@@ -169,6 +179,32 @@ function Formulaire({ modeles, onValider, onAnnuler }) {
   const [niveau, setNiveau] = useState('info')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
+  const [catalogue, setCatalogue] = useState([])
+  const [phaseCatalogue, setPhaseCatalogue] = useState('')
+  const [messageCatalogue, setMessageCatalogue] = useState(null)
+
+  useEffect(() => {
+    supabase
+      .from('catalogue_messages_alerte')
+      .select('id, numero_message_source, phase_cycle, section, zone_thematique, message_cle, sous_messages, statut_validation, necessite_completion')
+      .neq('statut_validation', 'rejete')
+      .order('numero_message_source')
+      .then(({ data }) => setCatalogue(data ?? []))
+  }, [])
+
+  function appliquerCatalogue(id) {
+    const m = catalogue.find((x) => x.id === id)
+    setMessageCatalogue(m ?? null)
+    if (!m) return
+    setTitre(m.zone_thematique.replace(/^\d+\.\d+\s+/, ''))
+    setMessage(m.message_cle)
+    setConsignes((m.sous_messages ?? []).map((l) => `• ${l}`).join('\n'))
+    setNiveau(PHASES_CATALOGUE.find((p) => p.valeur === m.phase_cycle)?.niveau ?? 'info')
+  }
+
+  const restantsACompleter = messageCatalogue
+    ? [...new Set(`${titre}\n${message}\n${consignes}`.match(MOTIF_A_COMPLETER) ?? [])]
+    : []
 
   function appliquerModele(id) {
     const m = modeles.find((x) => x.id === id)
@@ -181,6 +217,11 @@ function Formulaire({ modeles, onValider, onAnnuler }) {
 
   async function soumettre(e) {
     e.preventDefault()
+    if (restantsACompleter.length > 0) {
+      setErreur(`Complétez d'abord les éléments entre crochets : ${restantsACompleter.join(' ')}`)
+      return
+    }
+    setErreur(null)
     setEnCours(true)
     const { error } = await onValider({
       titre: titre.trim(),
@@ -196,10 +237,56 @@ function Formulaire({ modeles, onValider, onAnnuler }) {
 
   return (
     <form onSubmit={soumettre} className="space-y-3 mb-4 bg-fond border border-trait rounded p-3">
+      {catalogue.length > 0 && (
+        <div className="border border-trait rounded p-2 space-y-2">
+          <label className="block text-xs font-medium text-sourdine">Catalogue de messages inondation</label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <select
+              value={phaseCatalogue}
+              onChange={(e) => {
+                setPhaseCatalogue(e.target.value)
+                setMessageCatalogue(null)
+              }}
+              className="w-full"
+            >
+              <option value="">— phase —</option>
+              {PHASES_CATALOGUE.map((p) => (
+                <option key={p.valeur} value={p.valeur}>{p.libelle}</option>
+              ))}
+            </select>
+            <select
+              value={messageCatalogue?.id ?? ''}
+              onChange={(e) => appliquerCatalogue(e.target.value)}
+              disabled={!phaseCatalogue}
+              className="w-full sm:col-span-2"
+            >
+              <option value="">— message —</option>
+              {catalogue
+                .filter((m) => m.phase_cycle === phaseCatalogue)
+                .map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.section} · {m.message_cle.length > 70 ? `${m.message_cle.slice(0, 70)}…` : m.message_cle}
+                  </option>
+                ))}
+            </select>
+          </div>
+          {messageCatalogue && messageCatalogue.statut_validation !== 'valide' && (
+            <p className="text-xs text-chaud">
+              Message du catalogue non validé par un expert belge
+              {messageCatalogue.necessite_completion ? ' (texte reconstitué, à relire)' : ''} : relisez-le avant diffusion.
+            </p>
+          )}
+          {restantsACompleter.length > 0 && (
+            <p className="text-xs text-chaud">
+              À compléter avant publication : {restantsACompleter.join(' · ')}
+            </p>
+          )}
+        </div>
+      )}
       {modeles.length > 0 && (
         <div>
           <label className="block text-xs font-medium text-sourdine mb-1">Partir d'un modèle</label>
-          <select defaultValue="" onChange={(e) => appliquerModele(e.target.value)} className="w-full">
+          <select defaultValue="" onChange={(e) => { setMessageCatalogue(null); appliquerModele(e.target.value) }} className="w-full">
             <option value="">— message libre —</option>
             {modeles.map((m) => (
               <option key={m.id} value={m.id}>{m.titre}</option>
@@ -235,7 +322,7 @@ function Formulaire({ modeles, onValider, onAnnuler }) {
       </div>
       {erreur && <p className="text-sm text-chaud">{erreur}</p>}
       <div className="flex gap-2">
-        <BoutonPrincipal type="submit" disabled={enCours}>{enCours ? 'Publication…' : 'Publier maintenant'}</BoutonPrincipal>
+        <BoutonPrincipal type="submit" disabled={enCours || restantsACompleter.length > 0}>{enCours ? 'Publication…' : 'Publier maintenant'}</BoutonPrincipal>
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
       </div>
     </form>

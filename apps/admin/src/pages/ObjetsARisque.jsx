@@ -159,6 +159,7 @@ export default function ObjetsARisque() {
                       <span>priorité cellule sécurité : {o.priorite_cellule_securite}</span>
                     )}
                     {o.ppd_requis && <span className="text-veille">PPD requis</span>}
+                    {o.aggrave_etendue_crue && <span className="text-chaud">aggravé par la crue</span>}
                     {o.niveau_confidentialite && o.niveau_confidentialite !== 'restreint' && (
                       <span>confidentialité : {o.niveau_confidentialite}</span>
                     )}
@@ -200,6 +201,7 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
   const [prioriteCellule, setPrioriteCellule] = useState(valeursInitiales.priorite_cellule_securite ?? '')
   const [niveauConfidentialite, setNiveauConfidentialite] = useState(valeursInitiales.niveau_confidentialite ?? 'restreint')
   const [ppdRequis, setPpdRequis] = useState(valeursInitiales.ppd_requis ?? false)
+  const [aggraveCrue, setAggraveCrue] = useState(valeursInitiales.aggrave_etendue_crue ?? false)
   const [ppdConditions, setPpdConditions] = useState(valeursInitiales.ppd_conditions ?? '')
   const [ppdDistanceSecurite, setPpdDistanceSecurite] = useState(valeursInitiales.ppd_distance_securite_m ?? '')
   const [afficherCascade, setAfficherCascade] = useState(false)
@@ -234,6 +236,7 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
       priorite_cellule_securite: prioriteCellule === '' ? null : Number(prioriteCellule),
       niveau_confidentialite: niveauConfidentialite,
       ppd_requis: ppdRequis,
+      aggrave_etendue_crue: aggraveCrue,
       ppd_conditions: ppdConditions.trim() || null,
       ppd_distance_securite_m: ppdDistanceSecurite === '' ? null : Number(ppdDistanceSecurite),
       declencheur: declencheur.trim() || null,
@@ -321,6 +324,11 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
       <label className="flex items-center gap-2 text-sm text-sourdine">
         <input type="checkbox" checked={piuRecu} onChange={(e) => setPiuRecu(e.target.checked)} />
         Plan interne d'urgence (PIU) reçu de l'exploitant
+      </label>
+
+      <label className="flex items-center gap-2 text-sm text-sourdine">
+        <input type="checkbox" checked={aggraveCrue} onChange={(e) => setAggraveCrue(e.target.checked)} />
+        Risque aggravé en cas de crue (l'étendue de l'inondation peut étendre ou aggraver l'événement)
       </label>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
