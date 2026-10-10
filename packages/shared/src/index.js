@@ -9,7 +9,7 @@ export { DISCIPLINES, disciplineDe } from './disciplines.js'
 export { SYMBOLES, CATEGORIES_SYMBOLES, COULEURS_NATURE, symboleDe, svgSymbole } from './symboles.js'
 export { Symbole, PaletteSymboles, LegendeSymboles } from './Symboles.jsx'
 export { ORGANES_CRISE, libelleOrgane } from './organes.js'
-export { CLASSES_URGENCE_NUCLEAIRE, ACTIONS_PROTECTION, libelleClasseUrgence } from './nucleaire.js'
+export { CLASSES_URGENCE_NUCLEAIRE, ACTIONS_PROTECTION, libelleClasseUrgence, TYPES_ZONE_PLANIFICATION_NUCLEAIRE, cerclesZonesNucleaires } from './nucleaire.js'
 export {
   TYPES_OBSERVATION,
   STATUTS_MOYEN,

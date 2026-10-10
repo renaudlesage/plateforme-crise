@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ACTIONS_PROTECTION, CLASSES_URGENCE_NUCLEAIRE } from '@plateforme-crise/shared'
+import { ACTIONS_PROTECTION, CLASSES_URGENCE_NUCLEAIRE, CarteCrise, TYPES_ZONE_PLANIFICATION_NUCLEAIRE, cerclesZonesNucleaires } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import TableCrud from '../components/TableCrud'
@@ -50,6 +50,36 @@ export default function PlanNucleaire() {
       <Onglets
         onglets={[
           { cle: 'commune', libelle: 'Ma commune', contenu: <MaCommune /> },
+          { cle: 'carte', libelle: 'Carte des zones', contenu: <CarteZones /> },
+          {
+            cle: 'rayons',
+            libelle: 'Rayons des zones',
+            contenu: (
+              <TableCrud
+                table="zones_planification_nucleaire"
+                portee="national"
+                peutEcrire={estSuperAdmin}
+                tri="site_id"
+                aide="Cercles de planification centrés sur le site (repères). Les blocs réels suivent les frontières communales."
+                titreLigne={(l) => (
+                  <>
+                    <strong>{sites.find((x) => x.id === l.site_id)?.nom}</strong>{' '}
+                    <span className="text-xs text-sourdine">
+                      {TYPES_ZONE_PLANIFICATION_NUCLEAIRE.find((t) => t.valeur === l.type_zone)?.libelle} · {l.rayon_km} km
+                    </span>
+                    {l.a_confirmer && <span className="jeton ml-2 text-chaud">à confirmer</span>}
+                  </>
+                )}
+                champs={[
+                  { cle: 'site_id', libelle: 'Site', type: 'select', options: optionsSites, requis: true },
+                  { cle: 'type_zone', libelle: 'Zone', type: 'select', options: TYPES_ZONE_PLANIFICATION_NUCLEAIRE.map((t) => ({ valeur: t.valeur, libelle: t.libelle })), requis: true },
+                  { cle: 'rayon_km', libelle: 'Rayon (km)', type: 'number', requis: true },
+                  { cle: 'a_confirmer', libelle: 'À confirmer', type: 'checkbox' },
+                  { cle: 'source_reference', libelle: 'Source', type: 'text' },
+                ]}
+              />
+            ),
+          },
           {
             cle: 'sites',
             libelle: 'Sites',
@@ -284,6 +314,59 @@ function LiaisonBlocsCommunes({ peutEcrire, sites }) {
           ))}
         </ul>
       )}
+    </div>
+  )
+}
+
+/** Carte de Belgique et alentours : zones de planification autour de chaque site (cercles repères). */
+function CarteZones() {
+  const [sites, setSites] = useState([])
+  const [zones, setZones] = useState([])
+  const [avecExtension, setAvecExtension] = useState(false)
+  const [erreur, setErreur] = useState(null)
+
+  useEffect(() => {
+    Promise.all([
+      supabase.from('sites_nucleaires').select('id, nom, latitude, longitude, a_confirmer').not('latitude', 'is', null),
+      supabase.from('zones_planification_nucleaire').select('*'),
+    ]).then(([s, z]) => {
+      const e = s.error ?? z.error
+      if (e) setErreur(e.message)
+      setSites(s.data ?? [])
+      setZones(z.data ?? [])
+    })
+  }, [])
+
+  const cercles = cerclesZonesNucleaires(zones, sites, { avecExtension })
+  const marqueurs = sites.map((s) => ({
+    id: `site-${s.id}`,
+    lat: Number(s.latitude),
+    lon: Number(s.longitude),
+    titre: s.nom,
+    sousTitre: s.a_confirmer ? 'Position et rayons à confirmer' : 'Position approximative',
+    couleur: '#a21caf',
+  }))
+
+  return (
+    <div>
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-2 text-xs text-sourdine">
+        {TYPES_ZONE_PLANIFICATION_NUCLEAIRE.filter((t) => t.valeur !== 'extension_iode').map((t) => (
+          <span key={t.valeur}>
+            <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 5, background: t.couleur, marginRight: 4 }} />
+            {t.libelle}
+          </span>
+        ))}
+        <label className="flex items-center gap-1.5">
+          <input type="checkbox" checked={avecExtension} onChange={(e) => setAvecExtension(e.target.checked)} />
+          Extension 100 km (iode)
+        </label>
+      </div>
+      <CarteCrise centre={{ lat: 50.9, lon: 4.5 }} zoom={8} cercles={cercles} marqueurs={marqueurs} hauteur="65vh" />
+      <p className="text-xs text-sourdine mt-2">
+        Cercles centrés sur le site, à titre de repère : les blocs opérationnels réels suivent les frontières communales et
+        les secteurs de 30°. La carte officielle du NCCN fait foi.
+      </p>
     </div>
   )
 }

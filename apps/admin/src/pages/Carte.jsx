@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CarteCrise, SelecteurLocalisation } from '@plateforme-crise/shared'
+import { CarteCrise, SelecteurLocalisation, cerclesZonesNucleaires } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 
@@ -41,6 +41,7 @@ export default function Carte() {
     ])
     // Sites nucléaires : référentiel national, pas de contexte_id.
     requetes.push(supabase.from('sites_nucleaires').select('id, nom, type_site, latitude, longitude').not('latitude', 'is', null))
+    requetes.push(supabase.from('zones_planification_nucleaire').select('*'))
     const resultats = await Promise.all(requetes)
 
     const premiereErreur = resultats.find((r) => r.error)
@@ -64,7 +65,8 @@ export default function Carte() {
         })
       }
     })
-    nouveauxPoints.sites_nucleaires = resultats[resultats.length - 1].data ?? []
+    nouveauxPoints.sites_nucleaires = resultats[resultats.length - 2].data ?? []
+    nouveauxPoints.zones_nucleaires = resultats[resultats.length - 1].data ?? []
     setPoints(nouveauxPoints)
     setSansPosition(sans)
     setChargement(false)
@@ -103,6 +105,11 @@ export default function Carte() {
     }
     return tous
   }, [points, couches])
+
+  const cercles = useMemo(
+    () => (couches.sites_nucleaires ? cerclesZonesNucleaires(points.zones_nucleaires ?? [], points.sites_nucleaires ?? []) : []),
+    [points, couches]
+  )
 
   // Les sites nucléaires couvrent toute la Belgique et ses voisins : ils ne
   // doivent pas décentrer la carte d'un contexte communal.
@@ -150,7 +157,7 @@ export default function Carte() {
       {chargement ? (
         <p className="text-sm text-sourdine">Chargement…</p>
       ) : (
-        <CarteCrise centre={centre} zoom={marqueursContexte.length ? 13 : 8} marqueurs={marqueurs} hauteur="65vh" />
+        <CarteCrise centre={centre} zoom={marqueursContexte.length ? 13 : 8} marqueurs={marqueurs} cercles={cercles} hauteur="65vh" />
       )}
 
       {!chargement && (
