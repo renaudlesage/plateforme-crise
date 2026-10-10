@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SelecteurLocalisation } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
@@ -126,8 +127,8 @@ function FormulaireCentre({ contacts, valeursInitiales = {}, onValider, onAnnule
   const [nom, setNom] = useState(valeursInitiales.nom ?? '')
   const [typeLieu, setTypeLieu] = useState(valeursInitiales.type_lieu ?? '')
   const [adresse, setAdresse] = useState(valeursInitiales.adresse ?? '')
-  const [latitude, setLatitude] = useState(valeursInitiales.latitude ?? '')
-  const [longitude, setLongitude] = useState(valeursInitiales.longitude ?? '')
+  const [latitude, setLatitude] = useState(valeursInitiales.latitude ?? null)
+  const [longitude, setLongitude] = useState(valeursInitiales.longitude ?? null)
   const [capaciteDebout, setCapaciteDebout] = useState(valeursInitiales.capacite_debout ?? '')
   const [capaciteHebergement, setCapaciteHebergement] = useState(valeursInitiales.capacite_hebergement ?? '')
   const [largeurVoirie, setLargeurVoirie] = useState(valeursInitiales.largeur_voirie_acces ?? '')
@@ -150,8 +151,8 @@ function FormulaireCentre({ contacts, valeursInitiales = {}, onValider, onAnnule
       nom: nom.trim(),
       type_lieu: typeLieu.trim() || null,
       adresse: adresse.trim() || null,
-      latitude: latitude === '' ? null : Number(latitude),
-      longitude: longitude === '' ? null : Number(longitude),
+      latitude: latitude == null || latitude === '' ? null : Number(latitude),
+      longitude: longitude == null || longitude === '' ? null : Number(longitude),
       capacite_debout: capaciteDebout === '' ? null : Number(capaciteDebout),
       capacite_hebergement: capaciteHebergement === '' ? null : Number(capaciteHebergement),
       largeur_voirie_acces: largeurVoirie.trim() || null,
@@ -194,13 +195,14 @@ function FormulaireCentre({ contacts, valeursInitiales = {}, onValider, onAnnule
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Latitude</label>
-          <input value={latitude} onChange={(e) => setLatitude(e.target.value)} className="w-full" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Longitude</label>
-          <input value={longitude} onChange={(e) => setLongitude(e.target.value)} className="w-full" />
+        <div className="col-span-full">
+          <label className="block text-xs font-medium text-sourdine mb-1">Position</label>
+          <SelecteurLocalisation
+            lat={latitude}
+            lon={longitude}
+            onChange={(lat, lon) => { setLatitude(lat); setLongitude(lon) }}
+            hauteur="260px"
+          />
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SelecteurLocalisation } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
@@ -109,8 +110,8 @@ export default function SitesQG() {
 function FormulaireSite({ valeursInitiales = {}, prioriteParDefaut = 1, onValider, onAnnuler }) {
   const [nom, setNom] = useState(valeursInitiales.nom ?? '')
   const [adresse, setAdresse] = useState(valeursInitiales.adresse ?? '')
-  const [latitude, setLatitude] = useState(valeursInitiales.latitude ?? '')
-  const [longitude, setLongitude] = useState(valeursInitiales.longitude ?? '')
+  const [latitude, setLatitude] = useState(valeursInitiales.latitude ?? null)
+  const [longitude, setLongitude] = useState(valeursInitiales.longitude ?? null)
   const [priorite, setPriorite] = useState(valeursInitiales.priorite ?? prioriteParDefaut)
   const [actif, setActif] = useState(valeursInitiales.actif ?? true)
   const [equipements, setEquipements] = useState(() =>
@@ -139,8 +140,8 @@ function FormulaireSite({ valeursInitiales = {}, prioriteParDefaut = 1, onValide
     const { error } = await onValider({
       nom: nom.trim(),
       adresse: adresse.trim() || null,
-      latitude: latitude === '' ? null : Number(latitude),
-      longitude: longitude === '' ? null : Number(longitude),
+      latitude: latitude == null || latitude === '' ? null : Number(latitude),
+      longitude: longitude == null || longitude === '' ? null : Number(longitude),
       priorite: Number(priorite),
       actif,
       equipements: equipements.map((e) => e.trim()).filter(Boolean),
@@ -181,13 +182,14 @@ function FormulaireSite({ valeursInitiales = {}, prioriteParDefaut = 1, onValide
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Latitude</label>
-          <input value={latitude} onChange={(e) => setLatitude(e.target.value)} className="w-full" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Longitude</label>
-          <input value={longitude} onChange={(e) => setLongitude(e.target.value)} className="w-full" />
+        <div className="col-span-full">
+          <label className="block text-xs font-medium text-sourdine mb-1">Position</label>
+          <SelecteurLocalisation
+            lat={latitude}
+            lon={longitude}
+            onChange={(lat, lon) => { setLatitude(lat); setLongitude(lon) }}
+            hauteur="260px"
+          />
         </div>
       </div>
 

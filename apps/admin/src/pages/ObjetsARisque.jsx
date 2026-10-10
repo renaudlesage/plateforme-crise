@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { SelecteurLocalisation } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
@@ -190,8 +191,8 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
   const [typeRisque, setTypeRisque] = useState(valeursInitiales.type_risque ?? '')
   const [identification, setIdentification] = useState(valeursInitiales.identification ?? '')
   const [adresse, setAdresse] = useState(valeursInitiales.adresse ?? '')
-  const [latitude, setLatitude] = useState(valeursInitiales.latitude ?? '')
-  const [longitude, setLongitude] = useState(valeursInitiales.longitude ?? '')
+  const [latitude, setLatitude] = useState(valeursInitiales.latitude ?? null)
+  const [longitude, setLongitude] = useState(valeursInitiales.longitude ?? null)
   const [capacite, setCapacite] = useState(valeursInitiales.capacite_occupants ?? '')
   const [hauteur, setHauteur] = useState(valeursInitiales.hauteur_infrastructure ?? '')
   const [conformite, setConformite] = useState(valeursInitiales.conformite_prevention ?? false)
@@ -225,8 +226,8 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
       type_risque: typeRisque.trim(),
       identification: identification.trim(),
       adresse: adresse.trim() || null,
-      latitude: latitude === '' ? null : Number(latitude),
-      longitude: longitude === '' ? null : Number(longitude),
+      latitude: latitude == null || latitude === '' ? null : Number(latitude),
+      longitude: longitude == null || longitude === '' ? null : Number(longitude),
       capacite_occupants: capacite === '' ? null : Number(capacite),
       hauteur_infrastructure: hauteur.trim() || null,
       conformite_prevention: conformite,
@@ -292,13 +293,14 @@ function FormulaireObjet({ valeursInitiales = {}, onValider, onAnnuler }) {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Latitude</label>
-          <input value={latitude} onChange={(e) => setLatitude(e.target.value)} className="w-full" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Longitude</label>
-          <input value={longitude} onChange={(e) => setLongitude(e.target.value)} className="w-full" />
+        <div className="col-span-full">
+          <label className="block text-xs font-medium text-sourdine mb-1">Position</label>
+          <SelecteurLocalisation
+            lat={latitude}
+            lon={longitude}
+            onChange={(lat, lon) => { setLatitude(lat); setLongitude(lon) }}
+            hauteur="260px"
+          />
         </div>
         <div>
           <label className="block text-xs font-medium text-sourdine mb-1">Capacité (occupants)</label>

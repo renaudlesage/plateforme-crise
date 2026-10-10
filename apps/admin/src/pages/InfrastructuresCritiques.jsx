@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SelecteurLocalisation } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
@@ -116,8 +117,8 @@ function FormulaireInfrastructure({ contacts = [], valeursInitiales = {}, onVali
   const [nom, setNom] = useState(valeursInitiales.nom ?? '')
   const [type, setType] = useState(valeursInitiales.type ?? '')
   const [adresse, setAdresse] = useState(valeursInitiales.adresse ?? '')
-  const [latitude, setLatitude] = useState(valeursInitiales.latitude ?? '')
-  const [longitude, setLongitude] = useState(valeursInitiales.longitude ?? '')
+  const [latitude, setLatitude] = useState(valeursInitiales.latitude ?? null)
+  const [longitude, setLongitude] = useState(valeursInitiales.longitude ?? null)
   const [expositions, setExpositions] = useState((valeursInitiales.expositions_risques ?? []).join(', '))
   const [niveauCriticite, setNiveauCriticite] = useState(valeursInitiales.degre_criticite ?? '')
   const [gestionnaireContactId, setGestionnaireContactId] = useState(valeursInitiales.gestionnaire_contact_id ?? '')
@@ -132,8 +133,8 @@ function FormulaireInfrastructure({ contacts = [], valeursInitiales = {}, onVali
       nom: nom.trim(),
       type: type.trim(),
       adresse: adresse.trim() || null,
-      latitude: latitude === '' ? null : Number(latitude),
-      longitude: longitude === '' ? null : Number(longitude),
+      latitude: latitude == null || latitude === '' ? null : Number(latitude),
+      longitude: longitude == null || longitude === '' ? null : Number(longitude),
       expositions_risques: expositions.split(',').map((s) => s.trim()).filter(Boolean),
       degre_criticite: niveauCriticite === '' ? null : Number(niveauCriticite),
       gestionnaire_contact_id: gestionnaireContactId || null,
@@ -168,13 +169,14 @@ function FormulaireInfrastructure({ contacts = [], valeursInitiales = {}, onVali
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Latitude</label>
-          <input value={latitude} onChange={(e) => setLatitude(e.target.value)} className="w-full" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Longitude</label>
-          <input value={longitude} onChange={(e) => setLongitude(e.target.value)} className="w-full" />
+        <div className="col-span-full">
+          <label className="block text-xs font-medium text-sourdine mb-1">Position</label>
+          <SelecteurLocalisation
+            lat={latitude}
+            lon={longitude}
+            onChange={(lat, lon) => { setLatitude(lat); setLongitude(lon) }}
+            hauteur="260px"
+          />
         </div>
         <div className="col-span-2">
           <label className="block text-xs font-medium text-sourdine mb-1">Niveau de criticité (1-4)</label>

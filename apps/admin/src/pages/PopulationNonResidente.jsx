@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SelecteurLocalisation } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
@@ -121,8 +122,8 @@ export default function PopulationNonResidente() {
 function FormulairePopulation({ contacts = [], valeursInitiales = {}, onValider, onAnnuler }) {
   const [typePopulation, setTypePopulation] = useState(valeursInitiales.type_population ?? TYPES[0].valeur)
   const [lieu, setLieu] = useState(valeursInitiales.lieu ?? '')
-  const [latitude, setLatitude] = useState(valeursInitiales.latitude ?? '')
-  const [longitude, setLongitude] = useState(valeursInitiales.longitude ?? '')
+  const [latitude, setLatitude] = useState(valeursInitiales.latitude ?? null)
+  const [longitude, setLongitude] = useState(valeursInitiales.longitude ?? null)
   const [capaciteMax, setCapaciteMax] = useState(valeursInitiales.capacite_max ?? '')
   const [periodeDebut, setPeriodeDebut] = useState(valeursInitiales.periode_debut ?? '')
   const [periodeFin, setPeriodeFin] = useState(valeursInitiales.periode_fin ?? '')
@@ -137,8 +138,8 @@ function FormulairePopulation({ contacts = [], valeursInitiales = {}, onValider,
     const { error } = await onValider({
       type_population: typePopulation,
       lieu: lieu.trim(),
-      latitude: latitude === '' ? null : Number(latitude),
-      longitude: longitude === '' ? null : Number(longitude),
+      latitude: latitude == null || latitude === '' ? null : Number(latitude),
+      longitude: longitude == null || longitude === '' ? null : Number(longitude),
       capacite_max: capaciteMax === '' ? null : Number(capaciteMax),
       periode_debut: periodeDebut || null,
       periode_fin: periodeFin || null,
@@ -173,13 +174,14 @@ function FormulairePopulation({ contacts = [], valeursInitiales = {}, onValider,
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Latitude</label>
-          <input value={latitude} onChange={(e) => setLatitude(e.target.value)} className="w-full" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Longitude</label>
-          <input value={longitude} onChange={(e) => setLongitude(e.target.value)} className="w-full" />
+        <div className="col-span-full">
+          <label className="block text-xs font-medium text-sourdine mb-1">Position</label>
+          <SelecteurLocalisation
+            lat={latitude}
+            lon={longitude}
+            onChange={(lat, lon) => { setLatitude(lat); setLongitude(lon) }}
+            hauteur="260px"
+          />
         </div>
       </div>
 
