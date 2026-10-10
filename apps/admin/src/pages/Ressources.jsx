@@ -15,6 +15,7 @@ const CATEGORIES = [
   'interprete',
   'personnel',
   'reservoir_souple',
+  'decontamination',
 ]
 
 const DIMENSIONS_CAPACITE = [
@@ -338,6 +339,12 @@ function FormulaireRessource({ contacts, conventions = [], valeursInitiales = {}
         <label className="block text-xs font-medium text-sourdine mb-1">
           Attributs <span className="text-sourdine">(libres selon la catégorie : capacité, immatriculation, permis…)</span>
         </label>
+        {categorie === 'decontamination' && (
+          <p className="text-xs text-sourdine mb-2">
+            Dispositif de décontamination — attributs suggérés : <em>capacité (personnes/heure)</em>, <em>personnel requis</em>,{' '}
+            <em>délai de mise en œuvre (min)</em>, <em>localisation</em>, <em>dernière vérification</em>.
+          </p>
+        )}
         <div className="space-y-2">
           {attributs.map((a, i) => (
             <div key={i} className="flex gap-2">

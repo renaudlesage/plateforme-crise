@@ -7,6 +7,7 @@ import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
 import { supabase } from '../lib/supabase'
 import MessagesPopulation from '../components/MessagesPopulation'
 import { SectionDebriefings, SectionCohesionSociale } from '../components/DebriefingsEtCohesion'
+import { SectionPlanNucleaire, SectionVeille, SectionCauseIncendie } from '../components/NucleaireVeilleIncendie'
 
 export default function IncidentDetail() {
   const { id } = useParams()
@@ -243,6 +244,11 @@ export default function IncidentDetail() {
               <SectionOrganesCrise incidentId={id} contexteId={contexteId} degreCriticiteIncident={incident.degre_criticite} />
             </div>
           )}
+          {afficher('plan_nucleaire') && (
+            <div className="mb-6">
+              <SectionPlanNucleaire incidentId={id} contexteId={contexteId} typeEvenement={incident.type_evenement} />
+            </div>
+          )}
         </>
       )}
 
@@ -284,6 +290,11 @@ export default function IncidentDetail() {
               <SectionChecklist incidentId={id} contexteId={contexteId} />
             </div>
           )}
+          {afficher('veille') && (
+            <div className="mb-6">
+              <SectionVeille incidentId={id} contexteId={contexteId} />
+            </div>
+          )}
         </>
       )}
 
@@ -318,8 +329,11 @@ export default function IncidentDetail() {
               <div className="mb-6">
                 <SectionDebriefings incidentId={id} contexteId={contexteId} />
               </div>
-              <div>
+              <div className="mb-6">
                 <SectionCohesionSociale incidentId={id} contexteId={contexteId} />
+              </div>
+              <div>
+                <SectionCauseIncendie incidentId={id} contexteId={contexteId} typeEvenement={incident.type_evenement} />
               </div>
             </>
           )}
@@ -334,9 +348,9 @@ export default function IncidentDetail() {
 // PHASES_MODULES (la section "phase_cycle_vie" n'y figure pas : toujours
 // visible, donc l'onglet Pilotage ne disparaît jamais).
 const ONGLETS = [
-  { cle: 'pilotage', libelle: 'Pilotage', modules: ['phase_cycle_vie', 'escalade', 'activation_30min', 'seuils_action', 'organes'] },
+  { cle: 'pilotage', libelle: 'Pilotage', modules: ['phase_cycle_vie', 'escalade', 'activation_30min', 'seuils_action', 'organes', 'plan_nucleaire'] },
   { cle: 'operations', libelle: 'Opérations', modules: ['zones', 'pc_ops', 'suivi_intervenants', 'requisitions'] },
-  { cle: 'journal', libelle: 'Journal & suivi', modules: ['suivi_operationnel', 'checklist'] },
+  { cle: 'journal', libelle: 'Journal & suivi', modules: ['suivi_operationnel', 'checklist', 'veille'] },
   { cle: 'communication', libelle: 'Communication (D5)', modules: ['messages_population', 'communication_d5'] },
   { cle: 'psychosocial', libelle: 'Psychosocial (D2)', modules: ['psychosocial_d2'] },
   { cle: 'retablissement', libelle: 'Rétablissement & REX', modules: ['retablissement', 'phase_transitoire', 'rex'] },

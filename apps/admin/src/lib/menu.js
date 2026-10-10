@@ -50,6 +50,8 @@ export const SECTIONS = [
       { to: '/exercices', libelle: 'Exercices' },
       { to: '/conformite-legale', libelle: 'Conformité légale (AR 2019)' },
       { to: '/formation-stress-aigu', libelle: 'Facteur humain — stress aigu' },
+      { to: '/formations-cbrn', libelle: 'Formations CBRN' },
+      { to: '/connaissances', libelle: 'Connaissances & veille' },
     ],
   },
   {
@@ -64,6 +66,8 @@ export const SECTIONS = [
       { to: '/registre-expertises', libelle: "Registre d'expertises" },
       { to: '/continuite-activite', libelle: "Continuité d'activité (BCM)" },
       { to: '/resilience-territoriale', libelle: 'Résilience territoriale' },
+      { to: '/plan-nucleaire', libelle: "Plan d'urgence nucléaire" },
+      { to: '/lisiere-incendie', libelle: 'Lisière & incendie' },
     ],
   },
   {
@@ -72,6 +76,7 @@ export const SECTIONS = [
     liens: [
       { to: '/modeles-messages', libelle: 'Messages à la population (modèles)' },
       { to: '/catalogue-messages-alerte', libelle: "Catalogue de messages d'alerte" },
+      { to: '/publics-communication', libelle: 'Publics & tests de messages' },
       { to: '/alertes-publiques', libelle: 'Alertes publiques' },
       { to: '/canaux-diffusion', libelle: 'Canaux de diffusion' },
       { to: '/soutien-psychologique', libelle: 'Soutien psychologique' },

@@ -6,10 +6,13 @@ import { supabase } from '../lib/supabase'
 const CENTRE_BELGIQUE = { lat: 50.5039, lon: 4.4699 }
 
 const COUCHES = [
-  { cle: 'objets_a_risque', libelle: 'Objets à risque', couleur: '#dc5a3c', genre: 'Objet à risque', champNom: 'identification' },
-  { cle: 'centres_accueil', libelle: "Centres d'accueil", couleur: '#2563eb', genre: "Centre d'accueil", champNom: 'nom' },
-  { cle: 'sites_qg', libelle: 'Sites CC', couleur: '#7c3aed', genre: 'Site CC', champNom: 'nom' },
-  { cle: 'infrastructures_critiques', libelle: 'Infrastructures critiques', couleur: '#b45309', genre: 'Infrastructure critique', champNom: 'nom' },
+  { cle: 'objets_a_risque', libelle: 'Objets à risque', couleur: '#dc5a3c', genre: 'Objet à risque', champNom: 'identification', colonnes: 'id, identification, categorie' },
+  { cle: 'centres_accueil', libelle: "Centres d'accueil", couleur: '#2563eb', genre: "Centre d'accueil", champNom: 'nom', colonnes: 'id, nom, type_lieu' },
+  { cle: 'sites_qg', libelle: 'Sites CC', couleur: '#7c3aed', genre: 'Site CC', champNom: 'nom', colonnes: 'id, nom' },
+  { cle: 'infrastructures_critiques', libelle: 'Infrastructures critiques', couleur: '#b45309', genre: 'Infrastructure critique', champNom: 'nom', colonnes: 'id, nom, type' },
+  { cle: 'points_eau_incendie', libelle: "Points d'eau (incendie)", couleur: '#0891b2', genre: "Point d'eau", champNom: 'libelle', colonnes: 'id, libelle, type_point' },
+  { cle: 'plans_autoprotection_wui', libelle: 'Plans d\'autoprotection', couleur: '#65a30d', genre: "Plan d'autoprotection", champNom: 'zone_nom', colonnes: 'id, zone_nom, statut' },
+  { cle: 'parcelles_risque_incendie', libelle: 'Parcelles à risque incendie', couleur: '#ea580c', genre: 'Parcelle à risque', champNom: 'libelle', colonnes: 'id, libelle, niveau_risque' },
 ]
 
 /**
@@ -20,7 +23,7 @@ const COUCHES = [
  */
 export default function Carte() {
   const { contexteId } = useAuth()
-  const [couches, setCouches] = useState(() => Object.fromEntries(COUCHES.map((c) => [c.cle, true])))
+  const [couches, setCouches] = useState(() => ({ ...Object.fromEntries(COUCHES.map((c) => [c.cle, true])), sites_nucleaires: true }))
   const [points, setPoints] = useState({})
   const [sansPosition, setSansPosition] = useState([])
   const [aLocaliser, setALocaliser] = useState(null) // { table, id, libelle, genre }
@@ -32,46 +35,38 @@ export default function Carte() {
     setChargement(true)
     setErreur(null)
 
-    const sans = (table, colonnes) => supabase.from(table).select(colonnes).eq('contexte_id', contexteId).is('latitude', null)
-
-    const [objets, centres, sites, infra, objSans, cenSans, sitSans, infSans] = await Promise.all([
-      supabase.from('objets_a_risque').select('id, identification, categorie, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
-      supabase.from('centres_accueil').select('id, nom, type_lieu, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
-      supabase.from('sites_qg').select('id, nom, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
-      supabase.from('infrastructures_critiques').select('id, nom, type, latitude, longitude').eq('contexte_id', contexteId).not('latitude', 'is', null),
-      sans('objets_a_risque', 'id, identification, categorie'),
-      sans('centres_accueil', 'id, nom, type_lieu'),
-      sans('sites_qg', 'id, nom'),
-      sans('infrastructures_critiques', 'id, nom, type'),
+    const requetes = COUCHES.flatMap((c) => [
+      supabase.from(c.cle).select(`${c.colonnes}, latitude, longitude`).eq('contexte_id', contexteId).not('latitude', 'is', null),
+      supabase.from(c.cle).select(c.colonnes).eq('contexte_id', contexteId).is('latitude', null),
     ])
+    // Sites nucléaires : référentiel national, pas de contexte_id.
+    requetes.push(supabase.from('sites_nucleaires').select('id, nom, type_site, latitude, longitude').not('latitude', 'is', null))
+    const resultats = await Promise.all(requetes)
 
-    const premiereErreur = [objets, centres, sites, infra, objSans, cenSans, sitSans, infSans].find((r) => r.error)
+    const premiereErreur = resultats.find((r) => r.error)
     if (premiereErreur) {
       setErreur(premiereErreur.error.message)
       setChargement(false)
       return
     }
 
-    setPoints({
-      objets_a_risque: objets.data ?? [],
-      centres_accueil: centres.data ?? [],
-      sites_qg: sites.data ?? [],
-      infrastructures_critiques: infra.data ?? [],
+    const nouveauxPoints = {}
+    const sans = []
+    COUCHES.forEach((c, i) => {
+      nouveauxPoints[c.cle] = resultats[2 * i].data ?? []
+      for (const r of resultats[2 * i + 1].data ?? []) {
+        sans.push({
+          table: c.cle,
+          id: r.id,
+          libelle: r[c.champNom] ?? c.genre,
+          genre: c.genre,
+          detail: r.categorie ?? r.type_lieu ?? r.type ?? r.type_point ?? r.statut ?? r.niveau_risque ?? null,
+        })
+      }
     })
-    const versListe = (couche, lignes) =>
-      (lignes ?? []).map((r) => ({
-        table: couche.cle,
-        id: r.id,
-        libelle: r[couche.champNom] ?? couche.genre,
-        genre: couche.genre,
-        detail: r.categorie ?? r.type_lieu ?? r.type ?? null,
-      }))
-    setSansPosition([
-      ...versListe(COUCHES[0], objSans.data),
-      ...versListe(COUCHES[1], cenSans.data),
-      ...versListe(COUCHES[2], sitSans.data),
-      ...versListe(COUCHES[3], infSans.data),
-    ])
+    nouveauxPoints.sites_nucleaires = resultats[resultats.length - 1].data ?? []
+    setPoints(nouveauxPoints)
+    setSansPosition(sans)
     setChargement(false)
   }, [contexteId])
 
@@ -88,21 +83,36 @@ export default function Carte() {
           id: `${c.cle}-${p.id}`,
           lat: Number(p.latitude),
           lon: Number(p.longitude),
-          titre: p.identification ?? p.nom ?? c.libelle,
-          sousTitre: p.categorie ?? p.type_lieu ?? p.type,
+          titre: p.identification ?? p.nom ?? p.libelle ?? p.zone_nom ?? c.libelle,
+          sousTitre: p.categorie ?? p.type_lieu ?? p.type ?? p.type_point ?? p.statut ?? p.niveau_risque,
           couleur: c.couleur,
+        })
+      }
+    }
+    if (couches.sites_nucleaires) {
+      for (const p of points.sites_nucleaires ?? []) {
+        tous.push({
+          id: `sites_nucleaires-${p.id}`,
+          lat: Number(p.latitude),
+          lon: Number(p.longitude),
+          titre: p.nom,
+          sousTitre: 'Site nucléaire (position approximative)',
+          couleur: '#a21caf',
         })
       }
     }
     return tous
   }, [points, couches])
 
+  // Les sites nucléaires couvrent toute la Belgique et ses voisins : ils ne
+  // doivent pas décentrer la carte d'un contexte communal.
+  const marqueursContexte = useMemo(() => marqueurs.filter((m) => !m.id.startsWith('sites_nucleaires-')), [marqueurs])
   const centre = useMemo(() => {
-    if (marqueurs.length === 0) return CENTRE_BELGIQUE
-    const lat = marqueurs.reduce((s, m) => s + m.lat, 0) / marqueurs.length
-    const lon = marqueurs.reduce((s, m) => s + m.lon, 0) / marqueurs.length
+    if (marqueursContexte.length === 0) return CENTRE_BELGIQUE
+    const lat = marqueursContexte.reduce((s, m) => s + m.lat, 0) / marqueursContexte.length
+    const lon = marqueursContexte.reduce((s, m) => s + m.lon, 0) / marqueursContexte.length
     return { lat, lon }
-  }, [marqueurs])
+  }, [marqueursContexte])
 
   return (
     <div>
@@ -124,6 +134,15 @@ export default function Carte() {
             {c.libelle} ({(points[c.cle] ?? []).length})
           </label>
         ))}
+        <label className="flex items-center gap-1.5 text-xs text-sourdine">
+          <input
+            type="checkbox"
+            checked={couches.sites_nucleaires}
+            onChange={() => setCouches((prev) => ({ ...prev, sites_nucleaires: !prev.sites_nucleaires }))}
+          />
+          <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#a21caf' }} />
+          Sites nucléaires ({(points.sites_nucleaires ?? []).length})
+        </label>
       </div>
 
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
@@ -131,7 +150,7 @@ export default function Carte() {
       {chargement ? (
         <p className="text-sm text-sourdine">Chargement…</p>
       ) : (
-        <CarteCrise centre={centre} zoom={marqueurs.length ? 13 : 8} marqueurs={marqueurs} hauteur="65vh" />
+        <CarteCrise centre={centre} zoom={marqueursContexte.length ? 13 : 8} marqueurs={marqueurs} hauteur="65vh" />
       )}
 
       {!chargement && (

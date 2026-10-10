@@ -43,6 +43,11 @@ import ResilienceTerritoriale from './pages/ResilienceTerritoriale'
 import SourcesExternesAlertes from './pages/SourcesExternesAlertes'
 import Carte from './pages/Carte'
 import CatalogueMessagesAlerte from './pages/CatalogueMessagesAlerte'
+import PlanNucleaire from './pages/PlanNucleaire'
+import PublicsEtTestsMessages from './pages/PublicsEtTestsMessages'
+import FormationsCbrn from './pages/FormationsCbrn'
+import LisiereIncendie from './pages/LisiereIncendie'
+import ConnaissancesVeille from './pages/ConnaissancesVeille'
 import BeAlertTests from './pages/BeAlertTests'
 import Comptes from './pages/Comptes'
 import Clients from './pages/Clients'
@@ -120,6 +125,11 @@ export default function App() {
             <Route path="sources-externes-alertes" element={<SourcesExternesAlertes />} />
             <Route path="carte" element={<Carte />} />
             <Route path="catalogue-messages-alerte" element={<CatalogueMessagesAlerte />} />
+            <Route path="plan-nucleaire" element={<PlanNucleaire />} />
+            <Route path="publics-communication" element={<PublicsEtTestsMessages />} />
+            <Route path="formations-cbrn" element={<FormationsCbrn />} />
+            <Route path="lisiere-incendie" element={<LisiereIncendie />} />
+            <Route path="connaissances" element={<ConnaissancesVeille />} />
             <Route path="be-alert-tests" element={<BeAlertTests />} />
             <Route path="comptes" element={<Comptes />} />
             <Route path="clients" element={<Clients />} />
