@@ -1978,7 +1978,16 @@ function GestionPointsLogistiqueZone({ zone, zones, centreIncident, onChangement
   const zoneId = zone.id
   const points = zone.points_logistique_zone ?? []
   const [enAjout, setEnAjout] = useState(false)
+  const [enEdition, setEnEdition] = useState(null)
   const [erreur, setErreur] = useState(null)
+
+  async function modifier(idPoint, valeurs) {
+    const { error } = await supabase.from('points_logistique_zone').update(valeurs).eq('id', idPoint)
+    if (error) { setErreur(error.message); return { error } }
+    setErreur(null)
+    await onChangement()
+    return { error: null }
+  }
 
   async function creer(valeurs) {
     const { error } = await supabase.from('points_logistique_zone').insert({ ...valeurs, zone_id: zoneId })
@@ -1996,7 +2005,7 @@ function GestionPointsLogistiqueZone({ zone, zones, centreIncident, onChangement
     <div className="mt-2 pt-2 border-t border-trait">
       <div className="flex items-center justify-between mb-1">
         <p className="etiquette">Points logistiques</p>
-        {!enAjout && <BoutonDiscret onClick={() => setEnAjout(true)}>Ajouter</BoutonDiscret>}
+        {!enAjout && enEdition == null && <BoutonDiscret onClick={() => setEnAjout(true)}>Ajouter</BoutonDiscret>}
       </div>
       {erreur && <p className="text-xs text-chaud mb-1">{erreur}</p>}
       {enAjout && (
@@ -2017,29 +2026,52 @@ function GestionPointsLogistiqueZone({ zone, zones, centreIncident, onChangement
         <p className="text-xs text-sourdine">Aucun point logistique défini.</p>
       ) : (
         <ul className="space-y-1">
-          {points.map((pt) => (
-            <li key={pt.id} className="flex items-center justify-between text-xs text-encre">
-              <span>
-                <span className="jeton mr-1.5">{TYPES_POINT_LOGISTIQUE.find((t) => t.valeur === pt.type_point)?.libelle ?? pt.type_point}</span>
-                {pt.latitude != null && pt.longitude != null && <>{pt.latitude}, {pt.longitude}</>}
-                {pt.capacite != null && <> · capacité {pt.capacite}</>}
-                {pt.commentaire && <> · {pt.commentaire}</>}
-              </span>
-              <BoutonDiscret onClick={() => supprimer(pt.id)}>✕</BoutonDiscret>
-            </li>
-          ))}
+          {points.map((pt) =>
+            enEdition === pt.id ? (
+              <li key={pt.id}>
+                <FormulairePointLogistique
+                  zone={zone}
+                  zones={zones}
+                  points={points}
+                  centreIncident={centreIncident}
+                  valeursInitiales={pt}
+                  onAnnuler={() => setEnEdition(null)}
+                  onValider={async (valeurs) => {
+                    const { error } = await modifier(pt.id, valeurs)
+                    if (!error) setEnEdition(null)
+                    return { error }
+                  }}
+                />
+              </li>
+            ) : (
+              <li key={pt.id} className="flex items-center justify-between gap-2 text-xs text-encre">
+                <span>
+                  <span className="jeton mr-1.5">{TYPES_POINT_LOGISTIQUE.find((t) => t.valeur === pt.type_point)?.libelle ?? pt.type_point}</span>
+                  {pt.latitude != null && pt.longitude != null
+                    ? <>{Number(pt.latitude).toFixed(5)}, {Number(pt.longitude).toFixed(5)}</>
+                    : <span className="text-chaud">non localisé</span>}
+                  {pt.capacite != null && <> · capacité {pt.capacite}</>}
+                  {pt.commentaire && <> · {pt.commentaire}</>}
+                </span>
+                <span className="flex gap-1.5 flex-shrink-0">
+                  <BoutonDiscret onClick={() => { setEnAjout(false); setEnEdition(pt.id) }}>Modifier</BoutonDiscret>
+                  <BoutonDiscret onClick={() => supprimer(pt.id)}>✕</BoutonDiscret>
+                </span>
+              </li>
+            )
+          )}
         </ul>
       )}
     </div>
   )
 }
 
-function FormulairePointLogistique({ zone, zones, points, centreIncident, onValider, onAnnuler }) {
-  const [typePoint, setTypePoint] = useState('ppd')
-  const [latitude, setLatitude] = useState(null)
-  const [longitude, setLongitude] = useState(null)
-  const [capacite, setCapacite] = useState('')
-  const [commentaire, setCommentaire] = useState('')
+function FormulairePointLogistique({ zone, zones, points, centreIncident, valeursInitiales = null, onValider, onAnnuler }) {
+  const [typePoint, setTypePoint] = useState(valeursInitiales?.type_point ?? 'ppd')
+  const [latitude, setLatitude] = useState(valeursInitiales?.latitude ?? null)
+  const [longitude, setLongitude] = useState(valeursInitiales?.longitude ?? null)
+  const [capacite, setCapacite] = useState(valeursInitiales?.capacite ?? '')
+  const [commentaire, setCommentaire] = useState(valeursInitiales?.commentaire ?? '')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -2050,7 +2082,7 @@ function FormulairePointLogistique({ zone, zones, points, centreIncident, onVali
       ? { lat: Number(zone.centre_latitude), lon: Number(zone.centre_longitude) }
       : centreIncident
   const marqueursExistants = points
-    .filter((pt) => pt.latitude != null && pt.longitude != null)
+    .filter((pt) => pt.id !== valeursInitiales?.id && pt.latitude != null && pt.longitude != null)
     .map((pt) => ({
       id: pt.id,
       lat: Number(pt.latitude),
