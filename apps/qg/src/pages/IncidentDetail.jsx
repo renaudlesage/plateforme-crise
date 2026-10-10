@@ -256,7 +256,7 @@ export default function IncidentDetail() {
         <>
           {afficher('zones') && (
             <div className="mb-6">
-              <SectionZonesIntervention incidentId={id} />
+              <SectionZonesIntervention incidentId={id} centreIncident={incident.latitude != null ? { lat: Number(incident.latitude), lon: Number(incident.longitude) } : null} />
             </div>
           )}
           {afficher('pc_ops') && (
@@ -1726,7 +1726,24 @@ function FormulaireEtapeRetablissement({ contacts, valeursInitiales = {}, onVali
   )
 }
 
-function SectionZonesIntervention({ incidentId }) {
+const COULEUR_ZONE = { rouge: '#c0392b', orange: '#e67e22', jaune: '#d4ac0d' }
+
+/** Cercles d'affichage d'une liste de zones (celles qui ont un centre et un rayon). */
+function cerclesDesZones(zones, idMisEnAvant = null) {
+  return zones
+    .filter((z) => z.centre_latitude != null && z.centre_longitude != null && z.rayon_metres != null && !z.date_levee)
+    .map((z) => ({
+      id: z.id,
+      lat: Number(z.centre_latitude),
+      lon: Number(z.centre_longitude),
+      rayonM: Number(z.rayon_metres),
+      couleur: COULEUR_ZONE[z.type_zone],
+      libelle: TYPES_ZONE.find((t) => t.valeur === z.type_zone)?.libelle ?? z.type_zone,
+      misEnAvant: idMisEnAvant === z.id,
+    }))
+}
+
+function SectionZonesIntervention({ incidentId, centreIncident = null }) {
   const [zones, setZones] = useState([])
   const [chargement, setChargement] = useState(true)
   const [erreur, setErreur] = useState(null)
@@ -1806,6 +1823,8 @@ function SectionZonesIntervention({ incidentId }) {
               <li key={z.id} className="p-3 bg-fond">
                 <FormulaireZone
                   valeursInitiales={z}
+                  centreDefaut={centreIncident}
+                  autresZones={zones.filter((x) => x.id !== z.id)}
                   onAnnuler={() => setLigneEnEdition(null)}
                   onValider={async (valeurs) => {
                     const { error } = await modifier(z.id, valeurs)
@@ -1844,7 +1863,7 @@ function SectionZonesIntervention({ incidentId }) {
                       établie le {new Date(z.date_etablissement).toLocaleString('fr-BE')}
                       {z.date_levee && <> · levée le {new Date(z.date_levee).toLocaleString('fr-BE')}</>}
                     </p>
-                    <GestionPointsLogistiqueZone zoneId={z.id} points={z.points_logistique_zone ?? []} onChangement={rafraichir} />
+                    <GestionPointsLogistiqueZone zone={z} zones={zones} centreIncident={centreIncident} onChangement={rafraichir} />
                   </div>
                   <div className="flex gap-2 flex-shrink-0 ml-3">
                     <BoutonDiscret onClick={() => setLigneEnEdition(z.id)}>Modifier</BoutonDiscret>
@@ -1860,10 +1879,10 @@ function SectionZonesIntervention({ incidentId }) {
   )
 }
 
-function FormulaireZone({ valeursInitiales = {}, onValider, onAnnuler }) {
+function FormulaireZone({ valeursInitiales = {}, centreDefaut = null, autresZones = [], onValider, onAnnuler }) {
   const [typeZone, setTypeZone] = useState(valeursInitiales.type_zone ?? 'rouge')
-  const [centreLatitude, setCentreLatitude] = useState(valeursInitiales.centre_latitude ?? '')
-  const [centreLongitude, setCentreLongitude] = useState(valeursInitiales.centre_longitude ?? '')
+  const [centreLatitude, setCentreLatitude] = useState(valeursInitiales.centre_latitude ?? null)
+  const [centreLongitude, setCentreLongitude] = useState(valeursInitiales.centre_longitude ?? null)
   const [rayonMetres, setRayonMetres] = useState(valeursInitiales.rayon_metres ?? '')
   const [accesAutorise, setAccesAutorise] = useState(valeursInitiales.acces_autorise ?? ACCES_PAR_TYPE_ZONE.rouge)
   const [dateRevision, setDateRevision] = useState(valeursInitiales.date_derniere_revision ?? '')
@@ -1882,8 +1901,8 @@ function FormulaireZone({ valeursInitiales = {}, onValider, onAnnuler }) {
     const { error } = await onValider({
       type_zone: typeZone,
       perimetre: TYPES_ZONE.find((t) => t.valeur === typeZone)?.perimetre,
-      centre_latitude: centreLatitude === '' ? null : Number(centreLatitude),
-      centre_longitude: centreLongitude === '' ? null : Number(centreLongitude),
+      centre_latitude: centreLatitude == null ? null : Number(centreLatitude),
+      centre_longitude: centreLongitude == null ? null : Number(centreLongitude),
       rayon_metres: rayonMetres === '' ? null : Number(rayonMetres),
       acces_autorise: accesAutorise.trim() || null,
       date_derniere_revision: dateRevision || null,
@@ -1904,19 +1923,27 @@ function FormulaireZone({ valeursInitiales = {}, onValider, onAnnuler }) {
         </select>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Latitude centre</label>
-          <input type="number" step="any" value={centreLatitude} onChange={(e) => setCentreLatitude(e.target.value)} className="w-full" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Longitude centre</label>
-          <input type="number" step="any" value={centreLongitude} onChange={(e) => setCentreLongitude(e.target.value)} className="w-full" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Rayon (m)</label>
-          <input type="number" min="0" value={rayonMetres} onChange={(e) => setRayonMetres(e.target.value)} className="w-full" />
-        </div>
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Centre de la zone</label>
+        <p className="text-xs text-sourdine mb-1">Touchez la carte pour placer le centre ; le cercle suit le rayon saisi.</p>
+        <SelecteurLocalisation
+          lat={centreLatitude}
+          lon={centreLongitude}
+          onChange={(lat, lon) => { setCentreLatitude(lat); setCentreLongitude(lon) }}
+          centreDefaut={centreDefaut ?? undefined}
+          zoomDefaut={centreDefaut ? 14 : 8}
+          cercles={[
+            ...cerclesDesZones(autresZones),
+            ...(centreLatitude != null && centreLongitude != null && rayonMetres !== '' && Number(rayonMetres) > 0
+              ? [{ id: 'apercu', lat: Number(centreLatitude), lon: Number(centreLongitude), rayonM: Number(rayonMetres), couleur: COULEUR_ZONE[typeZone], libelle: 'Cette zone' }]
+              : []),
+          ]}
+          hauteur="300px"
+        />
+      </div>
+      <div className="max-w-xs">
+        <label className="block text-xs font-medium text-sourdine mb-1">Rayon (m)</label>
+        <input type="number" min="0" value={rayonMetres} onChange={(e) => setRayonMetres(e.target.value)} className="w-full" />
       </div>
 
       <div>
@@ -1947,7 +1974,9 @@ function FormulaireZone({ valeursInitiales = {}, onValider, onAnnuler }) {
   )
 }
 
-function GestionPointsLogistiqueZone({ zoneId, points, onChangement }) {
+function GestionPointsLogistiqueZone({ zone, zones, centreIncident, onChangement }) {
+  const zoneId = zone.id
+  const points = zone.points_logistique_zone ?? []
   const [enAjout, setEnAjout] = useState(false)
   const [erreur, setErreur] = useState(null)
 
@@ -1972,6 +2001,10 @@ function GestionPointsLogistiqueZone({ zoneId, points, onChangement }) {
       {erreur && <p className="text-xs text-chaud mb-1">{erreur}</p>}
       {enAjout && (
         <FormulairePointLogistique
+          zone={zone}
+          zones={zones}
+          points={points}
+          centreIncident={centreIncident}
           onAnnuler={() => setEnAjout(false)}
           onValider={async (valeurs) => {
             const { error } = await creer(valeurs)
@@ -2001,22 +2034,44 @@ function GestionPointsLogistiqueZone({ zoneId, points, onChangement }) {
   )
 }
 
-function FormulairePointLogistique({ onValider, onAnnuler }) {
+function FormulairePointLogistique({ zone, zones, points, centreIncident, onValider, onAnnuler }) {
   const [typePoint, setTypePoint] = useState('ppd')
-  const [latitude, setLatitude] = useState('')
-  const [longitude, setLongitude] = useState('')
+  const [latitude, setLatitude] = useState(null)
+  const [longitude, setLongitude] = useState(null)
   const [capacite, setCapacite] = useState('')
   const [commentaire, setCommentaire] = useState('')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
+
+  // La carte s'ouvre sur la zone concernée (ou sur l'incident), avec les périmètres et les
+  // points déjà posés en repère : on place le point en regard du terrain, pas à l'aveugle.
+  const centreZone =
+    zone.centre_latitude != null && zone.centre_longitude != null
+      ? { lat: Number(zone.centre_latitude), lon: Number(zone.centre_longitude) }
+      : centreIncident
+  const marqueursExistants = points
+    .filter((pt) => pt.latitude != null && pt.longitude != null)
+    .map((pt) => ({
+      id: pt.id,
+      lat: Number(pt.latitude),
+      lon: Number(pt.longitude),
+      titre: TYPES_POINT_LOGISTIQUE.find((t) => t.valeur === pt.type_point)?.libelle ?? pt.type_point,
+      sousTitre: pt.commentaire ?? undefined,
+      couleur: '#2e86c1',
+    }))
+
+  function changerPosition(lat, lon) {
+    setLatitude(lat)
+    setLongitude(lon)
+  }
 
   async function soumettre(e) {
     e.preventDefault()
     setEnCours(true)
     const { error } = await onValider({
       type_point: typePoint,
-      latitude: latitude === '' ? null : Number(latitude),
-      longitude: longitude === '' ? null : Number(longitude),
+      latitude: latitude == null ? null : Number(latitude),
+      longitude: longitude == null ? null : Number(longitude),
       capacite: capacite === '' ? null : Number(capacite),
       commentaire: commentaire.trim() || null,
     })
@@ -2026,16 +2081,25 @@ function FormulairePointLogistique({ onValider, onAnnuler }) {
 
   return (
     <form onSubmit={soumettre} className="space-y-2 mb-2">
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <select value={typePoint} onChange={(e) => setTypePoint(e.target.value)} className="w-full text-xs">
           {TYPES_POINT_LOGISTIQUE.map((t) => (
             <option key={t.valeur} value={t.valeur}>{t.libelle}</option>
           ))}
         </select>
-        <input type="number" step="any" value={latitude} onChange={(e) => setLatitude(e.target.value)} placeholder="Latitude" className="w-full text-xs" />
-        <input type="number" step="any" value={longitude} onChange={(e) => setLongitude(e.target.value)} placeholder="Longitude" className="w-full text-xs" />
         <input type="number" min="0" value={capacite} onChange={(e) => setCapacite(e.target.value)} placeholder="Capacité" className="w-full text-xs" />
       </div>
+      <p className="text-xs text-sourdine">Touchez la carte pour placer le point (ou utilisez votre position, ou saisissez les coordonnées).</p>
+      <SelecteurLocalisation
+        lat={latitude}
+        lon={longitude}
+        onChange={changerPosition}
+        centreDefaut={centreZone ?? undefined}
+        zoomDefaut={centreZone ? 16 : 8}
+        cercles={cerclesDesZones(zones, zone.id)}
+        marqueurs={marqueursExistants}
+        hauteur="300px"
+      />
       <input value={commentaire} onChange={(e) => setCommentaire(e.target.value)} placeholder="Commentaire" className="w-full text-xs" />
       {erreur && <p className="text-xs text-chaud">{erreur}</p>}
       <div className="flex gap-1.5">

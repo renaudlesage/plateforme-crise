@@ -15,8 +15,11 @@ const CENTRE_BELGIQUE = { lat: 50.5039, lon: 4.4699 }
  * @param {(lat:number|null, lon:number|null) => void} onChange
  * @param {{lat:number, lon:number}} [centreDefaut] - centre de la carte avant toute sélection
  * @param {string} [hauteur]
+ * @param {number} [zoomDefaut] - zoom avant toute sélection (8 par défaut ; plus serré quand `centreDefaut` est déjà précis)
+ * @param {Array} [cercles] - périmètres affichés en repère (ex. zones d'intervention), non interactifs pendant la sélection
+ * @param {Array} [marqueurs] - points déjà posés, affichés en repère
  */
-export default function SelecteurLocalisation({ lat, lon, onChange, centreDefaut = CENTRE_BELGIQUE, hauteur = '280px' }) {
+export default function SelecteurLocalisation({ lat, lon, onChange, centreDefaut = CENTRE_BELGIQUE, hauteur = '280px', zoomDefaut = 8, cercles = [], marqueurs = [] }) {
   const [erreurGeo, setErreurGeo] = useState(null)
   const [rechercheGeo, setRechercheGeo] = useState(false)
 
@@ -47,7 +50,9 @@ export default function SelecteurLocalisation({ lat, lon, onChange, centreDefaut
     <div>
       <CarteCrise
         centre={centre}
-        zoom={selection ? 15 : 8}
+        zoom={selection ? 15 : zoomDefaut}
+        cercles={cercles}
+        marqueurs={marqueurs}
         selection={selection}
         onClicCarte={(p) => onChange(p.lat, p.lon)}
         hauteur={hauteur}
