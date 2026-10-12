@@ -1,7 +1,60 @@
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, LayersControl, Marker, Popup, Circle, useMap, useMapEvents } from 'react-leaflet'
 import { divIcon, latLngBounds } from 'leaflet'
 import { useEffect, useState } from 'react'
 import { svgSymbole } from './symboles.js'
+
+// Fonds de plan proposés. Les serveurs publics d'OpenStreetMap ne sont pas destinés à un usage
+// commercial ou intensif : en production, remplacer les adresses par celles d'un fournisseur
+// de tuiles sous contrat (MapTiler, Stadia, Thunderforest…) — seul ce tableau change.
+const OSM = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+export const FONDS_DE_PLAN = [
+  { cle: 'osm', libelle: 'OpenStreetMap', url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: OSM },
+  {
+    cle: 'hot',
+    libelle: 'OpenStreetMap Humanitarian',
+    url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+    attribution: `${OSM}, <a href="https://www.hotosm.org/">HOT</a>`,
+  },
+  {
+    cle: 'satellite',
+    libelle: 'Satellite',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics',
+  },
+  {
+    cle: 'clair',
+    libelle: 'Fond clair',
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attribution: `${OSM}, &copy; <a href="https://carto.com/attributions">CARTO</a>`,
+  },
+]
+
+const CLE_STOCKAGE_FOND = 'crisiware.fond_de_plan'
+
+function fondMemorise() {
+  try {
+    const cle = localStorage.getItem(CLE_STOCKAGE_FOND)
+    return FONDS_DE_PLAN.some((f) => f.cle === cle) ? cle : 'osm'
+  } catch {
+    return 'osm'
+  }
+}
+
+/** Mémorise le fond choisi (par appareil) pour toutes les cartes de l'app. */
+function MemoriserFond() {
+  useMapEvents({
+    baselayerchange(e) {
+      const fond = FONDS_DE_PLAN.find((f) => f.libelle === e.name)
+      if (!fond) return
+      try {
+        localStorage.setItem(CLE_STOCKAGE_FOND, fond.cle)
+      } catch {
+        /* stockage indisponible : le choix vaut pour cette carte seulement */
+      }
+    },
+  })
+  return null
+}
 
 /**
  * Carte Leaflet/OpenStreetMap générique, partagée par les apps Admin et
@@ -46,6 +99,7 @@ export default function CarteCrise({
   // Plein écran « maison » (CSS fixed) plutôt que l'API Fullscreen : Safari sur iPhone ne la
   // propose pas pour un élément quelconque, et on veut garder la même carte (zoom, position).
   const [plein, setPlein] = useState(false)
+  const [fondInitial] = useState(fondMemorise)
 
   useEffect(() => {
     if (!plein) return undefined
@@ -125,10 +179,14 @@ export default function CarteCrise({
 
       <MapContainer center={[centre.lat, centre.lon]} zoom={zoom} style={{ height: '100%', width: '100%' }}>
         <AjusterTaille cle={plein} />
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <LayersControl position="topleft" collapsed>
+          {FONDS_DE_PLAN.map((f) => (
+            <LayersControl.BaseLayer key={f.cle} name={f.libelle} checked={f.cle === fondInitial}>
+              <TileLayer attribution={f.attribution} url={f.url} maxZoom={19} />
+            </LayersControl.BaseLayer>
+          ))}
+        </LayersControl>
+        <MemoriserFond />
         <RecentrerSiChangement centre={centre} cle={cleRecentrage} zoom={zoomRecentrage} ajusterSur={ajusterSur} />
         {onClicCarte && <CaptureClic onClicCarte={onClicCarte} />}
 

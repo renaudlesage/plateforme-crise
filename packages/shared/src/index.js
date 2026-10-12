@@ -1,5 +1,5 @@
 export { createSupabaseClient } from './supabaseClient.js'
-export { default as CarteCrise } from './CarteCrise.jsx'
+export { default as CarteCrise, FONDS_DE_PLAN } from './CarteCrise.jsx'
 export { default as FiltreIncidentsCarte } from './FiltreIncidentsCarte.jsx'
 export { default as SelecteurLocalisation } from './SelecteurLocalisation.jsx'
 export { creerFileEcritures } from './fileEcritures.js'
