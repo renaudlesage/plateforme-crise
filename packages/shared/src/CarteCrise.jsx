@@ -24,8 +24,9 @@ export const FONDS_DE_PLAN = [
   {
     cle: 'clair',
     libelle: 'Fond clair',
-    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    attribution: `${OSM}, &copy; <a href="https://carto.com/attributions">CARTO</a>`,
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles &copy; Esri, HERE, Garmin, OpenStreetMap contributors',
+    maxNativeZoom: 16, // au-delà, la tuile du niveau 16 est agrandie plutôt que d'afficher du vide
   },
 ]
 
@@ -182,7 +183,7 @@ export default function CarteCrise({
         <LayersControl position="topleft" collapsed>
           {FONDS_DE_PLAN.map((f) => (
             <LayersControl.BaseLayer key={f.cle} name={f.libelle} checked={f.cle === fondInitial}>
-              <TileLayer attribution={f.attribution} url={f.url} maxZoom={19} />
+              <TileLayer attribution={f.attribution} url={f.url} maxZoom={19} maxNativeZoom={f.maxNativeZoom ?? 19} />
             </LayersControl.BaseLayer>
           ))}
         </LayersControl>
