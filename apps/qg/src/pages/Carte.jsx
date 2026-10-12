@@ -74,6 +74,7 @@ const LIBELLE_OBSERVATION = {
  */
 export default function Carte() {
   const { contexteId } = useAuth()
+  const [filtresOuverts, setFiltresOuverts] = useState(false)
   const [couches, setCouches] = useState(() => Object.fromEntries(COUCHES.map((c) => [c.cle, true])))
   const [points, setPoints] = useState({})
   const [incidents, setIncidents] = useState([])
@@ -345,43 +346,52 @@ export default function Carte() {
         }}
       />
 
-      <div className="flex flex-wrap gap-3 mb-3">
-        {COUCHES.map((c) => (
-          <label key={c.cle} className="flex items-center gap-1.5 text-xs text-sourdine">
-            <input
-              type="checkbox"
-              checked={couches[c.cle]}
-              onChange={() => setCouches((prev) => ({ ...prev, [c.cle]: !prev[c.cle] }))}
-            />
-            <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: c.couleur }} />
-            {c.libelle}
-          </label>
-        ))}
-      </div>
-
-      {couches.observations && (
-        <div className="mb-3">
-          <p className="etiquette mb-1">Points terrain par discipline</p>
-          <div className="flex flex-wrap gap-1.5">
-            {[...DISCIPLINES, { valeur: 'aucune', court: 'Sans discipline', couleur: '#94a3b8' }].map((d) => {
-              const actif = disciplinesVues === null || disciplinesVues.includes(d.valeur)
-              return (
-                <button
-                  key={d.valeur}
-                  type="button"
-                  onClick={() => basculerDiscipline(d.valeur)}
-                  className="discret"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, opacity: actif ? 1 : 0.45, padding: '4px 8px', fontSize: 12 }}
-                  aria-pressed={actif}
-                >
-                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: d.couleur, display: 'inline-block' }} />
-                  {d.court}
-                </button>
-              )
-            })}
+      <div className="mb-2">
+        <button type="button" className="lien text-sm" onClick={() => setFiltresOuverts((o) => !o)} aria-expanded={filtresOuverts}>
+          Couches et filtres {filtresOuverts ? '▴' : '▾'}
+        </button>
+        {filtresOuverts && (
+          <div className="mt-2">
+          <div className="flex flex-wrap gap-3 mb-3">
+            {COUCHES.map((c) => (
+              <label key={c.cle} className="flex items-center gap-1.5 text-xs text-sourdine">
+                <input
+                  type="checkbox"
+                  checked={couches[c.cle]}
+                  onChange={() => setCouches((prev) => ({ ...prev, [c.cle]: !prev[c.cle] }))}
+                />
+                <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: c.couleur }} />
+                {c.libelle}
+              </label>
+            ))}
           </div>
-        </div>
-      )}
+
+          {couches.observations && (
+            <div className="mb-3">
+              <p className="etiquette mb-1">Points terrain par discipline</p>
+              <div className="flex flex-wrap gap-1.5">
+                {[...DISCIPLINES, { valeur: 'aucune', court: 'Sans discipline', couleur: '#94a3b8' }].map((d) => {
+                  const actif = disciplinesVues === null || disciplinesVues.includes(d.valeur)
+                  return (
+                    <button
+                      key={d.valeur}
+                      type="button"
+                      onClick={() => basculerDiscipline(d.valeur)}
+                      className="discret"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, opacity: actif ? 1 : 0.45, padding: '4px 8px', fontSize: 12 }}
+                      aria-pressed={actif}
+                    >
+                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: d.couleur, display: 'inline-block' }} />
+                      {d.court}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          </div>
+        )}
+      </div>
         </>
       )}
 
