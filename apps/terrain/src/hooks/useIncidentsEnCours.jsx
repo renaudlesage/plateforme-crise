@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 const CLE = 'terrain_incident_id_selectionne'
+const EVENEMENT_CHOIX = 'terrain:incident-choisi'
 
 /**
  * Incidents en cours du contexte + incident retenu sur cet appareil.
@@ -36,6 +37,14 @@ export function useIncidentsEnCours(contexteId) {
     charger()
   }, [charger])
 
+  // Plusieurs composants utilisent ce hook (pages et suivi de position) : un changement
+  // d'incident fait dans l'un doit être suivi par les autres.
+  useEffect(() => {
+    const suivre = (e) => setChoisiId(e.detail)
+    window.addEventListener(EVENEMENT_CHOIX, suivre)
+    return () => window.removeEventListener(EVENEMENT_CHOIX, suivre)
+  }, [])
+
   function choisir(id) {
     setChoisiId(id)
     try {
@@ -43,6 +52,7 @@ export function useIncidentsEnCours(contexteId) {
     } catch {
       /* ignore */
     }
+    window.dispatchEvent(new CustomEvent(EVENEMENT_CHOIX, { detail: id }))
   }
 
   const incident = incidents.find((i) => i.id === choisiId) ?? incidents[0] ?? null

@@ -214,6 +214,10 @@ export default function CarteCrise({
                   {m.sousTitre}
                 </>
               )}
+              <br />
+              <a href={`https://www.google.com/maps/dir/?api=1&destination=${m.lat},${m.lon}`} target="_blank" rel="noreferrer" style={{ fontSize: 13 }}>
+                Itinéraire ↗
+              </a>
               {m.onModifier && (
                 <>
                   <br />

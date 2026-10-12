@@ -7,6 +7,7 @@ import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
 import { supabase } from '../lib/supabase'
 import MessagesPopulation from '../components/MessagesPopulation'
 import { SectionDebriefings, SectionCohesionSociale } from '../components/DebriefingsEtCohesion'
+import { BandeauAppelsAide, SectionRapportsEtPhotos, SectionComptages } from '../components/RemonteesTerrain'
 import { SectionPlanNucleaire, SectionVeille, SectionCauseIncendie } from '../components/NucleaireVeilleIncendie'
 
 export default function IncidentDetail() {
@@ -199,6 +200,8 @@ export default function IncidentDetail() {
         )}
       </div>
 
+      <BandeauAppelsAide incidentId={id} />
+
       <div className="onglets" role="tablist" aria-label="Disciplines de la fiche incident">
         {ongletsVisibles.map((o) => (
           <button
@@ -274,6 +277,9 @@ export default function IncidentDetail() {
               <SectionRequisitions incidentId={id} contexteId={contexteId} />
             </div>
           )}
+          <div className="mb-6">
+            <SectionComptages incidentId={id} />
+          </div>
         </>
       )}
 
@@ -285,6 +291,9 @@ export default function IncidentDetail() {
               <SectionLivreDeBord incidentId={id} contexteId={contexteId} />
             </div>
           )}
+          <div className="mb-6">
+            <SectionRapportsEtPhotos incidentId={id} />
+          </div>
           {afficher('checklist') && (
             <div className="mb-6">
               <SectionChecklist incidentId={id} contexteId={contexteId} />

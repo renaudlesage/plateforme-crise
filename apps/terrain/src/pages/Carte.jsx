@@ -12,11 +12,14 @@ import {
   FormulaireLocalisation,
   PointsAFlaguer,
   MoyensEngages,
+  distanceEtCap,
+  ilYA,
 } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
 import { useIncidentsEnCours } from '../hooks/useIncidentsEnCours'
+import { usePosition } from '../context/PositionContext'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
 
 const CENTRE_BELGIQUE = { lat: 50.5039, lon: 4.4699 }
@@ -37,7 +40,13 @@ const COUCHES = [
   { cle: 'sites_qg', libelle: 'Sites CC', couleur: '#7c3aed', symbole: 'pc_ops', table: 'sites_qg', champNom: 'nom' },
   { cle: 'infrastructures_critiques', libelle: 'Infrastructures critiques', couleur: '#b45309', symbole: 'sensible_noir', table: 'infrastructures_critiques', champNom: 'nom', champSous: 'type' },
   { cle: 'signalements_citoyens', libelle: 'Signalements citoyens', couleur: '#059669', table: null },
+  // Rafraîchies à part (toutes les 30 s) : positions partagées par les équipes et appels d'aide en cours
+  { cle: 'equipes', libelle: 'Équipes (position partagée)', couleur: '#0891b2', table: null },
+  { cle: 'aides', libelle: "Appels d'aide", couleur: '#b91c1c', table: null },
 ]
+
+const COULEUR_AIDE = { attention: '#d97706', urgent: '#b91c1c', mayday: '#7f1d1d' }
+const POSITION_EQUIPE_VALIDE_MS = 2 * 3600000 // au-delà, la position est trop ancienne pour être affichée
 
 /**
  * Carte Terrain : même outil que le CC (composant partagé CarteCrise), avec
@@ -51,6 +60,7 @@ const COUCHES = [
  */
 export default function Carte() {
   const { contexteId } = useAuth()
+  const { position } = usePosition()
   const [couches, setCouches] = useState(() => Object.fromEntries(COUCHES.map((c) => [c.cle, true])))
   const [donnees, setDonnees] = useState({})
   const [zones, setZones] = useState([])
@@ -136,6 +146,29 @@ export default function Carte() {
     charger()
   }, [charger])
 
+  // Équipes et appels d'aide : rechargés toutes les 30 s, sans refaire tout le chargement de la carte.
+  const [equipes, setEquipes] = useState([])
+  const [aides, setAides] = useState([])
+  useEffect(() => {
+    if (!contexteId) return undefined
+    let annule = false
+    const rafraichir = async () => {
+      const [eq, ai] = await Promise.all([
+        supabase.from('positions_equipes').select('id, incident_id, libelle, latitude, longitude, precision_m, maj_le').eq('contexte_id', contexteId).gte('maj_le', new Date(Date.now() - POSITION_EQUIPE_VALIDE_MS).toISOString()),
+        supabase.from('alertes_aide').select('id, incident_id, niveau, statut, role_libelle, message, latitude, longitude, created_at').eq('contexte_id', contexteId).neq('statut', 'close').not('latitude', 'is', null).gte('created_at', new Date(Date.now() - 6 * 3600000).toISOString()),
+      ])
+      if (annule) return
+      setEquipes(eq.data ?? [])
+      setAides(ai.data ?? [])
+    }
+    rafraichir()
+    const t = setInterval(rafraichir, 30000)
+    return () => {
+      annule = true
+      clearInterval(t)
+    }
+  }, [contexteId])
+
   // Incidents cochés : par défaut celui qui est suivi sur cet appareil.
   useEffect(() => {
     if (affiches === null && incidentChoisi) setAffiches([incidentChoisi.id])
@@ -154,7 +187,7 @@ export default function Carte() {
   const marqueurs = useMemo(() => {
     const tous = []
     for (const c of COUCHES) {
-      if (!couches[c.cle]) continue
+      if (!couches[c.cle] || c.cle === 'equipes' || c.cle === 'aides') continue
       const source =
         c.cle === 'observations'
           ? (donnees.observations ?? []).filter((p) => (!p.incident_id || ids.has(p.incident_id)) && disciplineVisible(p.discipline))
@@ -211,6 +244,43 @@ export default function Carte() {
     return enEdition ? tous.filter((m) => m.id !== enEdition) : tous
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [donnees, couches, ids, disciplinesVues, mode])
+
+  // Ce qui s'ajoute à l'affichage sans toucher au cadrage : distance et cap depuis ma position,
+  // équipes, appels d'aide, et ma propre position.
+  const marqueursAffiches = useMemo(() => {
+    const avecDistance = marqueurs.map((m) =>
+      position ? { ...m, sousTitre: [m.sousTitre, distanceEtCap(position, m)].filter(Boolean).join(' · ') } : m
+    )
+    const extra = []
+    if (couches.equipes) {
+      for (const e of equipes.filter((x) => !x.incident_id || ids.has(x.incident_id))) {
+        extra.push({
+          id: `equipe-${e.id}`,
+          lat: Number(e.latitude),
+          lon: Number(e.longitude),
+          titre: e.libelle ?? 'Équipe',
+          sousTitre: `position ${ilYA(e.maj_le)}${position ? ` · ${distanceEtCap(position, { lat: Number(e.latitude), lon: Number(e.longitude) })}` : ''}`,
+          couleur: '#0891b2',
+        })
+      }
+    }
+    if (couches.aides) {
+      for (const a of aides.filter((x) => !x.incident_id || ids.has(x.incident_id))) {
+        extra.push({
+          id: `aide-${a.id}`,
+          lat: Number(a.latitude),
+          lon: Number(a.longitude),
+          titre: `🆘 ${a.niveau.toUpperCase()}${a.role_libelle ? ` · ${a.role_libelle}` : ''}`,
+          sousTitre: [ilYA(a.created_at), a.message].filter(Boolean).join(' · '),
+          couleur: COULEUR_AIDE[a.niveau] ?? '#b91c1c',
+        })
+      }
+    }
+    if (position) {
+      extra.push({ id: 'ma-position', lat: position.lat, lon: position.lon, titre: 'Ma position', sousTitre: `±${Math.round(position.precision_m ?? 0)} m`, couleur: '#2563eb' })
+    }
+    return [...avecDistance, ...extra]
+  }, [marqueurs, position, couches.equipes, couches.aides, equipes, aides, ids])
 
   const cercles = useMemo(
     () =>
@@ -427,7 +497,7 @@ export default function Carte() {
           zoomRecentrage={pointsIncidents.length === 1 ? 15 : null}
           ajusterSur={pointsIncidents.length > 1 ? pointsIncidents : null}
           cleRecentrage={cleRecentrage}
-          marqueurs={marqueurs}
+          marqueurs={marqueursAffiches}
           cercles={cercles}
           selection={selection}
           onClicCarte={mode ? (p) => setSelection(p) : null}

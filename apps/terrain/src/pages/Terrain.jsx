@@ -6,8 +6,13 @@ import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
 import { useIncidentsEnCours, SelecteurIncident } from '../hooks/useIncidentsEnCours'
 import { Link } from 'react-router-dom'
+import { BoutonAide, PanneauPosition, AutourDeMoi, Passation } from '../components/OutilsPosition'
+import { RapportCan, PhotoGeo, ComptagePersonnes } from '../components/OutilsRapport'
+import { usePosition } from '../context/PositionContext'
 
 const STORAGE_KEY_ROLE = 'terrain_role_id_selectionne'
+// Libellé du rôle, lu par le partage de position et les rapports (voir PositionContext)
+const STORAGE_KEY_ROLE_LIBELLE = 'terrain_role_libelle'
 
 const LIBELLE_PHASE_CYCLE_VIE = {
   veille: 'Veille',
@@ -28,11 +33,14 @@ export default function Terrain() {
   function choisirRole(id) {
     setRoleId(id)
     localStorage.setItem(STORAGE_KEY_ROLE, id)
+    const libelle = roles.find((r) => r.id === id)?.libelle
+    if (libelle) localStorage.setItem(STORAGE_KEY_ROLE_LIBELLE, libelle)
   }
 
   function changerDeRole() {
     setRoleId('')
     localStorage.removeItem(STORAGE_KEY_ROLE)
+    localStorage.removeItem(STORAGE_KEY_ROLE_LIBELLE)
   }
 
   if (chargementRoles) {
@@ -62,6 +70,10 @@ export default function Terrain() {
   }
 
   const roleActuel = roles.find((r) => r.id === roleId)
+  // Rôle choisi avant l'ajout du libellé mémorisé : on le complète une fois
+  if (roleActuel?.libelle && localStorage.getItem(STORAGE_KEY_ROLE_LIBELLE) !== roleActuel.libelle) {
+    localStorage.setItem(STORAGE_KEY_ROLE_LIBELLE, roleActuel.libelle)
+  }
 
   return (
     <div>
@@ -73,13 +85,22 @@ export default function Terrain() {
         <BoutonDiscret onClick={changerDeRole}>Changer</BoutonDiscret>
       </div>
 
-      <IncidentActif contexteId={contexteId} roleId={roleId} />
+      <IncidentActif contexteId={contexteId} roleId={roleId} roleLibelle={roleActuel?.libelle ?? null} />
     </div>
   )
 }
 
-function IncidentActif({ contexteId, roleId }) {
+const ONGLETS_TERRAIN = [
+  { cle: 'mission', libelle: 'Mission' },
+  { cle: 'rapport', libelle: 'Rapport' },
+  { cle: 'position', libelle: 'Ma position' },
+  { cle: 'passation', libelle: 'Passation' },
+]
+
+function IncidentActif({ contexteId, roleId, roleLibelle }) {
   const { incidents, incident, choisir, chargement } = useIncidentsEnCours(contexteId)
+  const { dansZoneRouge } = usePosition()
+  const [onglet, setOnglet] = useState('mission')
 
   if (chargement) return <p className="vide text-center mt-6">Chargement…</p>
 
@@ -110,12 +131,69 @@ function IncidentActif({ contexteId, roleId }) {
         </div>
       </div>
 
+      {dansZoneRouge && (
+        <div className="message erreur" role="alert">
+          ⚠ Vous êtes dans la zone ROUGE (exclusion). Réservée aux services d'intervention, experts et techniciens.
+        </div>
+      )}
+
+      <BoutonAide incidentId={incident.id} contexteId={contexteId} roleLibelle={roleLibelle} />
+
       <Link to="/situation" className="bouton-terrain principal" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
         Voir la situation (Comité de Coordination)
       </Link>
 
-      <ChecklistRole incidentId={incident.id} contexteId={contexteId} roleId={roleId} />
-      <SignalementRapide incidentId={incident.id} roleId={roleId} />
+      <div className="onglets" role="tablist">
+        {ONGLETS_TERRAIN.map((o) => (
+          <button key={o.cle} type="button" role="tab" aria-selected={onglet === o.cle} className={`module${onglet === o.cle ? ' actif' : ''}`} onClick={() => setOnglet(o.cle)}>
+            {o.libelle}
+          </button>
+        ))}
+      </div>
+
+      {onglet === 'mission' && (
+        <div className="space-y-6">
+          <ChecklistRole incidentId={incident.id} contexteId={contexteId} roleId={roleId} />
+          <SignalementRapide incidentId={incident.id} roleId={roleId} />
+        </div>
+      )}
+
+      {onglet === 'rapport' && (
+        <div className="space-y-6">
+          <div>
+            <h2>Rapport au CC (C.A.N.)</h2>
+            <RapportCan incidentId={incident.id} contexteId={contexteId} roleLibelle={roleLibelle} />
+          </div>
+          <div>
+            <h2>Photo géolocalisée</h2>
+            <PhotoGeo incidentId={incident.id} contexteId={contexteId} />
+          </div>
+          <div>
+            <h2>Comptage de personnes</h2>
+            <ComptagePersonnes incidentId={incident.id} contexteId={contexteId} />
+          </div>
+        </div>
+      )}
+
+      {onglet === 'position' && (
+        <div className="space-y-6">
+          <div>
+            <h2>Ma position</h2>
+            <PanneauPosition />
+          </div>
+          <div>
+            <h2>Autour de moi</h2>
+            <AutourDeMoi />
+          </div>
+        </div>
+      )}
+
+      {onglet === 'passation' && (
+        <div>
+          <h2>Fiche de passation</h2>
+          <Passation incident={incident} roleLibelle={roleLibelle} />
+        </div>
+      )}
     </div>
   )
 }

@@ -20,3 +20,4 @@ export {
   PointsAFlaguer,
   MoyensEngages,
 } from './EditionCarte.jsx'
+export { distanceM, capDegres, capLibelle, libelleDistance, distanceEtCap, lienItineraire, ilYA, heuresDepuis, positionActuelle } from './geo.js'

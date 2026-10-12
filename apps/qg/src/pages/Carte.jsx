@@ -11,6 +11,7 @@ import {
   FormulaireLocalisation,
   PointsAFlaguer,
   MoyensEngages,
+  ilYA,
 } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -29,7 +30,13 @@ const COUCHES = [
   { cle: 'signalements_citoyens', libelle: 'Signalements citoyens (ouverts)', couleur: '#059669' },
   { cle: 'observations', libelle: 'Points terrain (ouverts)', couleur: '#be123c' },
   { cle: 'moyens', libelle: 'Moyens engagés', couleur: '#8e2a8e', symbole: 'moyen_autre' },
+  // Rafraîchies à part toutes les 30 s (voir plus bas) : positions partagées par les équipes et appels d'aide
+  { cle: 'equipes', libelle: 'Équipes (position partagée)', couleur: '#0891b2' },
+  { cle: 'aides', libelle: "Appels d'aide", couleur: '#b91c1c' },
 ]
+
+const COULEUR_AIDE = { attention: '#d97706', urgent: '#b91c1c', mayday: '#7f1d1d' }
+const POSITION_EQUIPE_VALIDE_MS = 2 * 3600000 // au-delà, la position est trop ancienne pour être affichée
 
 // Symbole par défaut d'un point terrain posé avant l'arrivée des symboles (même table que Terrain).
 const SYMBOLE_PAR_TYPE = {
@@ -149,6 +156,29 @@ export default function Carte() {
     charger()
   }, [charger])
 
+  // Équipes et appels d'aide : rechargés toutes les 30 s sans refaire tout le chargement de la carte.
+  const [equipes, setEquipes] = useState([])
+  const [aides, setAides] = useState([])
+  useEffect(() => {
+    if (!contexteId) return undefined
+    let annule = false
+    const rafraichir = async () => {
+      const [eq, ai] = await Promise.all([
+        supabase.from('positions_equipes').select('id, incident_id, libelle, latitude, longitude, maj_le').eq('contexte_id', contexteId).gte('maj_le', new Date(Date.now() - POSITION_EQUIPE_VALIDE_MS).toISOString()),
+        supabase.from('alertes_aide').select('id, incident_id, niveau, role_libelle, message, latitude, longitude, created_at').eq('contexte_id', contexteId).neq('statut', 'close').not('latitude', 'is', null).gte('created_at', new Date(Date.now() - 6 * 3600000).toISOString()),
+      ])
+      if (annule) return
+      setEquipes(eq.data ?? [])
+      setAides(ai.data ?? [])
+    }
+    rafraichir()
+    const t = setInterval(rafraichir, 30000)
+    return () => {
+      annule = true
+      clearInterval(t)
+    }
+  }, [contexteId])
+
   const ids = useMemo(() => new Set(affiches ?? []), [affiches])
   const incidentsAffiches = useMemo(() => incidents.filter((i) => ids.has(i.id)), [incidents, ids])
   // Un point rattaché à un incident n'apparaît que si cet incident est coché ;
@@ -166,7 +196,7 @@ export default function Carte() {
   const marqueurs = useMemo(() => {
     const tous = []
     for (const c of COUCHES) {
-      if (!couches[c.cle]) continue
+      if (!couches[c.cle] || c.cle === 'equipes' || c.cle === 'aides') continue
       const source =
         c.cle === 'incidents'
           ? incidentsAffiches.filter((i) => i.latitude != null)
@@ -191,6 +221,30 @@ export default function Carte() {
     return enEdition ? tous.filter((m) => m.id !== enEdition) : tous
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [points, couches, incidentsAffiches, ids, disciplinesVues, mode])
+
+  // Ajouts d'affichage qui ne touchent pas au cadrage de la carte
+  const marqueursAffiches = useMemo(() => {
+    const extra = []
+    if (couches.equipes) {
+      for (const e of equipes.filter(visible)) {
+        extra.push({ id: `equipe-${e.id}`, lat: Number(e.latitude), lon: Number(e.longitude), titre: e.libelle ?? 'Équipe', sousTitre: `position ${ilYA(e.maj_le)}`, couleur: '#0891b2' })
+      }
+    }
+    if (couches.aides) {
+      for (const a of aides.filter(visible)) {
+        extra.push({
+          id: `aide-${a.id}`,
+          lat: Number(a.latitude),
+          lon: Number(a.longitude),
+          titre: `🆘 ${a.niveau.toUpperCase()}${a.role_libelle ? ` · ${a.role_libelle}` : ''}`,
+          sousTitre: [ilYA(a.created_at), a.message].filter(Boolean).join(' · '),
+          couleur: COULEUR_AIDE[a.niveau] ?? '#b91c1c',
+        })
+      }
+    }
+    return extra.length ? [...marqueurs, ...extra] : marqueurs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [marqueurs, equipes, aides, couches.equipes, couches.aides, ids])
 
   // Incident auquel rattacher un nouveau point : le seul affiché, sinon celui choisi dans la liste.
   const incidentId = incidentsAffiches.length === 1 ? incidentsAffiches[0].id : (incidentsAffiches.find((i) => i.id === incidentCible) ?? incidentsAffiches[0])?.id ?? null
@@ -414,7 +468,7 @@ export default function Carte() {
             zoomRecentrage={pointsIncidents.length === 1 ? 15 : null}
             ajusterSur={pointsIncidents.length > 1 ? pointsIncidents : null}
             cleRecentrage={cleRecentrage}
-            marqueurs={marqueurs}
+            marqueurs={marqueursAffiches}
             cercles={cercles}
             selection={selection}
             onClicCarte={mode ? (p) => setSelection(p) : null}

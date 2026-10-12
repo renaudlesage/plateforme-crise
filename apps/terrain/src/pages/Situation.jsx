@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Symbole, disciplineDe } from '@plateforme-crise/shared'
+import { Symbole, disciplineDe, heuresDepuis } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { BoutonDiscret } from '../components/Boutons'
@@ -18,6 +18,23 @@ const LIBELLE_PHASE = {
 const ETAT_MOYEN = { en_route: 'En route', sur_place: 'Sur place', disponible: 'Disponible' }
 
 const heure = (d) => new Date(d).toLocaleString('fr-BE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+
+const SEUIL_RELEVE_H = 4 // au-delà, on signale « à relever » : repère d'organisation, pas une règle
+
+/** Temps d'engagement d'un moyen sur place ou en route, avec alerte de relève au-delà de 4 h. */
+function EngagementMoyen({ moyen }) {
+  if (!moyen.created_at || (moyen.statut !== 'sur_place' && moyen.statut !== 'en_route')) return null
+  const h = heuresDepuis(moyen.created_at)
+  const long = h >= SEUIL_RELEVE_H
+  const hh = Math.floor(h)
+  const mm = String(Math.floor((h - hh) * 60)).padStart(2, '0')
+  return (
+    <p className={`text-xs mt-1 ${long ? 'text-chaud' : 'text-sourdine'}`}>
+      engagé depuis {hh} h {mm}
+      {long ? ' · à relever ?' : ''}
+    </p>
+  )
+}
 
 /**
  * Situation : ce que le CC sait et décide, vu du terrain. Lecture seule,
@@ -50,7 +67,7 @@ export default function Situation() {
       supabase.from('observations_terrain').select('id, type, description, created_at').eq('incident_id', id).eq('statut', 'ouvert').order('created_at', { ascending: false }),
       supabase
         .from('moyens_engages')
-        .select('id, symbole, libelle, discipline, effectif, statut, remarque, maj_le')
+        .select('id, symbole, libelle, discipline, effectif, statut, remarque, maj_le, created_at')
         .eq('incident_id', id)
         .neq('statut', 'retire')
         .order('maj_le', { ascending: false }),
@@ -212,6 +229,7 @@ export default function Situation() {
                   </div>
                   {m.remarque && <p className="text-xs text-sourdine mt-1">{m.remarque}</p>}
                   <p className="text-xs text-sourdine mt-1">mis à jour {heure(m.maj_le)}</p>
+                  <EngagementMoyen moyen={m} />
                 </li>
               )
             }}
