@@ -7,6 +7,7 @@ import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
 import { supabase } from '../lib/supabase'
 import MessagesPopulation from '../components/MessagesPopulation'
 import { SectionDebriefings, SectionCohesionSociale } from '../components/DebriefingsEtCohesion'
+import SyntheseIncident from '../components/SyntheseIncident'
 import { BandeauAppelsAide, SectionRapportsEtPhotos, SectionComptages } from '../components/RemonteesTerrain'
 import { SectionPlanNucleaire, SectionVeille, SectionCauseIncendie } from '../components/NucleaireVeilleIncendie'
 
@@ -84,7 +85,15 @@ export default function IncidentDetail() {
   // disparaît de la barre plutôt que d'afficher une page vide.
   const afficher = (module) => PHASES_MODULES[incident.phase_cycle_vie]?.[module] !== false
   const ongletsVisibles = ONGLETS.filter((o) => o.modules.some(afficher))
-  const ongletActif = ongletsVisibles.find((o) => o.cle === paramsUrl.get('onglet')) ?? ongletsVisibles[0]
+  // Sans onglet dans l'URL, on ouvre le moment qui correspond à la phase : pilotage avant l'alerte,
+  // synthèse pendant la crise, rétablissement après.
+  const ongletActif =
+    ongletsVisibles.find((o) => o.cle === paramsUrl.get('onglet')) ??
+    ongletsVisibles.find((o) => o.cle === ONGLET_PAR_DEFAUT[incident.phase_cycle_vie]) ??
+    ongletsVisibles[0]
+  const allerA = (cle) => setParamsUrl({ onglet: cle }, { replace: true })
+  const groupesVisibles = GROUPES.map((g) => ({ ...g, visibles: g.onglets.filter((c) => ongletsVisibles.some((o) => o.cle === c)) })).filter((g) => g.visibles.length > 0)
+  const groupeActif = groupesVisibles.find((g) => g.visibles.includes(ongletActif?.cle)) ?? groupesVisibles[0]
 
   return (
     <div>
@@ -202,20 +211,43 @@ export default function IncidentDetail() {
 
       <BandeauAppelsAide incidentId={id} />
 
-      <div className="onglets" role="tablist" aria-label="Disciplines de la fiche incident">
-        {ongletsVisibles.map((o) => (
+      {/* Deux niveaux : le moment de la crise (Maintenant / Piloter / Agir / Après), puis, sous « Agir », l'entrée par discipline ou fonction. */}
+      <div className="onglets" role="tablist" aria-label="Moments de la crise">
+        {groupesVisibles.map((g) => (
           <button
-            key={o.cle}
+            key={g.cle}
             type="button"
             role="tab"
-            aria-selected={o.cle === ongletActif?.cle}
-            className={`module ${o.cle === ongletActif?.cle ? 'actif' : ''}`.trim()}
-            onClick={() => setParamsUrl({ onglet: o.cle }, { replace: true })}
+            aria-selected={g.cle === groupeActif?.cle}
+            className={`module ${g.cle === groupeActif?.cle ? 'actif' : ''}`.trim()}
+            onClick={() => allerA(g.visibles.includes(ongletActif?.cle) ? ongletActif.cle : g.visibles[0])}
           >
-            {o.libelle}
+            {g.libelle}
           </button>
         ))}
       </div>
+      {groupeActif && groupeActif.visibles.length > 1 && (
+        <div className="onglets" role="tablist" aria-label={`${groupeActif.libelle} : par discipline ou fonction`} style={{ marginTop: -6 }}>
+          {groupeActif.visibles.map((cle) => {
+            const o = ongletsVisibles.find((x) => x.cle === cle)
+            return (
+              <button
+                key={cle}
+                type="button"
+                role="tab"
+                aria-selected={cle === ongletActif?.cle}
+                className={`module ${cle === ongletActif?.cle ? 'actif' : ''}`.trim()}
+                style={{ fontSize: 12, padding: '4px 10px' }}
+                onClick={() => allerA(cle)}
+              >
+                {o.libelle}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {ongletActif?.cle === 'synthese' && <SyntheseIncident incidentId={id} contexteId={contexteId} onAller={allerA} />}
 
       {ongletActif?.cle === 'pilotage' && (
         <>
@@ -357,13 +389,34 @@ export default function IncidentDetail() {
 // PHASES_MODULES (la section "phase_cycle_vie" n'y figure pas : toujours
 // visible, donc l'onglet Pilotage ne disparaît jamais).
 const ONGLETS = [
+  { cle: 'synthese', libelle: 'Synthèse', modules: ['phase_cycle_vie'] },
   { cle: 'pilotage', libelle: 'Pilotage', modules: ['phase_cycle_vie', 'escalade', 'activation_30min', 'seuils_action', 'organes', 'plan_nucleaire'] },
-  { cle: 'operations', libelle: 'Opérations', modules: ['zones', 'pc_ops', 'suivi_intervenants', 'requisitions'] },
-  { cle: 'journal', libelle: 'Journal & suivi', modules: ['suivi_operationnel', 'checklist', 'veille'] },
-  { cle: 'communication', libelle: 'Communication (D5)', modules: ['messages_population', 'communication_d5'] },
-  { cle: 'psychosocial', libelle: 'Psychosocial (D2)', modules: ['psychosocial_d2'] },
+  { cle: 'operations', libelle: 'Terrain · PC-Ops', modules: ['zones', 'pc_ops', 'suivi_intervenants', 'requisitions'] },
+  { cle: 'journal', libelle: 'Journal & SitRep', modules: ['suivi_operationnel', 'checklist', 'veille'] },
+  { cle: 'communication', libelle: 'D5 · Communication', modules: ['messages_population', 'communication_d5'] },
+  { cle: 'psychosocial', libelle: 'D2 · Psychosocial', modules: ['psychosocial_d2'] },
   { cle: 'retablissement', libelle: 'Rétablissement & REX', modules: ['retablissement', 'phase_transitoire', 'rex'] },
 ]
+
+// Moments de la crise : premier niveau de navigation. « Agir » regroupe les entrées par
+// discipline ou fonction (terrain et PC-Ops, D5, D2, journal).
+const GROUPES = [
+  { cle: 'maintenant', libelle: 'Maintenant', onglets: ['synthese'] },
+  { cle: 'piloter', libelle: 'Piloter', onglets: ['pilotage'] },
+  { cle: 'agir', libelle: 'Agir', onglets: ['operations', 'communication', 'psychosocial', 'journal'] },
+  { cle: 'apres', libelle: 'Après', onglets: ['retablissement'] },
+]
+
+// Onglet ouvert par défaut selon la phase du cycle de vie
+const ONGLET_PAR_DEFAUT = {
+  veille: 'pilotage',
+  vigilance: 'pilotage',
+  pre_alerte: 'pilotage',
+  alerte: 'synthese',
+  phase_active: 'synthese',
+  levee: 'retablissement',
+  post_crise: 'retablissement',
+}
 
 // Quelles sections de la fiche incident sont pertinentes selon la phase du
 // cycle de vie — une section non listée pour une phase est masquée plutôt

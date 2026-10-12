@@ -37,6 +37,9 @@ export default function Incidents() {
   const [enAjout, setEnAjout] = useState(false)
 
   const incidentsTries = [...incidents].sort((a, b) => new Date(b.date_debut) - new Date(a.date_debut))
+  const actifs = incidentsTries.filter((i) => i.statut !== 'cloture')
+  const clotures = incidentsTries.filter((i) => i.statut === 'cloture')
+  const [cloturesOuverts, setCloturesOuverts] = useState(false)
 
   return (
     <div>
@@ -47,7 +50,7 @@ export default function Incidents() {
         )}
       </div>
       <p className="text-sm text-sourdine mb-4">
-        Vue d'ensemble des incidents en cours et clôturés pour ce contexte.
+        Incidents à suivre en premier ; les clôturés restent consultables en dessous.
       </p>
 
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
@@ -71,9 +74,39 @@ export default function Incidents() {
           Aucun incident enregistré pour ce contexte.
         </p>
       ) : (
-        <ul className="divide-y divide-trait border border-trait rounded overflow-hidden">
-          {incidentsTries.map((i) => (
-            <li key={i.id}>
+        <>
+          {actifs.length === 0 ? (
+            <p className="text-sm text-sourdine border border-dashed border-trait rounded p-4 text-center mb-4">Aucun incident en cours.</p>
+          ) : (
+            <ul className="divide-y divide-trait border border-trait rounded overflow-hidden mb-4">
+              {actifs.map((i) => (
+                <LigneIncident key={i.id} i={i} />
+              ))}
+            </ul>
+          )}
+          {clotures.length > 0 && (
+            <div>
+              <button type="button" className="lien text-sm mb-2" onClick={() => setCloturesOuverts((o) => !o)} aria-expanded={cloturesOuverts}>
+                Incidents clôturés ({clotures.length}) {cloturesOuverts ? '▴' : '▾'}
+              </button>
+              {cloturesOuverts && (
+                <ul className="divide-y divide-trait border border-trait rounded overflow-hidden">
+                  {clotures.map((i) => (
+                    <LigneIncident key={i.id} i={i} />
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function LigneIncident({ i }) {
+  return (
+    <li>
               <Link
                 to={`/incidents/${i.id}`}
                 className="flex items-center justify-between px-4 py-3 bg-surface hover:bg-fond transition-colors"
@@ -115,11 +148,7 @@ export default function Incidents() {
                 </div>
                 <span className="text-sourdine text-sm">→</span>
               </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    </li>
   )
 }
 
@@ -135,6 +164,7 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
   const [longitude, setLongitude] = useState(null)
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
+  const [avance, setAvance] = useState(false)
 
   async function soumettre(e) {
     e.preventDefault()
@@ -184,7 +214,32 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="max-w-sm">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Phase du cycle de vie</label>
+          <p className="text-xs text-sourdine mb-1">Où en est l'incident — ajustable ensuite depuis sa fiche.</p>
+          <select value={phaseCycleVie} onChange={(e) => setPhaseCycleVie(e.target.value)} className="w-full">
+            {PHASES_CYCLE_VIE.map((p) => (
+              <option key={p.valeur} value={p.valeur}>{p.libelle}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Localisation du déclenchement</label>
+        <p className="text-xs text-sourdine mb-1">
+          Facultatif, mais recommandé : repère l'incident sur la carte du contexte dès le départ.
+        </p>
+        <SelecteurLocalisation lat={latitude} lon={longitude} onChange={(la, lo) => { setLatitude(la); setLongitude(lo) }} />
+      </div>
+
+      <div>
+        <button type="button" className="lien text-sm" onClick={() => setAvance((v) => !v)} aria-expanded={avance}>
+          Paramètres avancés (criticité, complexité, dynamique) {avance ? '▴' : '▾'}
+        </button>
+        {avance && (
+          <div className="mt-3 space-y-3">
         <div>
           <label className="block text-xs font-medium text-sourdine mb-1">Degré de criticité (1-4, PRGC)</label>
           <p className="text-xs text-sourdine mb-1">Axe indépendant du niveau d'escalade — à ajuster au fil de l'incident.</p>
@@ -196,16 +251,6 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
             <option value="4">4 — majeur</option>
           </select>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Phase du cycle de vie</label>
-          <p className="text-xs text-sourdine mb-1">Où en est l'incident — ajustable ensuite depuis sa fiche.</p>
-          <select value={phaseCycleVie} onChange={(e) => setPhaseCycleVie(e.target.value)} className="w-full">
-            {PHASES_CYCLE_VIE.map((p) => (
-              <option key={p.valeur} value={p.valeur}>{p.libelle}</option>
-            ))}
-          </select>
-        </div>
-      </div>
 
       <div>
         <label className="block text-xs font-medium text-sourdine mb-1">Complexité (commission Schmitz)</label>
@@ -234,12 +279,8 @@ function FormulaireIncident({ niveaux, onValider, onAnnuler }) {
         </select>
       </div>
 
-      <div>
-        <label className="block text-xs font-medium text-sourdine mb-1">Localisation du déclenchement</label>
-        <p className="text-xs text-sourdine mb-1">
-          Facultatif, mais recommandé : repère l'incident sur la carte du contexte dès le départ.
-        </p>
-        <SelecteurLocalisation lat={latitude} lon={longitude} onChange={(la, lo) => { setLatitude(la); setLongitude(lo) }} />
+          </div>
+        )}
       </div>
 
       {erreur && <p className="text-sm text-chaud">{erreur}</p>}
