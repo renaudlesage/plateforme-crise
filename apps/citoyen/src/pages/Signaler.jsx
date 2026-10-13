@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
-import { nouvelleCle, surRetourReseau } from '@plateforme-crise/shared'
+import { nouvelleCle, surRetourReseau, reduirePhoto } from '@plateforme-crise/shared'
 import { supabase } from '../lib/supabase'
 import { lireFile, ajouter, majSignalement, retirer, ETATS, ETIQUETTES_STATUT } from '../lib/fileSignalements'
 
@@ -14,6 +14,84 @@ const TYPES = [
   ['danger', 'Danger immédiat'],
   ['autre', 'Autre'],
 ]
+
+const PHOTOS_MAX = 3
+
+/**
+ * Ajout d'une photo à un signalement déjà reçu (donc avec du réseau : un fichier ne passe pas par la file hors ligne).
+ * Réduite, débarrassée de ses métadonnées (EXIF) et envoyée dans un espace privé, lisible par la commune seulement.
+ */
+function AjouterPhoto({ contexteId, signalement, onAjoutee }) {
+  const [fichier, setFichier] = useState(null)
+  const [apercu, setApercu] = useState(null)
+  const [legende, setLegende] = useState('')
+  const [enCours, setEnCours] = useState(false)
+  const [erreur, setErreur] = useState(null)
+  const nb = signalement.nb_photos ?? 0
+
+  useEffect(() => () => apercu && URL.revokeObjectURL(apercu), [apercu])
+
+  if (nb >= PHOTOS_MAX && !fichier) {
+    return <p className="text-xs text-sourdine mt-2">{PHOTOS_MAX} photos envoyées (maximum).</p>
+  }
+
+  function choisir(e) {
+    const f = e.target.files?.[0]
+    if (!f) return
+    setFichier(f)
+    setApercu(URL.createObjectURL(f))
+    setErreur(null)
+  }
+
+  async function envoyer() {
+    setEnCours(true)
+    setErreur(null)
+    try {
+      const blob = await reduirePhoto(fichier)
+      const chemin = `${contexteId}/${signalement.cle_client}/${nouvelleCle()}.jpg`
+      const { error: errUpload } = await supabase.storage.from('photos-citoyens').upload(chemin, blob, { contentType: 'image/jpeg' })
+      if (errUpload) throw new Error(navigator.onLine ? 'La photo n’a pas pu être envoyée. Réessayez.' : 'Pas de réseau : réessayez dès que vous captez.')
+      const { error } = await supabase.rpc('joindre_photo_signalement', {
+        p_contexte: contexteId,
+        p_cle_client: signalement.cle_client,
+        p_chemin: chemin,
+        p_legende: legende.trim() || null,
+      })
+      if (error) throw new Error(error.code === 'P0003' ? `${PHOTOS_MAX} photos au maximum par signalement.` : 'La photo n’a pas pu être rattachée. Réessayez.')
+      onAjoutee(nb + 1)
+      setFichier(null)
+      setApercu(null)
+      setLegende('')
+    } catch (e) {
+      setErreur(e.message ?? 'Envoi impossible.')
+    }
+    setEnCours(false)
+  }
+
+  return (
+    <div className="mt-2">
+      {!fichier ? (
+        <label className="lien text-xs" style={{ cursor: 'pointer' }}>
+          📷 Ajouter une photo{nb > 0 ? ` (${nb}/${PHOTOS_MAX})` : ''}
+          <input type="file" accept="image/*" capture="environment" onChange={choisir} style={{ display: 'none' }} />
+        </label>
+      ) : (
+        <div className="space-y-2">
+          {apercu && <img src={apercu} alt="Aperçu de la photo" style={{ width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 8 }} />}
+          <input value={legende} onChange={(e) => setLegende(e.target.value)} placeholder="Légende (facultatif)" maxLength={200} className="w-full" />
+          <div className="flex gap-2">
+            <button type="button" className="principal" onClick={envoyer} disabled={enCours}>{enCours ? 'Envoi…' : 'Envoyer la photo'}</button>
+            <button type="button" className="discret" onClick={() => { setFichier(null); setApercu(null) }} disabled={enCours}>Annuler</button>
+          </div>
+        </div>
+      )}
+      <p className="text-xs text-sourdine mt-1">
+        Ne vous mettez pas en danger pour la prendre. Évitez les personnes identifiables. Seule la commune voit la photo ; la position de la photo n’est pas transmise, seulement celle du signalement.
+      </p>
+      {erreur && <p className="text-xs text-chaud mt-1">{erreur}</p>}
+    </div>
+  )
+}
 
 /**
  * Signalement citoyen sans compte — port du module Participant
@@ -225,6 +303,9 @@ export default function Signaler() {
                 )}
                 {s.etat === 'echec' && <p className="text-xs text-chaud mt-1">{s.motif}</p>}
                 {s.description && <p className="text-xs text-sourdine mt-1">{s.description}</p>}
+                {s.etat === 'recu' && !['clos', 'sans_suite'].includes(s.statut) && (
+                  <AjouterPhoto contexteId={contexteId} signalement={s} onAjoutee={(n) => setFile(majSignalement(s.cle_client, { nb_photos: n }))} />
+                )}
                 {s.etat !== 'recu' && (
                   <button type="button" className="lien text-xs mt-1" onClick={() => setFile(retirer(s.cle_client))}>
                     Retirer de la liste

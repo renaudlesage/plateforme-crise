@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabase'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret } from '../components/Boutons'
 
@@ -45,6 +47,32 @@ export default function SignalementsCitoyens() {
   const tries = [...signalements].sort((a, b) => new Date(b.recu_le) - new Date(a.recu_le))
   const ouverts = tries.filter((s) => !['clos', 'sans_suite'].includes(s.statut))
   const clotures = tries.filter((s) => ['clos', 'sans_suite'].includes(s.statut))
+
+  // Photos jointes par les riverains : espace privé, adresses signées valables une heure
+  const [photos, setPhotos] = useState({}) // signalement_id -> [{ id, legende, url }]
+  const idsOuverts = ouverts.map((s) => s.id).join(',')
+  useEffect(() => {
+    if (!idsOuverts) {
+      setPhotos({})
+      return undefined
+    }
+    let annule = false
+    ;(async () => {
+      const { data } = await supabase.from('photos_signalements').select('id, signalement_id, chemin, legende, created_at').in('signalement_id', idsOuverts.split(',')).order('created_at')
+      if (annule || !data?.length) {
+        if (!annule) setPhotos({})
+        return
+      }
+      const { data: signees } = await supabase.storage.from('photos-citoyens').createSignedUrls(data.map((p) => p.chemin), 3600)
+      const urls = Object.fromEntries((signees ?? []).filter((x) => x.signedUrl).map((x) => [x.path, x.signedUrl]))
+      const parSignalement = {}
+      for (const p of data) (parSignalement[p.signalement_id] ??= []).push({ id: p.id, legende: p.legende, url: urls[p.chemin] })
+      if (!annule) setPhotos(parSignalement)
+    })()
+    return () => {
+      annule = true
+    }
+  }, [idsOuverts])
 
   async function changerStatut(s, statut) {
     const champs = { statut }
@@ -97,6 +125,17 @@ export default function SignalementsCitoyens() {
                         reçu le {new Date(s.recu_le).toLocaleString('fr-BE')}
                         {s.contact && <> · rappel : {s.contact}</>}
                       </p>
+                      {(photos[s.id] ?? []).length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {photos[s.id].map((p) =>
+                            p.url ? (
+                              <a key={p.id} href={p.url} target="_blank" rel="noreferrer" title={p.legende ?? 'Photo du riverain'}>
+                                <img src={p.url} alt={p.legende ?? 'Photo du riverain'} loading="lazy" style={{ width: 96, height: 72, objectFit: 'cover', borderRadius: 6 }} />
+                              </a>
+                            ) : null
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
                       {SUITE_POSSIBLE[s.statut]?.map((suivant) => (

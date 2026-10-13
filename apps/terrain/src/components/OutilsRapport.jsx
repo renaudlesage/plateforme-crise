@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { positionActuelle } from '@plateforme-crise/shared'
+import { positionActuelle, reduirePhoto } from '@plateforme-crise/shared'
 import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
 import { usePosition } from '../context/PositionContext'
@@ -122,27 +122,6 @@ export function RapportCan({ incidentId, contexteId, roleLibelle }) {
       </button>
     </form>
   )
-}
-
-/** Réduit une photo (≈ 1600 px, JPEG) avant envoi : un téléphone en produit de plusieurs Mo, inutiles sur le terrain. */
-async function reduirePhoto(fichier, cote = 1600, qualite = 0.8) {
-  const url = URL.createObjectURL(fichier)
-  try {
-    const img = await new Promise((ok, ko) => {
-      const i = new Image()
-      i.onload = () => ok(i)
-      i.onerror = ko
-      i.src = url
-    })
-    const echelle = Math.min(1, cote / Math.max(img.width, img.height))
-    const canvas = document.createElement('canvas')
-    canvas.width = Math.round(img.width * echelle)
-    canvas.height = Math.round(img.height * echelle)
-    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
-    return await new Promise((ok) => canvas.toBlob((b) => ok(b), 'image/jpeg', qualite))
-  } finally {
-    URL.revokeObjectURL(url)
-  }
 }
 
 /**
