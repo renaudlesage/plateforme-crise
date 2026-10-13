@@ -35,6 +35,13 @@ export default function Accueil() {
 
   const contexteActuel = contextes.find((c) => c.id === contexteId)
 
+  // Les signalements ne sont reçus que pendant une crise ouverte par la commune
+  const [signalementsOuverts, setSignalementsOuverts] = useState(false)
+  useEffect(() => {
+    if (!contexteId) return
+    supabase.rpc('signalements_ouverts', { p_contexte: contexteId }).then(({ data }) => setSignalementsOuverts(data === true))
+  }, [contexteId])
+
   if (!contexteId) {
     return (
       <div className="participant">
@@ -67,9 +74,11 @@ export default function Accueil() {
       <div className="bandeau">
         <span className="text-sm font-medium text-encre">{contexteActuel?.nom ?? '…'}</span>
         <div className="flex items-center gap-3">
-          <Link to="/signaler" className="lien">
-            Signaler un problème
-          </Link>
+          {signalementsOuverts && (
+            <Link to="/signaler" className="lien">
+              Signaler un problème
+            </Link>
+          )}
           <Link to="/plan-urgence" className="lien">
             Mon plan d'urgence
           </Link>

@@ -72,6 +72,11 @@ export default function IncidentDetail() {
     chargerIncident()
   }
 
+  async function changerSignalementsOuverts(ouverts) {
+    await supabase.from('incidents').update({ signalements_citoyens_ouverts: ouverts }).eq('id', id)
+    chargerIncident()
+  }
+
   async function changerLocalisation(latitude, longitude) {
     await supabase.from('incidents').update({ latitude, longitude }).eq('id', id)
     chargerIncident()
@@ -120,6 +125,15 @@ export default function IncidentDetail() {
               <option value="3">3 — sérieux</option>
               <option value="4">4 — majeur</option>
             </select>
+          </div>
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className="text-xs text-sourdine">Signalements citoyens :</span>
+            <span className={`jeton ${incident.signalements_citoyens_ouverts ? 'text-ok' : 'text-sourdine'}`}>
+              {incident.signalements_citoyens_ouverts ? 'ouverts' : 'fermés'}
+            </span>
+            <button type="button" className="lien text-xs" onClick={() => changerSignalementsOuverts(!incident.signalements_citoyens_ouverts)}>
+              {incident.signalements_citoyens_ouverts ? 'Fermer' : 'Ouvrir'}
+            </button>
           </div>
           <div className="mt-1.5">
             <button type="button" className="text-xs text-sourdine lien" onClick={() => setParametresOuverts((v) => !v)}>

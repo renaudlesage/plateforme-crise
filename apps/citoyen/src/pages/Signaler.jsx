@@ -116,6 +116,16 @@ export default function Signaler() {
   const [etatGeo, setEtatGeo] = useState('recherche')
   const [enLigne, setEnLigne] = useState(navigator.onLine)
   const [envoiEnCours, setEnvoiEnCours] = useState(false)
+  const [ouvert, setOuvert] = useState(null) // null = on ne sait pas encore ; false = pas de crise ouverte
+
+  // La réception n'est ouverte que pendant une crise : hors crise, personne n'est là pour lire.
+  // Sans réseau on ne peut pas le savoir : on laisse alors le formulaire accessible (le signalement partira au retour du réseau).
+  useEffect(() => {
+    if (!contexteId) return
+    supabase.rpc('signalements_ouverts', { p_contexte: contexteId }).then(({ data, error }) => {
+      if (!error && typeof data === 'boolean') setOuvert(data)
+    })
+  }, [contexteId, enLigne])
 
   useEffect(() => {
     if (!contexteId) {
@@ -187,6 +197,12 @@ export default function Signaler() {
       // Contexte inconnu (P0002) : refus définitif, inutile de réessayer.
       if (error.code === 'P0002') {
         setFile(majSignalement(s.cle_client, { etat: 'echec', motif: 'Commune inconnue ou lien invalide.' }))
+        return false
+      }
+      // Réception fermée (pas de crise ouverte) : refus définitif, on ne réessaie pas.
+      if (error.code === 'P0004') {
+        setOuvert(false)
+        setFile(majSignalement(s.cle_client, { etat: 'echec', motif: "La commune ne reçoit pas de signalements pour l'instant (pas de crise en cours). En cas d'urgence : 112." }))
         return false
       }
       // Panne réseau : pas de code SQL/PostgREST, la requête n'a pas abouti.
@@ -317,7 +333,18 @@ export default function Signaler() {
         </section>
       )}
 
-      <form onSubmit={soumettre} className="space-y-4">
+      {ouvert === false ? (
+        <div className="carte" role="status">
+          <p className="text-sm font-medium text-encre mb-1">Pas de crise en cours</p>
+          <p className="text-sm text-sourdine">
+            Les signalements ne sont reçus que lorsque la commune a ouvert une cellule de crise : hors crise, personne ne pourrait les lire à temps.
+          </p>
+          <p className="text-sm text-sourdine mt-2">
+            Danger ou urgence vitale : appelez le <strong>112</strong>. Pour tout autre problème, contactez directement les services de votre commune.
+          </p>
+        </div>
+      ) : (
+  <form onSubmit={soumettre} className="space-y-4">
         <div>
           <label className="block text-xs font-medium text-sourdine mb-1">De quoi s'agit-il ?</label>
           <select value={type} onChange={(e) => setType(e.target.value)} className="w-full">
@@ -370,7 +397,8 @@ export default function Signaler() {
         <button type="submit" disabled={envoiEnCours} className="principal bouton-terrain">
           {envoiEnCours ? 'Envoi…' : 'Envoyer le signalement'}
         </button>
-      </form>
+  </form>
+      )}
     </div>
   )
 }
