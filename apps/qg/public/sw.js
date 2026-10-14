@@ -5,7 +5,7 @@
 //  - tout le reste (notamment les appels Supabase cross-origin, REST/RPC) : jamais mis en cache,
 //    on ne sert que le réseau — pour ne jamais afficher une donnée de crise périmée.
 
-const CACHE_NAME = 'crisiware-qg-v1'
+const CACHE_NAME = 'crisiware-qg-v2'
 
 self.addEventListener('install', (event) => {
   self.skipWaiting()
