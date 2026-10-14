@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useSearchParams, Link } from 'react-router-dom'
-import { SelecteurLocalisation, DISCIPLINES, libelleOrgane } from '@plateforme-crise/shared'
+import { SelecteurLocalisation, DISCIPLINES, libelleOrgane, lienItineraire } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
@@ -9,7 +9,7 @@ import MessagesPopulation from '../components/MessagesPopulation'
 import { SectionDebriefings, SectionCohesionSociale } from '../components/DebriefingsEtCohesion'
 import SyntheseIncident from '../components/SyntheseIncident'
 import Repliable from '../components/Repliable'
-import { BandeauAppelsAide, SectionRapportsEtPhotos, SectionComptages } from '../components/RemonteesTerrain'
+import { BandeauAppelsAide, SectionComptages } from '../components/RemonteesTerrain'
 import { SectionPlanNucleaire, SectionVeille, SectionCauseIncendie } from '../components/NucleaireVeilleIncendie'
 
 export default function IncidentDetail() {
@@ -350,9 +350,6 @@ export default function IncidentDetail() {
               <SectionLivreDeBord incidentId={id} contexteId={contexteId} />
             </div>
           )}
-          <div className="mb-6">
-            <SectionRapportsEtPhotos incidentId={id} />
-          </div>
           {afficher('checklist') && (
             <div className="mb-6">
               <SectionChecklist incidentId={id} contexteId={contexteId} />
@@ -3654,30 +3651,51 @@ function SectionLivreDeBord({ incidentId, contexteId }) {
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
+  // Pièces du terrain rattachées aux entrées (photos : miniature ; rapports et photos : position)
+  const [pieces, setPieces] = useState({})
+
   const rafraichir = useCallback(async () => {
-    setChargement(true)
     const { data, error } = await supabase
       .from('livre_de_bord')
       .select('*, expediteur:expediteur_contact_id(id, nom, prenom), destinataire:destinataire_contact_id(id, nom, prenom)')
       .eq('incident_id', incidentId)
       .order('numero_ordre', { ascending: false })
     if (error) setErreur(error.message)
-    else setEntrees(data ?? [])
+    else {
+      setErreur(null)
+      setEntrees(data ?? [])
+      const idsPhotos = (data ?? []).filter((x) => x.source_type === 'photo').map((x) => x.source_id)
+      const idsRapports = (data ?? []).filter((x) => x.source_type === 'rapport_can').map((x) => x.source_id)
+      const [ph, ra] = await Promise.all([
+        idsPhotos.length ? supabase.from('photos_terrain').select('id, chemin, latitude, longitude').in('id', idsPhotos) : { data: [] },
+        idsRapports.length ? supabase.from('rapports_can').select('id, latitude, longitude').in('id', idsRapports) : { data: [] },
+      ])
+      const signees = ph.data?.length
+        ? (await supabase.storage.from('photos-terrain').createSignedUrls(ph.data.map((x) => x.chemin), 3600)).data ?? []
+        : []
+      const urlParChemin = Object.fromEntries(signees.filter((x) => x.signedUrl).map((x) => [x.path, x.signedUrl]))
+      const m = {}
+      for (const x of ph.data ?? []) m[x.id] = { url: urlParChemin[x.chemin], latitude: x.latitude, longitude: x.longitude }
+      for (const x of ra.data ?? []) m[x.id] = { latitude: x.latitude, longitude: x.longitude }
+      setPieces(m)
+    }
     setChargement(false)
   }, [incidentId])
 
   useEffect(() => {
     rafraichir()
+    // Le terrain écrit pendant qu'on regarde : le journal se met à jour seul
+    const t = setInterval(rafraichir, 30000)
+    return () => clearInterval(t)
   }, [rafraichir])
 
   async function ajouterEntree(e) {
     e.preventDefault()
     if (!message.trim()) return
     setEnCours(true)
-    const prochainNumero = entrees.length > 0 ? Math.max(...entrees.map((x) => x.numero_ordre)) + 1 : 1
+    // Le numéro d'ordre est attribué par le serveur (le terrain écrit aussi dans ce journal)
     const { error } = await supabase.from('livre_de_bord').insert({
       incident_id: incidentId,
-      numero_ordre: prochainNumero,
       message: message.trim(),
       decision: decision.trim() || null,
       expediteur_contact_id: expediteurContactId || null,
@@ -3773,8 +3791,19 @@ function SectionLivreDeBord({ incidentId, contexteId }) {
             <li key={e.id} className="bg-surface border border-trait rounded p-3">
               <p className="text-xs text-sourdine">
                 #{e.numero_ordre} · {new Date(e.horodatage).toLocaleString('fr-BE')}
+                {e.source_type && <span className="jeton ml-2">{e.source_type === 'photo' ? 'photo' : 'rapport C.A.N.'}</span>}
+                {pieces[e.source_id]?.latitude != null && (
+                  <a href={lienItineraire(pieces[e.source_id].latitude, pieces[e.source_id].longitude)} target="_blank" rel="noreferrer" className="lien ml-2">
+                    position ↗
+                  </a>
+                )}
               </p>
-              <p className="text-sm text-encre mt-0.5">{e.message}</p>
+              <p className="text-sm text-encre mt-0.5" style={{ whiteSpace: 'pre-line' }}>{e.message}</p>
+              {e.source_type === 'photo' && pieces[e.source_id]?.url && (
+                <a href={pieces[e.source_id].url} target="_blank" rel="noreferrer">
+                  <img src={pieces[e.source_id].url} alt="Photo du terrain" loading="lazy" style={{ marginTop: 6, maxWidth: 260, width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 4 }} />
+                </a>
+              )}
               {e.decision && <p className="text-xs text-sourdine mt-1">décision : {e.decision}</p>}
               {e.justification_prevoyance && (
                 <p className="text-xs text-sourdine mt-0.5">prévoyance : {e.justification_prevoyance}</p>

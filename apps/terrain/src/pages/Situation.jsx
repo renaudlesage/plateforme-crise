@@ -250,7 +250,7 @@ export default function Situation() {
             {(e) => (
               <li key={e.id} className="carte">
                 <p className="text-xs text-sourdine">#{e.numero_ordre} · {heure(e.horodatage)}</p>
-                <p className="text-sm text-encre mt-1">{e.message}</p>
+                <p className="text-sm text-encre mt-1" style={{ whiteSpace: 'pre-line' }}>{e.message}</p>
                 {e.decision && <p className="text-xs text-sourdine mt-1">décision : {e.decision}</p>}
               </li>
             )}

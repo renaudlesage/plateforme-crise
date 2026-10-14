@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ilYA, lienItineraire } from '@plateforme-crise/shared'
 import { supabase } from '../lib/supabase'
-import { BoutonDiscret } from './Boutons'
 
 /**
- * Ce que le terrain remonte au CC : appels d'aide, rapports C.A.N., photos, comptages.
+ * Ce que le terrain remonte au CC : appels d'aide et comptages. Les rapports C.A.N. et les photos arrivent dans le livre de bord.
  * Lecture et suivi seulement : rien n'est décidé ici à la place du Dir-PC-Ops.
  */
 
@@ -87,136 +86,6 @@ export function BandeauAppelsAide({ incidentId }) {
           </div>
         </div>
       ))}
-    </div>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Rapports C.A.N. et photos                                           */
-
-const CHAMPS_CAN = [
-  ['je_suis', 'Je suis'],
-  ['je_vois', 'Je vois'],
-  ['je_fais', 'Je fais'],
-  ['je_demande', 'Je demande'],
-  ['je_prevois', 'Je prévois'],
-]
-
-/** Rapports C.A.N. des équipes, photos géolocalisées. Replié par défaut (peu de place en priorité). */
-export function SectionRapportsEtPhotos({ incidentId }) {
-  const [rapports, setRapports] = useState([])
-  const [photos, setPhotos] = useState([])
-  const [urls, setUrls] = useState({})
-  const [ouvert, setOuvert] = useState(false)
-  const [erreur, setErreur] = useState(null)
-
-  const charger = useCallback(async () => {
-    const [r, p] = await Promise.all([
-      supabase
-        .from('rapports_can')
-        .select('id, role_libelle, je_suis, je_vois, je_fais, je_demande, je_prevois, latitude, longitude, created_at')
-        .eq('incident_id', incidentId)
-        .order('created_at', { ascending: false })
-        .limit(30),
-      supabase
-        .from('photos_terrain')
-        .select('id, chemin, legende, latitude, longitude, created_at')
-        .eq('incident_id', incidentId)
-        .order('created_at', { ascending: false })
-        .limit(30),
-    ])
-    const err = r.error ?? p.error
-    setErreur(err ? err.message : null)
-    setRapports(r.data ?? [])
-    setPhotos(p.data ?? [])
-    if ((p.data ?? []).length > 0) {
-      // Bucket privé : adresses signées valables une heure
-      const { data: signees } = await supabase.storage.from('photos-terrain').createSignedUrls(p.data.map((x) => x.chemin), 3600)
-      setUrls(Object.fromEntries((signees ?? []).filter((s) => s.signedUrl).map((s) => [s.path, s.signedUrl])))
-    }
-  }, [incidentId])
-
-  useEffect(() => {
-    charger()
-    const t = setInterval(charger, 60000)
-    return () => clearInterval(t)
-  }, [charger])
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="font-medium text-encre">
-          Rapports et photos du terrain{' '}
-          <span className="text-xs text-sourdine font-normal">
-            ({rapports.length} rapport{rapports.length > 1 ? 's' : ''}, {photos.length} photo{photos.length > 1 ? 's' : ''})
-          </span>
-        </h2>
-        <BoutonDiscret onClick={() => setOuvert((o) => !o)}>{ouvert ? 'Replier' : 'Afficher'}</BoutonDiscret>
-      </div>
-      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
-
-      {ouvert && (
-        <div className="space-y-4">
-          {rapports.length === 0 && photos.length === 0 && (
-            <p className="text-sm text-sourdine border border-dashed border-trait rounded p-4 text-center">Rien remonté par le terrain pour l'instant.</p>
-          )}
-
-          {rapports.length > 0 && (
-            <ul className="space-y-2">
-              {rapports.map((r) => (
-                <li key={r.id} className="bg-surface border border-trait rounded p-3">
-                  <p className="text-sm font-medium text-encre">
-                    {r.role_libelle ?? 'Intervenant'} <span className="text-xs text-sourdine font-normal">· {heure(r.created_at)}</span>
-                    {r.latitude != null && (
-                      <a href={lienItineraire(r.latitude, r.longitude)} target="_blank" rel="noreferrer" className="lien text-xs ml-2">
-                        position ↗
-                      </a>
-                    )}
-                  </p>
-                  <dl className="mt-1 text-sm">
-                    {CHAMPS_CAN.filter(([cle]) => r[cle]).map(([cle, lib]) => (
-                      <div key={cle} className="flex gap-2">
-                        <dt className="text-sourdine" style={{ minWidth: 84 }}>{lib}</dt>
-                        <dd className="text-encre">{r[cle]}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {photos.length > 0 && (
-            <ul className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {photos.map((p) => (
-                <li key={p.id} className="bg-surface border border-trait rounded overflow-hidden">
-                  {urls[p.chemin] ? (
-                    <a href={urls[p.chemin]} target="_blank" rel="noreferrer">
-                      <img src={urls[p.chemin]} alt={p.legende ?? 'Photo du terrain'} loading="lazy" style={{ width: '100%', height: 140, objectFit: 'cover' }} />
-                    </a>
-                  ) : (
-                    <div className="text-xs text-sourdine p-4 text-center">Photo indisponible</div>
-                  )}
-                  <div className="p-2">
-                    {p.legende && <p className="text-xs text-encre">{p.legende}</p>}
-                    <p className="text-xs text-sourdine">
-                      {heure(p.created_at)}
-                      {p.latitude != null && (
-                        <>
-                          {' · '}
-                          <a href={lienItineraire(p.latitude, p.longitude)} target="_blank" rel="noreferrer" className="lien">
-                            lieu ↗
-                          </a>
-                        </>
-                      )}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
     </div>
   )
 }
