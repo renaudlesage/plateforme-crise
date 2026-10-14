@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import MessagesPopulation from '../components/MessagesPopulation'
 import { SectionDebriefings, SectionCohesionSociale } from '../components/DebriefingsEtCohesion'
 import SyntheseIncident from '../components/SyntheseIncident'
+import Repliable from '../components/Repliable'
 import { BandeauAppelsAide, SectionRapportsEtPhotos, SectionComptages } from '../components/RemonteesTerrain'
 import { SectionPlanNucleaire, SectionVeille, SectionCauseIncendie } from '../components/NucleaireVeilleIncendie'
 
@@ -112,6 +113,17 @@ export default function IncidentDetail() {
             {incident.niveaux_escalade?.libelle} · statut : {incident.statut}
             {' · '}phase : {PHASES_CYCLE_VIE.find((p) => p.valeur === incident.phase_cycle_vie)?.libelle ?? incident.phase_cycle_vie}
           </p>
+          <div className="flex items-center flex-wrap gap-2 mt-1.5">
+            <span className="jeton">{incident.degre_criticite ? `criticité ${incident.degre_criticite}` : 'criticité non fixée'}</span>
+            <span className={`jeton ${incident.signalements_citoyens_ouverts ? 'text-ok' : 'text-sourdine'}`}>
+              signalements citoyens {incident.signalements_citoyens_ouverts ? 'ouverts' : 'fermés'}
+            </span>
+            <button type="button" className="text-xs text-sourdine lien" onClick={() => setParametresOuverts((v) => !v)}>
+              {parametresOuverts ? 'Masquer' : "Modifier l'état de l'incident"}
+            </button>
+          </div>
+          {parametresOuverts && (
+          <>
           <div className="flex items-center gap-2 mt-1.5">
             <label className="text-xs text-sourdine">Degré de criticité :</label>
             <select
@@ -135,13 +147,6 @@ export default function IncidentDetail() {
               {incident.signalements_citoyens_ouverts ? 'Fermer' : 'Ouvrir'}
             </button>
           </div>
-          <div className="mt-1.5">
-            <button type="button" className="text-xs text-sourdine lien" onClick={() => setParametresOuverts((v) => !v)}>
-              Paramètres de l'incident — {parametresOuverts ? 'masquer' : 'afficher'}
-            </button>
-          </div>
-          {parametresOuverts && (
-          <>
           <div className="flex items-center gap-2 mt-1.5">
             <label className="text-xs text-sourdine">Site CC actuel :</label>
             <select
@@ -288,15 +293,23 @@ export default function IncidentDetail() {
               <SectionSeuilsAction incidentId={id} contexteId={contexteId} />
             </div>
           )}
-          {afficher('organes') && (
-            <div className="mb-6">
-              <SectionOrganesCrise incidentId={id} contexteId={contexteId} degreCriticiteIncident={incident.degre_criticite} />
-            </div>
-          )}
-          {afficher('plan_nucleaire') && (
-            <div className="mb-6">
-              <SectionPlanNucleaire incidentId={id} contexteId={contexteId} typeEvenement={incident.type_evenement} />
-            </div>
+          {(afficher('organes') || afficher('plan_nucleaire')) && (
+            <Repliable
+              titre="Organes de crise · Plan d'urgence nucléaire"
+              aide="Rarement utiles dans les premières minutes : ouvrez-les quand l'incident s'installe."
+              ouvertParDefaut={/nucl|radiolog/i.test(incident.type_evenement ?? '')}
+            >
+              {afficher('organes') && (
+                <div className="mb-6">
+                  <SectionOrganesCrise incidentId={id} contexteId={contexteId} degreCriticiteIncident={incident.degre_criticite} />
+                </div>
+              )}
+              {afficher('plan_nucleaire') && (
+                <div className="mb-6">
+                  <SectionPlanNucleaire incidentId={id} contexteId={contexteId} typeEvenement={incident.type_evenement} />
+                </div>
+              )}
+            </Repliable>
           )}
         </>
       )}
@@ -3898,15 +3911,21 @@ function SectionCommunicationD5({ incidentId }) {
         DO! / WE CARE! / WE'LL BE BACK!.
       </p>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <GestionMessagesReflexes incidentId={incidentId} />
         <GestionPoccRoles incidentId={incidentId} />
         <GestionNumerosInformation incidentId={incidentId} />
-        <GestionMessagesReflexes incidentId={incidentId} />
-        <GestionStrategieCommunication incidentId={incidentId} />
-        <GestionAnalysesIbs incidentId={incidentId} />
-        <GestionWebcare incidentId={incidentId} />
-        <GestionChecklistActionD5 incidentId={incidentId} />
         <GestionMessageUrgentMedias incidentId={incidentId} />
-        <GestionEvaluationCommunication incidentId={incidentId} />
+      </div>
+      <div className="mt-4">
+        <Repliable titre="Outils avancés D5" aide="Stratégie, analyses IBS, webcare, checklist d'activation, évaluation : à ouvrir quand l'équipe D5 est en place.">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <GestionStrategieCommunication incidentId={incidentId} />
+            <GestionAnalysesIbs incidentId={incidentId} />
+            <GestionWebcare incidentId={incidentId} />
+            <GestionChecklistActionD5 incidentId={incidentId} />
+            <GestionEvaluationCommunication incidentId={incidentId} />
+          </div>
+        </Repliable>
       </div>
     </div>
   )
@@ -4481,9 +4500,15 @@ function SectionPsychosocialD2({ incidentId }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <GestionCategorisationImpliques incidentId={incidentId} />
         <GestionStructuresPips incidentId={incidentId} />
-        <GestionCommunicationVictimesDeces incidentId={incidentId} />
-        <GestionCommemorations incidentId={incidentId} />
-        <GestionSignauxAlerte incidentId={incidentId} />
+      </div>
+      <div className="mt-4">
+        <Repliable titre="Suites : décès, commémorations, signaux d'alerte" aide="Concerne la phase de rétablissement : à ouvrir le moment venu.">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <GestionCommunicationVictimesDeces incidentId={incidentId} />
+            <GestionCommemorations incidentId={incidentId} />
+            <GestionSignauxAlerte incidentId={incidentId} />
+          </div>
+        </Repliable>
       </div>
     </div>
   )

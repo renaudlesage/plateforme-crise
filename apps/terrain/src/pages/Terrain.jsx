@@ -139,7 +139,7 @@ function IncidentActif({ contexteId, roleId, roleLibelle }) {
 
       <BoutonAide incidentId={incident.id} contexteId={contexteId} roleLibelle={roleLibelle} />
 
-      <Link to="/situation" className="bouton-terrain principal" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+      <Link to="/situation" className="bouton-terrain principal">
         Voir la situation (Comité de Coordination)
       </Link>
 
@@ -324,36 +324,24 @@ function ChecklistRole({ incidentId, contexteId, roleId }) {
 function SignalementRapide({ incidentId }) {
   const [message, setMessage] = useState('')
   const [enCours, setEnCours] = useState(false)
-  const [envoye, setEnvoye] = useState(false)
-  const [erreur, setErreur] = useState(null)
+  const [res, setRes] = useState(null)
 
   async function envoyer(e) {
     e.preventDefault()
     if (!message.trim()) return
     setEnCours(true)
-    setErreur(null)
-
-    const { data: dernier } = await supabase
-      .from('livre_de_bord')
-      .select('numero_ordre')
-      .eq('incident_id', incidentId)
-      .order('numero_ordre', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    const { error } = await supabase.from('livre_de_bord').insert({
-      incident_id: incidentId,
-      numero_ordre: (dernier?.numero_ordre ?? 0) + 1,
-      message: `[Terrain] ${message.trim()}`,
+    // Écrit d'abord dans le téléphone, envoie ensuite : le numéro d'ordre du journal est attribué par le serveur.
+    const r = await fileEcritures.ecrireOuEmpiler({
+      nature: 'insert',
+      table: 'livre_de_bord',
+      champs: { incident_id: incidentId, message: `[Terrain] ${message.trim()}` },
+      libelle: 'Signalement au PC-Ops',
     })
-
     setEnCours(false)
-    if (error) {
-      setErreur(error.message)
-    } else {
+    setRes(r)
+    if (r.statut !== 'refus') {
       setMessage('')
-      setEnvoye(true)
-      setTimeout(() => setEnvoye(false), 2500)
+      setTimeout(() => setRes(null), 4000)
     }
   }
 
@@ -368,8 +356,9 @@ function SignalementRapide({ incidentId }) {
           rows={3}
           className="w-full"
         />
-        {erreur && <p className="message erreur">{erreur}</p>}
-        {envoye && <p className="message">Envoyé au PC-Ops.</p>}
+        {res?.statut === 'refus' && <p className="message erreur">{res.message}</p>}
+        {res?.statut === 'enfile' && <p className="message">Enregistré sur l'appareil : part dès le retour du réseau.</p>}
+        {res && res.statut !== 'refus' && res.statut !== 'enfile' && <p className="message">Envoyé au PC-Ops.</p>}
         <button type="submit" className="bouton-terrain principal" disabled={enCours || !message.trim()}>
           {enCours ? 'Envoi…' : 'Envoyer au PC-Ops'}
         </button>

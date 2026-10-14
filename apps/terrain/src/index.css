@@ -6,3 +6,12 @@
 @tailwind utilities;
 
 :root { color-scheme: light dark; }
+
+/* Gants, main tremblante : cibles tactiles d'au moins 44 px pour les onglets, retour et lien-bouton. */
+button.module { min-height: 44px; padding-left: 14px; padding-right: 14px; }
+button.sortie, button.discret { min-height: 40px; }
+a.bouton-terrain {
+  display: block; box-sizing: border-box; width: 100%; margin-top: 6px; text-align: center; text-decoration: none;
+  border: 1px solid var(--trait-fort); border-radius: var(--rayon);
+}
+a.bouton-terrain.principal { background: var(--etat-info); border-color: var(--etat-info); color: var(--on-teinte); }

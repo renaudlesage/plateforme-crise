@@ -74,23 +74,6 @@ export default function Accueil() {
       <div className="bandeau">
         <span className="text-sm font-medium text-encre">{contexteActuel?.nom ?? '…'}</span>
         <div className="flex items-center gap-3">
-          {signalementsOuverts && (
-            <Link to="/signaler" className="lien">
-              Signaler un problème
-            </Link>
-          )}
-          <Link to="/plan-urgence" className="lien">
-            Mon plan d'urgence
-          </Link>
-          <Link to="/soutien" className="lien">
-            Besoin d'en parler ?
-          </Link>
-          <Link to="/risques" className="lien">
-            S'informer sur les risques
-          </Link>
-          <Link to="/benevole" className="lien">
-            Devenir bénévole
-          </Link>
           <button type="button" className="lien" onClick={changerDeCommune}>
             Changer de commune
           </button>
@@ -99,6 +82,31 @@ export default function Accueil() {
       </div>
 
       <ListeAlertes contexteId={contexteId} />
+
+      <nav className="tuiles-citoyen" aria-label="Que voulez-vous faire ?">
+        {signalementsOuverts && (
+          <Link to="/signaler" className="tuile-citoyen urgente">
+            <span className="titre">Signaler un problème</span>
+            <span className="aide">Danger, dégâts, personne en difficulté</span>
+          </Link>
+        )}
+        <Link to="/plan-urgence" className="tuile-citoyen">
+          <span className="titre">Mon plan d'urgence</span>
+          <span className="aide">Les bons réflexes pour mon foyer</span>
+        </Link>
+        <Link to="/soutien" className="tuile-citoyen">
+          <span className="titre">Besoin d'en parler ?</span>
+          <span className="aide">Soutien psychologique</span>
+        </Link>
+        <Link to="/risques" className="tuile-citoyen">
+          <span className="titre">Risques</span>
+          <span className="aide">S'informer sur les risques près de chez moi</span>
+        </Link>
+        <Link to="/benevole" className="tuile-citoyen">
+          <span className="titre">Devenir bénévole</span>
+          <span className="aide">Se proposer pour aider</span>
+        </Link>
+      </nav>
     </div>
   )
 }

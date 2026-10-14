@@ -6,3 +6,16 @@
 @tailwind utilities;
 
 :root { color-scheme: light dark; }
+
+/* Accueil : grandes tuiles tactiles plutôt que petits liens soulignés. */
+.tuiles-citoyen { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 24px; }
+.tuile-citoyen {
+  display: flex; flex-direction: column; justify-content: center; gap: 4px;
+  min-height: 92px; padding: 14px; text-decoration: none; color: var(--encre);
+  background: var(--surface); border: 1px solid var(--trait-fort); border-radius: var(--rayon);
+}
+.tuile-citoyen .titre { font-size: 16px; font-weight: 600; }
+.tuile-citoyen .aide { font-size: 12px; color: var(--sourdine); }
+.tuile-citoyen.urgente { grid-column: 1 / -1; background: var(--etat-info); border-color: var(--etat-info); color: var(--on-teinte); }
+.tuile-citoyen.urgente .aide { color: inherit; opacity: 0.9; }
+@media (max-width: 340px) { .tuiles-citoyen { grid-template-columns: 1fr; } }

@@ -6,3 +6,10 @@
 @tailwind utilities;
 
 :root { color-scheme: light dark; }
+
+/* Tablette en déplacement : onglets et liens d'action plus faciles à toucher (sans alourdir l'écran de bureau). */
+@media (pointer: coarse) {
+  button.module { min-height: 44px; }
+  button.lien { padding: 10px 6px; }
+  .tete button.sortie, button.discret, button.principal { min-height: 44px; }
+}
