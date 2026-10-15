@@ -91,6 +91,74 @@ export function BandeauAppelsAide({ incidentId }) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Demandes des disciplines (« je demande » des rapports C.A.N.)        */
+
+const LIBELLE_SUITE = { a_traiter: 'à traiter', prise_en_compte: 'prise en compte' }
+
+/**
+ * Les « je demande » des rapports C.A.N. pas encore traités, avec leur suite (à traiter → prise en compte →
+ * satisfaite ou écartée). Le Dir PC-Ops voit le même statut sur le terrain. N'affiche rien s'il n'y en a pas.
+ */
+export function BandeauDemandes({ incidentId }) {
+  const [lignes, setLignes] = useState([])
+  const [erreur, setErreur] = useState(null)
+
+  const charger = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('rapports_can')
+      .select('id, role_libelle, je_demande, suite_statut, created_at')
+      .eq('incident_id', incidentId)
+      .not('je_demande', 'is', null)
+      .in('suite_statut', ['a_traiter', 'prise_en_compte'])
+      .order('created_at', { ascending: false })
+      .limit(30)
+    if (error) setErreur(error.message)
+    else {
+      setErreur(null)
+      setLignes((data ?? []).filter((d) => d.je_demande?.trim()))
+    }
+  }, [incidentId])
+
+  useEffect(() => {
+    charger()
+    const t = setInterval(charger, 20000)
+    return () => clearInterval(t)
+  }, [charger])
+
+  async function traiter(id, statut) {
+    const { error } = await supabase.from('rapports_can').update({ suite_statut: statut }).eq('id', id)
+    if (error) setErreur(error.message)
+    else charger()
+  }
+
+  if (lignes.length === 0 && !erreur) return null
+
+  return (
+    <div className="mb-4 bg-surface border border-trait rounded p-3 space-y-2">
+      <h2 className="font-medium text-encre">Demandes des équipes à traiter ({lignes.length})</h2>
+      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
+      <ul className="space-y-2" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        {lignes.map((d) => (
+          <li key={d.id} className="text-sm">
+            <p className="text-encre">{d.je_demande}</p>
+            <p className="text-xs text-sourdine">
+              {d.role_libelle ?? 'intervenant'} · {ilYA(d.created_at)} · {LIBELLE_SUITE[d.suite_statut]}
+            </p>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {d.suite_statut === 'a_traiter' && (
+                <button type="button" className="discret" onClick={() => traiter(d.id, 'prise_en_compte')}>Prise en compte</button>
+              )}
+              <button type="button" className="principal" onClick={() => traiter(d.id, 'satisfaite')}>Satisfaite</button>
+              <button type="button" className="discret" onClick={() => traiter(d.id, 'ecartee')}>Écarter</button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
 /* Comptages de personnes                                              */
 
 export const CATEGORIES_COMPTAGE = [

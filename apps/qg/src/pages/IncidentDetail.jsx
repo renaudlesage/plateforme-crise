@@ -10,7 +10,7 @@ import { SectionDebriefings, SectionCohesionSociale } from '../components/Debrie
 import SyntheseIncident from '../components/SyntheseIncident'
 import Repliable from '../components/Repliable'
 import VeilleMeteo from '../components/VeilleMeteo'
-import { BandeauAppelsAide, SectionComptages } from '../components/RemonteesTerrain'
+import { BandeauAppelsAide, BandeauDemandes, SectionComptages } from '../components/RemonteesTerrain'
 import { SectionPlanNucleaire, SectionVeille, SectionCauseIncendie } from '../components/NucleaireVeilleIncendie'
 
 export default function IncidentDetail() {
@@ -230,6 +230,8 @@ export default function IncidentDetail() {
       </div>
 
       <BandeauAppelsAide incidentId={id} />
+
+      <BandeauDemandes incidentId={id} />
 
       <VeilleMeteo compact />
 

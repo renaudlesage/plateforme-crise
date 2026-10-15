@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret } from '../components/Boutons'
 import VeilleMeteo from '../components/VeilleMeteo'
+import { BandeauAppelsAide, DemandesATraiter, VueCommandement } from '../components/Commandement'
 import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
 import { useIncidentsEnCours, SelecteurIncident } from '../hooks/useIncidentsEnCours'
@@ -92,6 +93,7 @@ export default function Terrain() {
 }
 
 const ONGLETS_TERRAIN = [
+  { cle: 'commandement', libelle: 'Commandement' },
   { cle: 'mission', libelle: 'Mission' },
   { cle: 'rapport', libelle: 'Rapport' },
   { cle: 'position', libelle: 'Ma position' },
@@ -101,7 +103,8 @@ const ONGLETS_TERRAIN = [
 function IncidentActif({ contexteId, roleId, roleLibelle }) {
   const { incidents, incident, choisir, chargement } = useIncidentsEnCours(contexteId)
   const { dansZoneRouge } = usePosition()
-  const [onglet, setOnglet] = useState('mission')
+  // Le Dir PC-Ops (ou tout rôle PC-Ops) ouvre directement sur la vue de commandement
+  const [onglet, setOnglet] = useState(() => (/pc.?ops/i.test(roleLibelle ?? '') ? 'commandement' : 'mission'))
 
   if (chargement) return <p className="vide text-center mt-6">Chargement…</p>
 
@@ -116,6 +119,7 @@ function IncidentActif({ contexteId, roleId, roleLibelle }) {
   return (
     <div className="space-y-6">
       <SelecteurIncident incidents={incidents} incident={incident} onChoisir={choisir} />
+      <BandeauAppelsAide incidentId={incident.id} />
       <div className="bandeau-alerte niv-urgence">
         <div className="niv">Incident</div>
         <div className="contenu">
@@ -144,6 +148,8 @@ function IncidentActif({ contexteId, roleId, roleLibelle }) {
         Voir la situation (Comité de Coordination)
       </Link>
 
+      {onglet !== 'commandement' && <DemandesATraiter incidentId={incident.id} masquerSiVide />}
+
       <VeilleMeteo compact />
 
       <div className="onglets" role="tablist">
@@ -153,6 +159,8 @@ function IncidentActif({ contexteId, roleId, roleLibelle }) {
           </button>
         ))}
       </div>
+
+      {onglet === 'commandement' && <VueCommandement incident={incident} />}
 
       {onglet === 'mission' && (
         <div className="space-y-6">

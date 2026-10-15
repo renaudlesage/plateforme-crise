@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { viderCaches } from '../lib/cacheLocal'
 
 const AuthContext = createContext(null)
 
@@ -86,6 +87,7 @@ export function AuthProvider({ children }) {
 
   async function deconnexion() {
     await supabase.auth.signOut()
+    viderCaches()
     selectionnerContexte(null)
   }
 

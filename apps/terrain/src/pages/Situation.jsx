@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import { Symbole, disciplineDe, heuresDepuis } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { BoutonDiscret } from '../components/Boutons'
 import VeilleMeteo from '../components/VeilleMeteo'
+import { BandeauAppelsAide, BandeauFraicheur } from '../components/Commandement'
+import { useChargementPeriodique } from '../hooks/useChargementPeriodique'
 import { useIncidentsEnCours, SelecteurIncident } from '../hooks/useIncidentsEnCours'
 
 const LIBELLE_PHASE = {
@@ -46,14 +48,10 @@ function EngagementMoyen({ moyen }) {
 export default function Situation() {
   const { contexteId } = useAuth()
   const { incidents, incident, choisir, chargement: chargementIncidents, recharger } = useIncidentsEnCours(contexteId)
-  const [donnees, setDonnees] = useState(null)
-  const [erreur, setErreur] = useState(null)
-  const [majLe, setMajLe] = useState(null)
-
   const charger = useCallback(async () => {
-    if (!incident) return
+    if (!incident) return null
     const id = incident.id
-    const [niveau, siteQg, sitrep, zones, alertes, pcops, journal, points, moyens] = await Promise.all([
+    const reponses = await Promise.all([
       incident.niveau_actuel_id
         ? supabase.from('niveaux_escalade').select('code, libelle').eq('id', incident.niveau_actuel_id).maybeSingle()
         : Promise.resolve({ data: null }),
@@ -73,28 +71,28 @@ export default function Situation() {
         .neq('statut', 'retire')
         .order('maj_le', { ascending: false }),
     ])
-    const premiere = [niveau, siteQg, sitrep, zones, alertes, pcops, journal, points, moyens].find((r) => r.error)
-    setErreur(premiere ? premiere.error.message : null)
-    setDonnees({
+    // Un chargement partiel ne remplace jamais le dernier état complet : « aucun moyen engagé » ne doit pas être une requête perdue.
+    const echec = reponses.find((r) => r.error)
+    if (echec) throw new Error(echec.error.message)
+    const [niveau, siteQg, sitrep, zones, alertes, pcops, journal, points, moyens] = reponses
+    return {
       niveau: niveau.data,
       siteQg: siteQg.data,
       sitrep: sitrep.data,
       zones: zones.data ?? [],
-      alertes: (alertes.data ?? []).filter((a) => !a.date_expiration || new Date(a.date_expiration) > new Date()),
+      alertes: alertes.data ?? [],
       pcops: pcops.data ?? [],
       journal: journal.data ?? [],
       points: points.data ?? [],
       moyens: moyens.data ?? [],
-    })
-    setMajLe(new Date())
+    }
   }, [incident])
 
-  useEffect(() => {
-    setDonnees(null)
-    charger()
-    const t = setInterval(charger, 30000)
-    return () => clearInterval(t)
-  }, [charger])
+  const { donnees, majLe, echec, recharger: rechargerDonnees } = useChargementPeriodique({
+    cle: incident ? `situation.${incident.id}` : null,
+    charger,
+    intervalle: 30000,
+  })
 
   if (chargementIncidents) return <p className="vide text-center mt-6">Chargement…</p>
 
@@ -106,11 +104,13 @@ export default function Situation() {
     )
   }
 
-  const d = donnees
+  const d = donnees ? { ...donnees, alertes: donnees.alertes.filter((a) => !a.date_expiration || new Date(a.date_expiration) > new Date()) } : null
 
   return (
     <div className="space-y-5">
       <SelecteurIncident incidents={incidents} incident={incident} onChoisir={choisir} />
+
+      <BandeauAppelsAide incidentId={incident.id} />
 
       <VeilleMeteo compact />
 
@@ -137,11 +137,9 @@ export default function Situation() {
       </div>
 
       <div className="flex items-center justify-between">
-        <p className="text-xs text-sourdine">{majLe ? `Mis à jour à ${majLe.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' })}` : 'Chargement…'}</p>
-        <BoutonDiscret onClick={() => { recharger(); charger() }}>Actualiser</BoutonDiscret>
+        <BandeauFraicheur majLe={majLe} echec={echec} />
+        <BoutonDiscret onClick={() => { recharger(); rechargerDonnees() }}>Actualiser</BoutonDiscret>
       </div>
-
-      {erreur && <p className="message erreur">{erreur}</p>}
 
       {d && (
         <>

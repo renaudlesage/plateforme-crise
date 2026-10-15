@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { ecrireCache, lireCache } from '../lib/cacheLocal'
 
 const CLE = 'terrain_incident_id_selectionne'
 const EVENEMENT_CHOIX = 'terrain:incident-choisi'
@@ -11,7 +12,8 @@ const EVENEMENT_CHOIX = 'terrain:incident-choisi'
  * tout parle du même incident.
  */
 export function useIncidentsEnCours(contexteId) {
-  const [incidents, setIncidents] = useState([])
+  // Dernier état connu en attendant le réseau : sans cela, hors ligne, l'écran dirait « aucun incident en cours ».
+  const [incidents, setIncidents] = useState(() => lireCache(`incidents.${contexteId}`)?.donnees ?? [])
   const [chargement, setChargement] = useState(true)
   const [choisiId, setChoisiId] = useState(() => {
     try {
@@ -23,13 +25,16 @@ export function useIncidentsEnCours(contexteId) {
 
   const charger = useCallback(async () => {
     if (!contexteId) return
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('incidents')
       .select('id, nom, type_evenement, statut, degre_criticite, phase_cycle_vie, niveau_actuel_id, site_qg_actuel_id, date_debut, latitude, longitude')
       .eq('contexte_id', contexteId)
       .eq('statut', 'en_cours')
       .order('date_debut', { ascending: false })
-    setIncidents(data ?? [])
+    if (!error && data) {
+      setIncidents(data)
+      ecrireCache(`incidents.${contexteId}`, { donnees: data, majLe: Date.now() })
+    }
     setChargement(false)
   }, [contexteId])
 
