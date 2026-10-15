@@ -3,6 +3,7 @@ import { Symbole, disciplineDe, heuresDepuis } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { BoutonDiscret } from '../components/Boutons'
+import VeilleMeteo from '../components/VeilleMeteo'
 import { useIncidentsEnCours, SelecteurIncident } from '../hooks/useIncidentsEnCours'
 
 const LIBELLE_PHASE = {
@@ -110,6 +111,8 @@ export default function Situation() {
   return (
     <div className="space-y-5">
       <SelecteurIncident incidents={incidents} incident={incident} onChoisir={choisir} />
+
+      <VeilleMeteo compact />
 
       <div className="bandeau-alerte niv-urgence">
         <div className="niv">Incident</div>

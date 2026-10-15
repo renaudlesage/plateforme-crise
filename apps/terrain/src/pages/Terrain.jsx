@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret } from '../components/Boutons'
+import VeilleMeteo from '../components/VeilleMeteo'
 import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
 import { useIncidentsEnCours, SelecteurIncident } from '../hooks/useIncidentsEnCours'
@@ -142,6 +143,8 @@ function IncidentActif({ contexteId, roleId, roleLibelle }) {
       <Link to="/situation" className="bouton-terrain principal">
         Voir la situation (Comité de Coordination)
       </Link>
+
+      <VeilleMeteo compact />
 
       <div className="onglets" role="tablist">
         {ONGLETS_TERRAIN.map((o) => (
