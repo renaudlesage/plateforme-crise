@@ -4,6 +4,7 @@ import { CarteCrise, distanceM, ilYA } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { CATEGORIES_COMPTAGE, totauxComptages } from '../components/RemonteesTerrain'
+import VeilleMeteo from '../components/VeilleMeteo'
 
 /**
  * Vue autorité : le point de situation d'un incident sur une seule page, en lecture, pour le bourgmestre
@@ -292,6 +293,9 @@ export default function VueAutorite() {
           🆘 {d.aides} appel{d.aides > 1 ? 's' : ''} d'aide ouvert{d.aides > 1 ? 's' : ''} → voir
         </Link>
       )}
+
+      {/* Météo de la commune : prévisions + avertissement IRM (lecture seule ici) */}
+      <VeilleMeteo compact autoJournal={false} />
 
       {/* Chiffres clés */}
       <section aria-label="Chiffres clés">

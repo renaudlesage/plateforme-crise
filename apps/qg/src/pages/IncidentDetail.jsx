@@ -9,6 +9,7 @@ import MessagesPopulation from '../components/MessagesPopulation'
 import { SectionDebriefings, SectionCohesionSociale } from '../components/DebriefingsEtCohesion'
 import SyntheseIncident from '../components/SyntheseIncident'
 import Repliable from '../components/Repliable'
+import VeilleMeteo from '../components/VeilleMeteo'
 import { BandeauAppelsAide, SectionComptages } from '../components/RemonteesTerrain'
 import { SectionPlanNucleaire, SectionVeille, SectionCauseIncendie } from '../components/NucleaireVeilleIncendie'
 
@@ -229,6 +230,8 @@ export default function IncidentDetail() {
       </div>
 
       <BandeauAppelsAide incidentId={id} />
+
+      <VeilleMeteo compact />
 
       {/* Deux niveaux : le moment de la crise (Maintenant / Piloter / Agir / Après), puis, sous « Agir », l'entrée par discipline ou fonction. */}
       <div className="onglets" role="tablist" aria-label="Moments de la crise">

@@ -22,6 +22,7 @@ import CanauxDiffusion from './pages/CanauxDiffusion'
 import FonctionsCritiques from './pages/FonctionsCritiques'
 import SeuilsAction from './pages/SeuilsAction'
 import SeuilsMeteoDeclencheurs from './pages/SeuilsMeteoDeclencheurs'
+import MeteoCommune from './pages/MeteoCommune'
 import InfrastructuresCritiques from './pages/InfrastructuresCritiques'
 import PopulationNonResidente from './pages/PopulationNonResidente'
 import RegistreExpertises from './pages/RegistreExpertises'
@@ -104,6 +105,7 @@ export default function App() {
             <Route path="fonctions-critiques" element={<FonctionsCritiques />} />
             <Route path="seuils-action" element={<SeuilsAction />} />
             <Route path="seuils-meteo" element={<SeuilsMeteoDeclencheurs />} />
+            <Route path="meteo-commune" element={<MeteoCommune />} />
             <Route path="infrastructures-critiques" element={<InfrastructuresCritiques />} />
             <Route path="population-non-residente" element={<PopulationNonResidente />} />
             <Route path="registre-expertises" element={<RegistreExpertises />} />

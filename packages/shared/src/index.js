@@ -22,3 +22,19 @@ export {
 } from './EditionCarte.jsx'
 export { distanceM, capDegres, capLibelle, libelleDistance, distanceEtCap, lienItineraire, ilYA, heuresDepuis, positionActuelle } from './geo.js'
 export { reduirePhoto } from './photo.js'
+export {
+  NIVEAUX,
+  LIBELLE_NIVEAU,
+  CRITERES,
+  LIBELLE_CRITERE,
+  PROVINCES,
+  SEUILS_DEFAUT,
+  URL_PORTAIL_METEOALARM,
+  urlOpenMeteo,
+  libelleCodeMeteo,
+  heureBelge,
+  extraire as extraireMeteo,
+  evaluer as evaluerMeteo,
+  synthese as syntheseMeteo,
+  quand as quandMeteo,
+} from './meteo.js'

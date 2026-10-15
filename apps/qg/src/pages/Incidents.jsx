@@ -4,6 +4,7 @@ import { SelecteurLocalisation } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
+import VeilleMeteo from '../components/VeilleMeteo'
 
 const LIBELLE_STATUT = {
   pre_alerte: 'Pré-alerte',
@@ -52,6 +53,8 @@ export default function Incidents() {
       <p className="text-sm text-sourdine mb-4">
         Incidents à suivre en premier ; les clôturés restent consultables en dessous.
       </p>
+
+      <VeilleMeteo compact />
 
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
 
