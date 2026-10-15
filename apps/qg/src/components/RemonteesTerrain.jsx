@@ -93,13 +93,28 @@ export function BandeauAppelsAide({ incidentId }) {
 /* ------------------------------------------------------------------ */
 /* Comptages de personnes                                              */
 
-const CATEGORIES = [
+export const CATEGORIES_COMPTAGE = [
   ['evacues', 'Évacués'],
   ['accueillis', 'Accueillis'],
   ['blesses', 'Blessés'],
   ['personnes_a_risque', 'Personnes à risque'],
   ['introuvables', 'Introuvables'],
 ]
+
+/** Pour chaque déclarant et chaque catégorie on retient le dernier chiffre (lignes triées de la plus récente à la plus ancienne), puis on additionne. */
+export function totauxComptages(lignes) {
+  const vus = new Set()
+  const retenus = []
+  for (const l of lignes) {
+    const k = `${l.categorie}|${l.auteur_id}`
+    if (vus.has(k)) continue
+    vus.add(k)
+    retenus.push(l)
+  }
+  const totaux = Object.fromEntries(CATEGORIES_COMPTAGE.map(([c]) => [c, 0]))
+  for (const l of retenus) totaux[l.categorie] = (totaux[l.categorie] ?? 0) + l.nombre
+  return { retenus, totaux }
+}
 
 /**
  * Totaux de personnes remontés par le terrain : pour chaque personne et chaque catégorie on retient
@@ -129,16 +144,7 @@ export function SectionComptages({ incidentId }) {
     return () => clearInterval(t)
   }, [charger])
 
-  const vus = new Set()
-  const retenus = []
-  for (const l of lignes) {
-    const k = `${l.categorie}|${l.auteur_id}`
-    if (vus.has(k)) continue
-    vus.add(k)
-    retenus.push(l)
-  }
-  const totaux = Object.fromEntries(CATEGORIES.map(([c]) => [c, 0]))
-  for (const l of retenus) totaux[l.categorie] = (totaux[l.categorie] ?? 0) + l.nombre
+  const { retenus, totaux } = totauxComptages(lignes)
   const dernier = lignes[0]?.created_at
 
   return (
@@ -153,7 +159,7 @@ export function SectionComptages({ incidentId }) {
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-            {CATEGORIES.map(([cle, lib]) => (
+            {CATEGORIES_COMPTAGE.map(([cle, lib]) => (
               <div key={cle} className="bg-surface border border-trait rounded p-3 text-center">
                 <p className="text-2xl font-semibold text-encre">{totaux[cle]}</p>
                 <p className="text-xs text-sourdine">{lib}</p>

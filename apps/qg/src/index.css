@@ -13,3 +13,10 @@
   button.lien { padding: 10px 6px; }
   .tete button.sortie, button.discret, button.principal { min-height: 44px; }
 }
+
+/* « Point de situation » : la vue autorité s'imprime ou s'enregistre en PDF sans navigation ni boutons. */
+@media print {
+  header.tete, .no-print, a[role="alert"] { display: none !important; }
+  body { background: #fff !important; color: #000 !important; }
+  .vue-autorite section, .vue-autorite .border { break-inside: avoid; }
+}

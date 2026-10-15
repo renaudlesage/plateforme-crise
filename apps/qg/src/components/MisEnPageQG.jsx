@@ -23,7 +23,7 @@ export default function MisEnPageQG() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const actif = (to) =>
-    to === '/' ? pathname === '/' || pathname.startsWith('/incidents') : pathname === to || pathname.startsWith(to + '/')
+    to === '/incidents' ? pathname === '/' || pathname.startsWith('/incidents') : pathname === to || pathname.startsWith(to + '/')
 
   function changerDeContexte() {
     selectionnerContexte(null)
@@ -52,8 +52,11 @@ export default function MisEnPageQG() {
         </div>
 
         <div className="barre-bas plaques">
-          <Link to="/" className={`plaque-nav${actif('/') ? ' actif' : ''}`}>
+          <Link to="/incidents" className={`plaque-nav${actif('/incidents') ? ' actif' : ''}`}>
             Incidents<Pastille n={compteurs.incidents} />
+          </Link>
+          <Link to="/autorite" className={`plaque-nav${actif('/autorite') ? ' actif' : ''}`}>
+            Vue autorité
           </Link>
           <Link to="/signalements-citoyens" className={`plaque-nav${actif('/signalements-citoyens') ? ' actif' : ''}`}>
             Signalements citoyens<Pastille n={compteurs.signalements} />
