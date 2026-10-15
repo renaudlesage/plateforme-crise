@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ilYA, lienItineraire } from '@plateforme-crise/shared'
+import { ilYA, lienItineraire, profilDe } from '@plateforme-crise/shared'
 import { supabase } from '../lib/supabase'
 
 /**
@@ -106,7 +106,7 @@ export function BandeauDemandes({ incidentId }) {
   const charger = useCallback(async () => {
     const { data, error } = await supabase
       .from('rapports_can')
-      .select('id, role_libelle, je_demande, suite_statut, created_at')
+      .select('id, role_libelle, je_demande, destinataire, suite_statut, created_at')
       .eq('incident_id', incidentId)
       .not('je_demande', 'is', null)
       .in('suite_statut', ['a_traiter', 'prise_en_compte'])
@@ -142,7 +142,7 @@ export function BandeauDemandes({ incidentId }) {
           <li key={d.id} className="text-sm">
             <p className="text-encre">{d.je_demande}</p>
             <p className="text-xs text-sourdine">
-              {d.role_libelle ?? 'intervenant'} · {ilYA(d.created_at)} · {LIBELLE_SUITE[d.suite_statut]}
+              {d.role_libelle ?? 'intervenant'} · {ilYA(d.created_at)} · pour {profilDe(d.destinataire ?? 'pc_ops')?.court ?? 'PC-Ops'} · {LIBELLE_SUITE[d.suite_statut]}
             </p>
             <div className="flex flex-wrap gap-2 mt-1">
               {d.suite_statut === 'a_traiter' && (
@@ -237,6 +237,101 @@ export function SectionComptages({ incidentId }) {
           <p className="text-xs text-sourdine mt-2">
             {retenus.length} déclaration{retenus.length > 1 ? 's' : ''} retenue{retenus.length > 1 ? 's' : ''} · dernière {ilYA(dernier)}
           </p>
+        </>
+      )}
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Triage au PMA et destinations hospitalières (déclarés par le Dir-Med)  */
+
+export const CATEGORIES_TRIAGE = ['u0', 'u1', 'u2', 'u3']
+
+/** Dernier chiffre de chaque déclarant pour chaque clé (lignes de la plus récente à la plus ancienne), puis somme par clé. */
+function sommeDerniers(lignes, cle) {
+  const vus = new Set()
+  const somme = {}
+  for (const l of lignes) {
+    const k = `${cle(l)}|${l.auteur_id}`
+    if (vus.has(k)) continue
+    vus.add(k)
+    somme[cle(l)] = (somme[cle(l)] ?? 0) + l.nombre
+  }
+  return somme
+}
+
+/** Totaux U0 à U3 déclarés par le terrain pour un incident (null s'il n'y a rien, ou en cas d'erreur de lecture). */
+export async function chargerTriage(incidentId) {
+  const { data, error } = await supabase
+    .from('triage_victimes')
+    .select('categorie, nombre, auteur_id, created_at')
+    .eq('incident_id', incidentId)
+    .order('created_at', { ascending: false })
+  if (error || !data || data.length === 0) return null
+  const somme = sommeDerniers(data, (l) => l.categorie)
+  return { totaux: Object.fromEntries(CATEGORIES_TRIAGE.map((c) => [c, somme[c] ?? 0])), dernier: data[0].created_at }
+}
+
+export function SectionTriage({ incidentId, contexteId }) {
+  const [donnees, setDonnees] = useState(null)
+  const [erreur, setErreur] = useState(null)
+
+  const charger = useCallback(async () => {
+    const [tri, tr, ho] = await Promise.all([
+      supabase.from('triage_victimes').select('categorie, nombre, auteur_id, created_at').eq('incident_id', incidentId).order('created_at', { ascending: false }),
+      supabase.from('transferts_hopitaux').select('hopital_id, nombre, auteur_id, created_at').eq('incident_id', incidentId).order('created_at', { ascending: false }),
+      supabase.from('hopitaux').select('id, nom').eq('contexte_id', contexteId),
+    ])
+    const err = tri.error ?? tr.error ?? ho.error
+    if (err) {
+      setErreur(err.message)
+      return
+    }
+    setErreur(null)
+    setDonnees({ triage: tri.data ?? [], transferts: tr.data ?? [], hopitaux: ho.data ?? [] })
+  }, [incidentId, contexteId])
+
+  useEffect(() => {
+    charger()
+    const t = setInterval(charger, 60000)
+    return () => clearInterval(t)
+  }, [charger])
+
+  const triage = donnees ? sommeDerniers(donnees.triage, (l) => l.categorie) : {}
+  const parHopital = donnees ? sommeDerniers(donnees.transferts, (l) => l.hopital_id) : {}
+  const nomHopital = (id) => donnees?.hopitaux.find((h) => h.id === id)?.nom ?? 'Hôpital'
+  const vide = !donnees || (donnees.triage.length === 0 && donnees.transferts.length === 0)
+
+  return (
+    <div>
+      <h2 className="font-medium text-encre mb-1">Triage et destinations hospitalières</h2>
+      <p className="text-xs text-sourdine mb-2">
+        Déclarés par le Dir-Med (nombres seulement) : dernier chiffre de chaque déclarant, additionnés. Les capacités des hôpitaux sont celles du plan, pas des disponibilités du moment.
+      </p>
+      {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
+      {vide ? (
+        !erreur && <p className="text-sm text-sourdine border border-dashed border-trait rounded p-4 text-center">Aucun triage ni transfert déclaré.</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-4 gap-2">
+            {CATEGORIES_TRIAGE.map((c) => (
+              <div key={c} className="bg-surface border border-trait rounded p-3 text-center">
+                <p className="text-2xl font-semibold text-encre">{triage[c] ?? 0}</p>
+                <p className="text-xs text-sourdine">{c.toUpperCase()}</p>
+              </div>
+            ))}
+          </div>
+          {donnees.triage[0] && <p className="text-xs text-sourdine mt-2">Dernier décompte {ilYA(donnees.triage[0].created_at)}</p>}
+          {Object.keys(parHopital).length > 0 && (
+            <ul className="mt-3 space-y-1 text-sm" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {Object.entries(parHopital).map(([id, n]) => (
+                <li key={id} className="text-encre">
+                  {nomHopital(id)} : <strong>{n}</strong> dirigé{n > 1 ? 's' : ''}
+                </li>
+              ))}
+            </ul>
+          )}
         </>
       )}
     </div>

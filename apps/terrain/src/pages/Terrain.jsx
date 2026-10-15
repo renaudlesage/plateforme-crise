@@ -4,6 +4,8 @@ import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret } from '../components/Boutons'
 import VeilleMeteo from '../components/VeilleMeteo'
 import { BandeauAppelsAide, DemandesATraiter, VueCommandement } from '../components/Commandement'
+import VueDiscipline from '../components/Disciplines'
+import { profilDe } from '@plateforme-crise/shared'
 import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
 import { useIncidentsEnCours, SelecteurIncident } from '../hooks/useIncidentsEnCours'
@@ -15,6 +17,15 @@ import { usePosition } from '../context/PositionContext'
 const STORAGE_KEY_ROLE = 'terrain_role_id_selectionne'
 // Libellé du rôle, lu par le partage de position et les rapports (voir PositionContext)
 const STORAGE_KEY_ROLE_LIBELLE = 'terrain_role_libelle'
+// Profil de terrain du rôle (pc_ops, si, med, pol, log, info) : gardé en mémoire pour rester juste hors réseau
+const STORAGE_KEY_PROFIL = 'terrain_role_profil'
+
+/** Profil du rôle : celui réglé dans Admin ; à défaut, on reconnaît un libellé « PC-Ops ». */
+function profilDuRole(role) {
+  if (!role) return null
+  if (role.profil_terrain) return role.profil_terrain
+  return /pc.?ops/i.test(role.libelle ?? '') ? 'pc_ops' : null
+}
 
 const LIBELLE_PHASE_CYCLE_VIE = {
   veille: 'Veille',
@@ -35,14 +46,18 @@ export default function Terrain() {
   function choisirRole(id) {
     setRoleId(id)
     localStorage.setItem(STORAGE_KEY_ROLE, id)
-    const libelle = roles.find((r) => r.id === id)?.libelle
-    if (libelle) localStorage.setItem(STORAGE_KEY_ROLE_LIBELLE, libelle)
+    const role = roles.find((r) => r.id === id)
+    if (role?.libelle) localStorage.setItem(STORAGE_KEY_ROLE_LIBELLE, role.libelle)
+    const profil = profilDuRole(role)
+    if (profil) localStorage.setItem(STORAGE_KEY_PROFIL, profil)
+    else localStorage.removeItem(STORAGE_KEY_PROFIL)
   }
 
   function changerDeRole() {
     setRoleId('')
     localStorage.removeItem(STORAGE_KEY_ROLE)
     localStorage.removeItem(STORAGE_KEY_ROLE_LIBELLE)
+    localStorage.removeItem(STORAGE_KEY_PROFIL)
   }
 
   if (chargementRoles) {
@@ -76,6 +91,12 @@ export default function Terrain() {
   if (roleActuel?.libelle && localStorage.getItem(STORAGE_KEY_ROLE_LIBELLE) !== roleActuel.libelle) {
     localStorage.setItem(STORAGE_KEY_ROLE_LIBELLE, roleActuel.libelle)
   }
+  // Profil : la liste des rôles fait foi quand elle est chargée ; sinon (hors réseau) on garde le dernier connu
+  const profil = roleActuel ? profilDuRole(roleActuel) : localStorage.getItem(STORAGE_KEY_PROFIL) || null
+  if (roleActuel) {
+    if (profil) localStorage.setItem(STORAGE_KEY_PROFIL, profil)
+    else localStorage.removeItem(STORAGE_KEY_PROFIL)
+  }
 
   return (
     <div>
@@ -87,24 +108,34 @@ export default function Terrain() {
         <BoutonDiscret onClick={changerDeRole}>Changer</BoutonDiscret>
       </div>
 
-      <IncidentActif contexteId={contexteId} roleId={roleId} roleLibelle={roleActuel?.libelle ?? null} />
+      <IncidentActif contexteId={contexteId} roleId={roleId} roleLibelle={roleActuel?.libelle ?? localStorage.getItem(STORAGE_KEY_ROLE_LIBELLE) ?? null} profil={profil} />
     </div>
   )
 }
 
-const ONGLETS_TERRAIN = [
-  { cle: 'commandement', libelle: 'Commandement' },
+const ONGLETS_COMMUNS = [
   { cle: 'mission', libelle: 'Mission' },
   { cle: 'rapport', libelle: 'Rapport' },
   { cle: 'position', libelle: 'Ma position' },
   { cle: 'passation', libelle: 'Passation' },
 ]
 
-function IncidentActif({ contexteId, roleId, roleLibelle }) {
+/** Premier onglet = l'accueil du profil : Commandement pour le Dir PC-Ops, l'outil de la discipline pour les autres directeurs. */
+function ongletsPour(profil) {
+  const p = profilDe(profil)
+  if (!p) return ONGLETS_COMMUNS
+  if (profil === 'pc_ops') return [{ cle: 'commandement', libelle: 'Commandement' }, ...ONGLETS_COMMUNS]
+  return [{ cle: 'discipline', libelle: p.court }, ...ONGLETS_COMMUNS]
+}
+
+function IncidentActif({ contexteId, roleId, roleLibelle, profil }) {
   const { incidents, incident, choisir, chargement } = useIncidentsEnCours(contexteId)
   const { dansZoneRouge } = usePosition()
-  // Le Dir PC-Ops (ou tout rôle PC-Ops) ouvre directement sur la vue de commandement
-  const [onglet, setOnglet] = useState(() => (/pc.?ops/i.test(roleLibelle ?? '') ? 'commandement' : 'mission'))
+  const onglets = ongletsPour(profil)
+  // Chaque directeur ouvre sur l'accueil de son profil ; les autres rôles sur leur mission
+  const [ongletChoisi, setOnglet] = useState(() => onglets[0].cle)
+  // Si le profil change en cours de route (rôle modifié dans Admin), on revient à l'accueil du profil
+  const onglet = onglets.some((o) => o.cle === ongletChoisi) ? ongletChoisi : onglets[0].cle
 
   if (chargement) return <p className="vide text-center mt-6">Chargement…</p>
 
@@ -148,19 +179,21 @@ function IncidentActif({ contexteId, roleId, roleLibelle }) {
         Voir la situation (Comité de Coordination)
       </Link>
 
-      {onglet !== 'commandement' && <DemandesATraiter incidentId={incident.id} masquerSiVide />}
+      {onglet !== 'commandement' && onglet !== 'discipline' && <DemandesATraiter incidentId={incident.id} masquerSiVide pour={profil ?? undefined} />}
 
       <VeilleMeteo compact />
 
       <div className="onglets" role="tablist">
-        {ONGLETS_TERRAIN.map((o) => (
+        {onglets.map((o) => (
           <button key={o.cle} type="button" role="tab" aria-selected={onglet === o.cle} className={`module${onglet === o.cle ? ' actif' : ''}`} onClick={() => setOnglet(o.cle)}>
             {o.libelle}
           </button>
         ))}
       </div>
 
-      {onglet === 'commandement' && <VueCommandement incident={incident} />}
+      {onglet === 'commandement' && <VueCommandement incident={incident} profil={profil} />}
+
+      {onglet === 'discipline' && <VueDiscipline incident={incident} contexteId={contexteId} profil={profil} roleLibelle={roleLibelle} />}
 
       {onglet === 'mission' && (
         <div className="space-y-6">

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { DISCIPLINES, SelecteurLocalisation, disciplineDe, ilYA, lienItineraire } from '@plateforme-crise/shared'
+import { DISCIPLINES, SelecteurLocalisation, disciplineDe, ilYA, lienItineraire, peutModifierZonage, profilDe } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
@@ -14,14 +14,14 @@ import { useChargementPeriodique, useEnLigne } from '../hooks/useChargementPerio
  * en DEMANDE une (le CC la reçoit dans son livre de bord), on n'en crée pas.
  */
 
-const heure = (d) => new Date(d).toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' })
+export const heure = (d) => new Date(d).toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' })
 
-const verifier = (...reponses) => {
+export const verifier = (...reponses) => {
   const e = reponses.find((r) => r?.error)
   if (e) throw new Error(e.error.message)
 }
 
-function Retour({ res }) {
+export function Retour({ res }) {
   if (!res) return null
   if (res.statut === 'refus') return <p className="message erreur">{res.message}</p>
   if (res.statut === 'enfile') return <p className="message">Enregistré : part dès que le réseau revient.</p>
@@ -179,12 +179,12 @@ const LIBELLE_SUITE = { a_traiter: 'à traiter', prise_en_compte: 'prise en comp
  * Les « je demande » des rapports C.A.N. non encore traités, avec leur suite : à traiter → prise en compte →
  * satisfaite (ou écartée). Le CC voit le même statut. `masquerSiVide` : n'occupe aucune place quand il n'y a rien.
  */
-export function DemandesATraiter({ incidentId, masquerSiVide = false }) {
+export function DemandesATraiter({ incidentId, masquerSiVide = false, pour = null }) {
   const { utilisateur } = useAuth()
   const charger = useCallback(async () => {
     const r = await supabase
       .from('rapports_can')
-      .select('id, role_libelle, auteur_id, je_demande, suite_statut, created_at, latitude, longitude')
+      .select('id, role_libelle, auteur_id, je_demande, destinataire, suite_statut, created_at, latitude, longitude')
       .eq('incident_id', incidentId)
       .not('je_demande', 'is', null)
       .in('suite_statut', ['a_traiter', 'prise_en_compte'])
@@ -196,10 +196,15 @@ export function DemandesATraiter({ incidentId, masquerSiVide = false }) {
   const { donnees, majLe, echec, recharger } = useChargementPeriodique({ cle: `demandes.${incidentId}`, charger, intervalle: 20000 })
   const [surcharge, setSurcharge] = useState({})
   const [res, setRes] = useState(null)
+  const [toutes, setToutes] = useState(false)
 
-  const lignes = (donnees ?? [])
+  const ouvertes = (donnees ?? [])
     .map((d) => ({ ...d, suite_statut: surcharge[d.id] ?? d.suite_statut }))
     .filter((d) => d.suite_statut === 'a_traiter' || d.suite_statut === 'prise_en_compte')
+  // Une demande sans destinataire s'adresse au Dir PC-Ops
+  const pourMoi = (d) => !pour || (d.destinataire ?? 'pc_ops') === pour
+  const lignes = toutes ? ouvertes : ouvertes.filter(pourMoi)
+  const autres = ouvertes.length - ouvertes.filter(pourMoi).length
 
   async function traiter(d, statut) {
     const r = await fileEcritures.ecrireOuEmpiler({
@@ -221,7 +226,14 @@ export function DemandesATraiter({ incidentId, masquerSiVide = false }) {
   return (
     <div className="space-y-2">
       <h2>Demandes à traiter{lignes.length > 0 ? ` (${lignes.length})` : ''}</h2>
-      <p className="text-xs text-sourdine">Ce que les équipes demandent dans leurs rapports C.A.N. Le CC voit la même suite.</p>
+      <p className="text-xs text-sourdine">
+        {pour ? 'Les demandes qui vous sont adressées, tirées des rapports C.A.N.' : 'Ce que les équipes demandent dans leurs rapports C.A.N.'} Le CC voit la même suite.
+      </p>
+      {pour && autres > 0 && (
+        <button type="button" className="discret" onClick={() => setToutes((t) => !t)}>
+          {toutes ? 'Seulement celles pour moi' : `Voir aussi les ${autres} adressée${autres > 1 ? 's' : ''} à d’autres`}
+        </button>
+      )}
       {echec && <p className="text-xs text-chaud">Liste non rafraîchie depuis {majLe ? heure(majLe) : '…'} ({echec}).</p>}
       {lignes.length === 0 ? (
         !echec && <p className="vide border border-dashed border-trait text-center p-3">Aucune demande en attente.</p>
@@ -232,7 +244,7 @@ export function DemandesATraiter({ incidentId, masquerSiVide = false }) {
               <p className="text-sm text-encre">{d.je_demande}</p>
               <p className="text-xs text-sourdine mt-1">
                 {d.role_libelle ?? 'intervenant'}
-                {d.auteur_id === utilisateur?.id ? ' (vous)' : ''} · {ilYA(d.created_at)} · {LIBELLE_SUITE[d.suite_statut]}
+                {d.auteur_id === utilisateur?.id ? ' (vous)' : ''} · {ilYA(d.created_at)} · pour {profilDe(d.destinataire ?? 'pc_ops')?.court ?? 'PC-Ops'} · {LIBELLE_SUITE[d.suite_statut]}
                 {d.latitude != null && (
                   <>
                     {' · '}
@@ -271,7 +283,7 @@ const ACCES_PAR_TYPE_ZONE = {
 }
 
 /** Zones actives de l'incident : en créer une (position sur la carte ou position actuelle), la lever. Passe par la file hors ligne. */
-export function ZonesIntervention({ incident }) {
+export function ZonesIntervention({ incident, peutModifier = false }) {
   const charger = useCallback(async () => {
     const r = await supabase
       .from('zones_intervention')
@@ -369,15 +381,19 @@ export function ZonesIntervention({ incident }) {
                 {z.rayon_metres ? ` · rayon ${Math.round(z.rayon_metres)} m` : ''}
               </p>
               {z.acces_autorise && <p className="text-xs text-sourdine mt-1">{z.acces_autorise}</p>}
-              <div className="mt-2">
-                <button type="button" className="discret" onClick={() => lever(z)}>Lever la zone</button>
-              </div>
+              {peutModifier && (
+                <div className="mt-2">
+                  <button type="button" className="discret" onClick={() => lever(z)}>Lever la zone</button>
+                </div>
+              )}
             </li>
           ))}
         </ul>
       )}
 
-      {!ouvert ? (
+      {!peutModifier ? (
+        <p className="text-xs text-sourdine">Le zonage est établi et levé par le Dir-Si (et le Dir PC-Ops). Signalez-leur ce qui doit changer.</p>
+      ) : !ouvert ? (
         <button type="button" className="bouton-terrain discret" onClick={() => setOuvert(true)}>+ Nouvelle zone</button>
       ) : (
         <form onSubmit={creer} className="carte space-y-3">
@@ -504,7 +520,7 @@ function RequisitionsEtDemande({ incidentId, requisitions }) {
 /* ------------------------------------------------------------------ */
 /* Vue d'ensemble                                                      */
 
-const CATEGORIES_COMPTAGE = [
+export const CATEGORIES_COMPTAGE = [
   ['evacues', 'Évacués'],
   ['accueillis', 'Accueillis'],
   ['blesses', 'Blessés'],
@@ -531,7 +547,7 @@ function duree(depuis) {
 }
 
 /** Pour chaque déclarant et chaque catégorie on retient le dernier chiffre (lignes de la plus récente à la plus ancienne), puis on additionne. */
-function totauxComptages(lignes) {
+export function totauxComptages(lignes) {
   const vus = new Set()
   const totaux = Object.fromEntries(CATEGORIES_COMPTAGE.map(([c]) => [c, 0]))
   for (const l of lignes) {
@@ -544,7 +560,7 @@ function totauxComptages(lignes) {
 }
 
 /** Onglet « Commandement » : l'incident d'un coup d'œil, puis ce qu'il y a à traiter et à décider. */
-export function VueCommandement({ incident }) {
+export function VueCommandement({ incident, profil = null }) {
   const { utilisateur } = useAuth()
   const charger = useCallback(async () => {
     const id = incident.id
@@ -607,7 +623,7 @@ export function VueCommandement({ incident }) {
         </>
       )}
 
-      <DemandesATraiter incidentId={incident.id} />
+      <DemandesATraiter incidentId={incident.id} pour={profil} />
 
       {d && parDiscipline.length > 0 && (
         <div className="space-y-2">
@@ -646,7 +662,7 @@ export function VueCommandement({ incident }) {
         </div>
       )}
 
-      <ZonesIntervention incident={incident} />
+      <ZonesIntervention incident={incident} peutModifier={peutModifierZonage(profil)} />
 
       {d && <RequisitionsEtDemande incidentId={incident.id} requisitions={d.requisitions} />}
     </div>

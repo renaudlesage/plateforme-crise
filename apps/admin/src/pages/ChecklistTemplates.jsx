@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { CHECKLISTS_DEPART, DECLENCHEUR_MODELE_DEPART, profilDe, texteErreur } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabase'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
 
@@ -12,6 +14,7 @@ export default function ChecklistTemplates() {
     creer,
     modifier,
     supprimer,
+    rafraichir,
   } = useTableContexte('checklist_templates', contexteId, {
     colonnes: '*, roles(id, libelle), niveaux_escalade(id, libelle)',
     tri: 'ordre',
@@ -22,6 +25,33 @@ export default function ChecklistTemplates() {
   const [enAjout, setEnAjout] = useState(false)
   const [ligneEnEdition, setLigneEnEdition] = useState(null)
   const [filtreRole, setFiltreRole] = useState('')
+
+  const [installation, setInstallation] = useState(null)
+
+  // Rôles à profil de terrain qui n'ont encore AUCUNE action : on leur propose le modèle de départ
+  const rolesSansChecklist = roles.filter(
+    (r) => r.profil_terrain && CHECKLISTS_DEPART[r.profil_terrain] && !items.some((i) => i.role_id === r.id)
+  )
+
+  async function installerModeles() {
+    setInstallation({ etat: 'cours' })
+    const lignes = rolesSansChecklist.flatMap((r) =>
+      CHECKLISTS_DEPART[r.profil_terrain].map((libelle, i) => ({
+        contexte_id: contexteId,
+        role_id: r.id,
+        declencheur: DECLENCHEUR_MODELE_DEPART,
+        ordre: i + 1,
+        libelle,
+      }))
+    )
+    const { error } = await supabase.from('checklist_templates').insert(lignes)
+    if (error) {
+      setInstallation({ etat: 'erreur', texte: texteErreur(error) })
+      return
+    }
+    await rafraichir()
+    setInstallation({ etat: 'ok', texte: `${lignes.length} actions installées pour ${rolesSansChecklist.length} rôle${rolesSansChecklist.length > 1 ? 's' : ''}.` })
+  }
 
   const itemsFiltres = filtreRole ? items.filter((i) => i.role_id === filtreRole) : items
 
@@ -50,6 +80,25 @@ export default function ChecklistTemplates() {
       </p>
 
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
+
+      {rolesSansChecklist.length > 0 && (
+        <div className="border border-trait rounded p-3 mb-4 bg-fond space-y-2">
+          <p className="text-sm text-encre">
+            {rolesSansChecklist.length} rôle{rolesSansChecklist.length > 1 ? 's' : ''} de terrain sans checklist :{' '}
+            {rolesSansChecklist.map((r) => `${r.libelle} (${profilDe(r.profil_terrain)?.court})`).join(', ')}.
+          </p>
+          <p className="text-xs text-sourdine">
+            Un modèle de départ ne reprend que les gestes dans l’application (déclarer un chiffre, traiter une demande…). Il n’invente aucune doctrine d’intervention :
+            c’est un point de départ à relire et corriger avec vos experts. Il s’installe sous le déclencheur « {DECLENCHEUR_MODELE_DEPART} ».
+          </p>
+          <BoutonPrincipal disabled={installation?.etat === 'cours'} onClick={installerModeles}>
+            {installation?.etat === 'cours' ? 'Installation…' : 'Installer les modèles de départ'}
+          </BoutonPrincipal>
+        </div>
+      )}
+      {installation?.texte && (
+        <p role="status" className={`text-sm mb-3 ${installation.etat === 'erreur' ? 'text-chaud' : 'text-encre'}`}>{installation.texte}</p>
+      )}
 
       {enAjout && (
         <FormulaireItem

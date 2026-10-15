@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { PROFILS_TERRAIN, profilDe } from '@plateforme-crise/shared'
 import { useAuth } from '../../context/AuthContext'
 import { useTableContexte } from '../../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../../components/Boutons'
@@ -92,6 +93,11 @@ export default function Roles() {
                     {r.tout_pouvoir && (
                       <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-chaud">
                         tous pouvoirs
+                      </span>
+                    )}
+                    {r.profil_terrain && (
+                      <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-encre">
+                        terrain : {profilDe(r.profil_terrain)?.court ?? r.profil_terrain}
                       </span>
                     )}
                     {r.peut_declencher_escalade && (
@@ -224,6 +230,7 @@ function FormulaireRole({ valeursInitiales = {}, onValider, onAnnuler }) {
     valeursInitiales.peut_declencher_escalade ?? false
   )
   const [toutPouvoir, setToutPouvoir] = useState(valeursInitiales.tout_pouvoir ?? false)
+  const [profilTerrain, setProfilTerrain] = useState(valeursInitiales.profil_terrain ?? '')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -242,6 +249,7 @@ function FormulaireRole({ valeursInitiales = {}, onValider, onAnnuler }) {
       libelle: libelle.trim(),
       peut_declencher_escalade: peutDeclencher,
       tout_pouvoir: toutPouvoir,
+      profil_terrain: profilTerrain || null,
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -271,6 +279,20 @@ function FormulaireRole({ valeursInitiales = {}, onValider, onAnnuler }) {
             className="w-full font-mono"
           />
         </div>
+      </div>
+
+      <div className="max-w-sm">
+        <label className="block text-xs font-medium text-sourdine mb-1">Profil sur le terrain</label>
+        <select value={profilTerrain} onChange={(e) => setProfilTerrain(e.target.value)} className="w-full">
+          <option value="">— aucun (écran standard) —</option>
+          {PROFILS_TERRAIN.map((p) => (
+            <option key={p.valeur} value={p.valeur}>{p.libelle}</option>
+          ))}
+        </select>
+        <p className="text-xs text-sourdine mt-0.5">
+          Décide de l’écran d’accueil de l’application Terrain pour ce rôle (outils de sa discipline, demandes qui lui sont adressées).
+          Le Dir-Si et le Dir PC-Ops peuvent établir ou lever les zones d’intervention. Ce réglage organise l’écran, il n’est pas un contrôle d’accès.
+        </p>
       </div>
 
       <label className="flex items-center gap-2 text-sm text-sourdine">

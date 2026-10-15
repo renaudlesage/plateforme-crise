@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { positionActuelle, reduirePhoto } from '@plateforme-crise/shared'
+import { DESTINATAIRES_DEMANDE, positionActuelle, reduirePhoto } from '@plateforme-crise/shared'
 import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
 import { usePosition } from '../context/PositionContext'
@@ -78,6 +78,7 @@ const CHAMPS_CAN = [
 export function RapportCan({ incidentId, contexteId, roleLibelle }) {
   const { position } = usePosition()
   const [valeurs, setValeurs] = useState({})
+  const [destinataire, setDestinataire] = useState('pc_ops')
   const [enCours, setEnCours] = useState(false)
   const [res, setRes] = useState(null)
 
@@ -97,6 +98,7 @@ export function RapportCan({ incidentId, contexteId, roleLibelle }) {
         incident_id: incidentId,
         role_libelle: roleLibelle ?? null,
         ...champs,
+        destinataire: champs.je_demande ? destinataire : null,
         latitude: pos?.lat ?? null,
         longitude: pos?.lon ?? null,
       },
@@ -116,6 +118,16 @@ export function RapportCan({ incidentId, contexteId, roleLibelle }) {
           <ChampDicte valeur={valeurs[c.cle] ?? ''} onChange={(v) => setValeurs((p) => ({ ...p, [c.cle]: v }))} placeholder={c.aide} />
         </div>
       ))}
+      {(valeurs.je_demande ?? '').trim() && (
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Ma demande s&apos;adresse à</label>
+          <select value={destinataire} onChange={(e) => setDestinataire(e.target.value)} className="w-full">
+            {DESTINATAIRES_DEMANDE.map((d) => (
+              <option key={d.valeur} value={d.valeur}>{d.libelle}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <Resultat res={res} />
       <button type="submit" className="bouton-terrain principal" disabled={enCours || !rempli}>
         {enCours ? 'Envoi…' : 'Envoyer le rapport au CC'}

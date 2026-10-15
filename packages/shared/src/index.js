@@ -38,3 +38,5 @@ export {
   synthese as syntheseMeteo,
   quand as quandMeteo,
 } from './meteo.js'
+export { PROFILS_TERRAIN, profilDe, peutModifierZonage, DESTINATAIRES_DEMANDE } from './profils.js'
+export { CHECKLISTS_DEPART, DECLENCHEUR_MODELE_DEPART } from './checklistsDepart.js'

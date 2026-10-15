@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useSearchParams, Link } from 'react-router-dom'
-import { SelecteurLocalisation, DISCIPLINES, libelleOrgane, lienItineraire } from '@plateforme-crise/shared'
+import { SelecteurLocalisation, DISCIPLINES, libelleOrgane, lienItineraire, ilYA } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
@@ -10,7 +10,7 @@ import { SectionDebriefings, SectionCohesionSociale } from '../components/Debrie
 import SyntheseIncident from '../components/SyntheseIncident'
 import Repliable from '../components/Repliable'
 import VeilleMeteo from '../components/VeilleMeteo'
-import { BandeauAppelsAide, BandeauDemandes, SectionComptages } from '../components/RemonteesTerrain'
+import { BandeauAppelsAide, BandeauDemandes, SectionComptages, SectionTriage, chargerTriage } from '../components/RemonteesTerrain'
 import { SectionPlanNucleaire, SectionVeille, SectionCauseIncendie } from '../components/NucleaireVeilleIncendie'
 
 export default function IncidentDetail() {
@@ -343,6 +343,9 @@ export default function IncidentDetail() {
           )}
           <div className="mb-6">
             <SectionComptages incidentId={id} />
+          </div>
+          <div className="mb-6">
+            <SectionTriage incidentId={id} contexteId={contexteId} />
           </div>
         </>
       )}
@@ -3345,8 +3348,25 @@ function FormulaireSitRep({ incidentId, niveaux, contacts = [], centresAccueil =
   const [canal, setCanal] = useState({})
   const [facadeAlfa, setFacadeAlfa] = useState('')
   const [infoCarte, setInfoCarte] = useState(null)
+  const [infoTriage, setInfoTriage] = useState(null)
+  const [localisationPma, setLocalisationPma] = useState('')
+  const [localisationPpd, setLocalisationPpd] = useState('')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
+
+  async function reprendreTriage() {
+    setInfoTriage(null)
+    const t = await chargerTriage(incidentId)
+    if (!t) {
+      setInfoTriage('Aucun triage déclaré par le terrain (ou lecture impossible) : rien n’a été repris.')
+      return
+    }
+    setU0(t.totaux.u0)
+    setU1(t.totaux.u1)
+    setU2(t.totaux.u2)
+    setU3(t.totaux.u3)
+    setInfoTriage(`Triage déclaré par le terrain ${ilYA(t.dernier)} repris : à confirmer avant d’enregistrer (le Dir-Med peut avoir compté depuis).`)
+  }
 
   async function remplirDepuisCarte() {
     setInfoCarte(null)
@@ -3385,6 +3405,8 @@ function FormulaireSitRep({ incidentId, niveaux, contacts = [], centresAccueil =
       victimes_u3: Number(u3) || 0,
       localisation_incident: localisationIncident.trim() || null,
       localisation_pc_ops: localisationPcOps.trim() || null,
+      localisation_pma: localisationPma.trim() || null,
+      localisation_ppd: localisationPpd.trim() || null,
       dir_pc_ops_contact_id: dirPcOpsContactId || null,
       localisation_centre_accueil_id: localisationCentreAccueilId || null,
       mesures_reflexes: mesuresReflexes.trim() || null,
@@ -3424,6 +3446,10 @@ function FormulaireSitRep({ incidentId, niveaux, contacts = [], centresAccueil =
             </div>
           ))}
         </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <button type="button" className="discret" onClick={reprendreTriage}>Reprendre le triage déclaré par le terrain</button>
+          {infoTriage && <span className="text-xs text-sourdine">{infoTriage}</span>}
+        </div>
       </div>
 
       <div>
@@ -3434,6 +3460,17 @@ function FormulaireSitRep({ incidentId, niveaux, contacts = [], centresAccueil =
       <div>
         <label className="block text-xs font-medium text-sourdine mb-1">Localisation PC-Ops</label>
         <input value={localisationPcOps} onChange={(e) => setLocalisationPcOps(e.target.value)} className="w-full" />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Localisation PMA</label>
+          <input value={localisationPma} onChange={(e) => setLocalisationPma(e.target.value)} className="w-full" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Localisation PPD</label>
+          <input value={localisationPpd} onChange={(e) => setLocalisationPpd(e.target.value)} className="w-full" />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
