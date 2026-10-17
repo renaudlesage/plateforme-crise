@@ -117,6 +117,7 @@ function LigneIncident({ i }) {
                 <div>
                   <p className="text-sm font-medium text-encre">
                     {i.nom}
+                    {i.est_exercice && <span className="jeton ml-2 text-veille">EXERCICE</span>}
                     <span
                       className={`jeton ml-2 ${
                         i.statut === 'en_cours'

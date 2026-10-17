@@ -9,12 +9,20 @@ import IncidentDetail from './pages/IncidentDetail'
 import SignalementsCitoyens from './pages/SignalementsCitoyens'
 import Carte from './pages/Carte'
 import VueAutorite from './pages/VueAutorite'
+import Exercices from './pages/Exercices'
+import ExerciceDetail from './pages/ExerciceDetail'
 import { useAuth } from './context/AuthContext'
 
 // Un accès en lecture seule (bourgmestre, autorité) arrive directement sur la vue autorité ; les autres, sur la liste des incidents.
 function AccueilSelonAcces() {
   const { contexteActuel } = useAuth()
   return contexteActuel?.niveau_acces === 'lecture' ? <Navigate to="/autorite" replace /> : <Incidents />
+}
+
+// Les exercices s'animent depuis le CC : un accès en lecture seule (autorité) n'y a pas sa place et retombe sur la vue autorité.
+function ReserveAuxActeurs({ children }) {
+  const { contexteActuel } = useAuth()
+  return contexteActuel?.niveau_acces === 'lecture' ? <Navigate to="/autorite" replace /> : children
 }
 
 export default function App() {
@@ -47,6 +55,8 @@ export default function App() {
             <Route path="incidents/:id" element={<IncidentDetail />} />
             <Route path="signalements-citoyens" element={<SignalementsCitoyens />} />
             <Route path="carte" element={<Carte />} />
+            <Route path="exercices" element={<ReserveAuxActeurs><Exercices /></ReserveAuxActeurs>} />
+            <Route path="exercices/:id" element={<ReserveAuxActeurs><ExerciceDetail /></ReserveAuxActeurs>} />
           </Route>
         </Routes>
       </AuthProvider>

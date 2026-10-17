@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { texteErreur } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
@@ -15,6 +16,8 @@ const TYPES_EXERCICE = [
 ]
 
 const LIBELLE_TYPE_EXERCICE = Object.fromEntries(TYPES_EXERCICE.map((t) => [t.valeur, t.libelle]))
+const LIBELLE_STATUT_EXERCICE = { preparation: 'En préparation', en_cours: 'En cours', termine: 'Terminé' }
+const LIBELLE_MODE_JEU = { sur_table: 'Sur table', dans_outil: 'Dans l’outil' }
 
 function lignesVersJson(texte) {
   const lignes = texte.split('\n').map((l) => l.trim()).filter(Boolean)
@@ -40,6 +43,7 @@ export default function Exercices() {
 
   const [enAjout, setEnAjout] = useState(false)
   const [ligneEnEdition, setLigneEnEdition] = useState(null)
+  const [erreurSuppression, setErreurSuppression] = useState(null)
 
   return (
     <div>
@@ -49,11 +53,16 @@ export default function Exercices() {
           <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter un exercice</BoutonPrincipal>
         )}
       </div>
-      <p className="text-sm text-sourdine mb-4">
+      <p className="text-sm text-sourdine mb-1">
         Exercices planifiés, réalisés et leur évaluation.
+      </p>
+      <p className="text-xs text-sourdine mb-4">
+        Pour préparer le scénario, animer l’exercice et en tirer le bilan, ouvrez l’écran « Exercices » du Comité de Coordination.
+        Un exercice terminé est une preuve : il ne peut plus être supprimé.
       </p>
 
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
+      {erreurSuppression && <p role="alert" className="text-sm text-chaud mb-2">{erreurSuppression}</p>}
 
       {enAjout && (
         <FormulaireExercice
@@ -91,7 +100,9 @@ export default function Exercices() {
               <li key={ex.id} className="flex items-start justify-between px-4 py-3 bg-surface">
                 <div>
                   <p className="text-sm font-medium text-encre">
-                    {LIBELLE_TYPE_EXERCICE[ex.type_exercice] ?? ex.type_exercice}
+                    {ex.titre?.trim() || LIBELLE_TYPE_EXERCICE[ex.type_exercice] || ex.type_exercice}
+                    <span className="jeton ml-2">{LIBELLE_STATUT_EXERCICE[ex.statut] ?? ex.statut}</span>
+                    <span className="jeton ml-2">{LIBELLE_MODE_JEU[ex.mode_jeu] ?? ex.mode_jeu}</span>
                     {ex.valide_par_niveau_superieur && (
                       <span className="jeton ml-2 text-ok">
                         validé niveau supérieur
@@ -99,6 +110,7 @@ export default function Exercices() {
                     )}
                   </p>
                   <p className="text-xs text-sourdine">
+                    {ex.titre?.trim() && <>{LIBELLE_TYPE_EXERCICE[ex.type_exercice] ?? ex.type_exercice} · </>}
                     {ex.date_planifiee && <>planifié : {ex.date_planifiee}</>}
                     {ex.date_realisee && <> · réalisé : {ex.date_realisee}</>}
                   </p>
@@ -108,13 +120,18 @@ export default function Exercices() {
                 </div>
                 <div className="flex gap-2 flex-shrink-0 ml-3">
                   <BoutonDiscret onClick={() => setLigneEnEdition(ex.id)}>Modifier</BoutonDiscret>
-                  <BoutonDiscret
-                    onClick={() => {
-                      if (confirm('Supprimer cet exercice ?')) supprimer(ex.id)
-                    }}
-                  >
-                    Supprimer
-                  </BoutonDiscret>
+                  {ex.statut !== 'termine' && (
+                    <BoutonDiscret
+                      onClick={async () => {
+                        if (!confirm('Supprimer cet exercice ?')) return
+                        setErreurSuppression(null)
+                        const { error } = await supprimer(ex.id)
+                        if (error) setErreurSuppression(texteErreur(error))
+                      }}
+                    >
+                      Supprimer
+                    </BoutonDiscret>
+                  )}
                 </div>
               </li>
             )
@@ -126,6 +143,7 @@ export default function Exercices() {
 }
 
 function FormulaireExercice({ valeursInitiales = {}, onValider, onAnnuler }) {
+  const [titre, setTitre] = useState(valeursInitiales.titre ?? '')
   const [typeExercice, setTypeExercice] = useState(valeursInitiales.type_exercice ?? TYPES_EXERCICE[0].valeur)
   const [datePlanifiee, setDatePlanifiee] = useState(valeursInitiales.date_planifiee ?? '')
   const [dateRealisee, setDateRealisee] = useState(valeursInitiales.date_realisee ?? '')
@@ -143,6 +161,7 @@ function FormulaireExercice({ valeursInitiales = {}, onValider, onAnnuler }) {
     e.preventDefault()
     setEnCours(true)
     const { error } = await onValider({
+      titre: titre.trim() || null,
       type_exercice: typeExercice,
       date_planifiee: datePlanifiee || null,
       date_realisee: dateRealisee || null,
@@ -160,6 +179,11 @@ function FormulaireExercice({ valeursInitiales = {}, onValider, onAnnuler }) {
 
   return (
     <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-4 bg-fond space-y-3">
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Titre</label>
+        <input value={titre} onChange={(e) => setTitre(e.target.value)} placeholder="ex. Inondation Haute-Meuse — table de crise" className="w-full" />
+      </div>
+
       <div>
         <label className="block text-xs font-medium text-sourdine mb-1">Type d'exercice</label>
         <select

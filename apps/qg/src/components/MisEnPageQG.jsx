@@ -64,6 +64,11 @@ export default function MisEnPageQG() {
           <Link to="/carte" className={`plaque-nav${actif('/carte') ? ' actif' : ''}`}>
             Carte
           </Link>
+          {contexteActuel?.niveau_acces !== 'lecture' && (
+            <Link to="/exercices" className={`plaque-nav${actif('/exercices') ? ' actif' : ''}`}>
+              Exercices
+            </Link>
+          )}
         </div>
       </header>
 

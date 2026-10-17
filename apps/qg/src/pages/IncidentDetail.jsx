@@ -106,6 +106,13 @@ export default function IncidentDetail() {
     <div>
       <Link to="/" className="text-sm text-sourdine hover:text-encre">← retour aux incidents</Link>
 
+      {incident.est_exercice && (
+        <div role="note" style={{ background: '#7c2d12', color: '#fff', padding: '8px 14px', borderRadius: 6, margin: '8px 0 0', fontSize: 13, fontWeight: 600, letterSpacing: 0.3 }}>
+          EXERCICE — aucune diffusion publique possible : ni alerte à la population, ni signalement citoyen.{' '}
+          <Link to="/exercices" style={{ color: '#fff', textDecoration: 'underline' }}>Voir les exercices</Link>
+        </div>
+      )}
+
       <div className="flex items-start justify-between mt-2 mb-6">
         <div>
           <h1 className="text-lg font-semibold text-encre">{incident.nom}</h1>
@@ -144,9 +151,13 @@ export default function IncidentDetail() {
             <span className={`jeton ${incident.signalements_citoyens_ouverts ? 'text-ok' : 'text-sourdine'}`}>
               {incident.signalements_citoyens_ouverts ? 'ouverts' : 'fermés'}
             </span>
-            <button type="button" className="lien text-xs" onClick={() => changerSignalementsOuverts(!incident.signalements_citoyens_ouverts)}>
-              {incident.signalements_citoyens_ouverts ? 'Fermer' : 'Ouvrir'}
-            </button>
+            {incident.est_exercice ? (
+              <span className="text-xs text-sourdine">toujours fermés pendant un exercice</span>
+            ) : (
+              <button type="button" className="lien text-xs" onClick={() => changerSignalementsOuverts(!incident.signalements_citoyens_ouverts)}>
+                {incident.signalements_citoyens_ouverts ? 'Fermer' : 'Ouvrir'}
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-2 mt-1.5">
             <label className="text-xs text-sourdine">Site CC actuel :</label>
