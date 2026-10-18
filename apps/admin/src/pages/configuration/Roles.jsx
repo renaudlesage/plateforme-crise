@@ -15,6 +15,7 @@ const RESSOURCES = [
   { valeur: 'resilience_territoriale', libelle: 'Résilience territoriale' },
   { valeur: 'conformite_legale', libelle: 'Conformité légale' },
   { valeur: 'comptes', libelle: 'Comptes' },
+  { valeur: 'situation', libelle: 'Situation (veille sociétale)' },
 ]
 const ACTIONS = [
   { valeur: 'lire', libelle: 'Lire' },

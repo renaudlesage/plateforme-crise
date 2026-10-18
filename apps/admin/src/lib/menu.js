@@ -64,6 +64,7 @@ export const SECTIONS = [
       { to: '/seuils-action', libelle: "Seuils d'action" },
       { to: '/meteo-commune', libelle: 'Météo de la commune' },
       { to: '/seuils-meteo', libelle: 'Seuils météo (déclencheurs)' },
+      { to: '/sources-situation', libelle: 'Sources de situation (veille)' },
       { to: '/registre-expertises', libelle: "Registre d'expertises" },
       { to: '/continuite-activite', libelle: "Continuité d'activité (BCM)" },
       { to: '/resilience-territoriale', libelle: 'Résilience territoriale' },
