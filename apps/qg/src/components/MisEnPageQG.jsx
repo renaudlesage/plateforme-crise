@@ -65,6 +65,11 @@ export default function MisEnPageQG() {
             Carte
           </Link>
           {contexteActuel?.niveau_acces !== 'lecture' && (
+            <Link to="/evenements" className={`plaque-nav${actif('/evenements') ? ' actif' : ''}`}>
+              Événements<Pastille n={compteurs.evenements} />
+            </Link>
+          )}
+          {contexteActuel?.niveau_acces !== 'lecture' && (
             <Link to="/exercices" className={`plaque-nav${actif('/exercices') ? ' actif' : ''}`}>
               Exercices
             </Link>
