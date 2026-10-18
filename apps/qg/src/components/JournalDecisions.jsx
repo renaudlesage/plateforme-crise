@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { libelleClasseUrgence, texteErreur } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from './Boutons'
-
-const LIBELLE_NATURE = { decision: 'Décision', correction: 'Correction', reexamen: 'Réexamen' }
+import { LIBELLE_NATURE, etatsJournal, libelleAuteur, liensEntree } from '../lib/journalDecisions'
 
 /** Valeur pour <input type="datetime-local"> : heure locale, à la minute. */
 function valeurLocale(date = new Date()) {
@@ -25,7 +25,7 @@ function dateHeure(iso) {
  * l'heure d'enregistrement et l'incident sont fixés par le serveur ; seul « qui a décidé » est libre,
  * car la personne qui décide (le bourgmestre, par exemple) n'est pas toujours celle qui écrit.
  */
-export default function JournalDecisions({ incidentId, contexteId }) {
+export default function JournalDecisions({ incidentId, contexteId, aFormaliser = null, onFormaliseTraite = null, onEnregistre = null }) {
   const { contexteActuel } = useAuth()
   const lectureSeule = contexteActuel?.niveau_acces === 'lecture'
   const { lignes: roles } = useTableContexte('roles', contexteId, { tri: 'libelle' })
@@ -36,15 +36,18 @@ export default function JournalDecisions({ incidentId, contexteId }) {
   const [livre, setLivre] = useState([])
   const [chargement, setChargement] = useState(true)
   const [erreur, setErreur] = useState(null)
-  const [formulaire, setFormulaire] = useState(null) // { nature, cible? }
+  const [auteurs, setAuteurs] = useState({})
+  const [formulaire, setFormulaire] = useState(null) // { nature, cible?, amorce? }
+  const racine = useRef(null)
   const [maintenant, setMaintenant] = useState(Date.now())
 
   const rafraichir = useCallback(async () => {
-    const [j, d, a, l] = await Promise.all([
+    const [j, d, a, l, au] = await Promise.all([
       supabase.from('journal_decisions').select('*').eq('incident_id', incidentId).order('numero_ordre', { ascending: false }),
       supabase.from('declenchements_seuils_action').select('id, horodatage_declenchement, seuils_action(libelle)').eq('incident_id', incidentId),
       supabase.from('activations_plan_nucleaire').select('id, classe_urgence, declenche_le').eq('incident_id', incidentId),
       supabase.from('livre_de_bord').select('id, numero_ordre, message').eq('incident_id', incidentId).order('numero_ordre', { ascending: false }),
+      supabase.rpc('journal_decisions_auteurs', { p_incident_id: incidentId }),
     ])
     if (j.error) setErreur(texteErreur(j.error))
     else {
@@ -54,6 +57,8 @@ export default function JournalDecisions({ incidentId, contexteId }) {
     setDeclenchements(d.data ?? [])
     setActivations(a.data ?? [])
     setLivre(l.data ?? [])
+    // L'auteur est un complément : s'il manque, le journal reste lisible (on n'affiche simplement pas qui a saisi).
+    setAuteurs(Object.fromEntries((au.data ?? []).map((x) => [x.user_id, x])))
     setChargement(false)
   }, [incidentId])
 
@@ -68,49 +73,39 @@ export default function JournalDecisions({ incidentId, contexteId }) {
     return () => clearInterval(t)
   }, [])
 
-  const parId = useMemo(() => Object.fromEntries(entrees.map((e) => [e.id, e])), [entrees])
-  // Une décision corrigée est « remplacée » ; une décision avec échéance est « suivie » dès qu'un réexamen la reprend.
-  const remplaceePar = useMemo(() => {
-    const m = {}
-    for (const e of entrees) if (e.nature === 'correction') m[e.precedente_id] = e
-    return m
-  }, [entrees])
-  const reexaminee = useMemo(() => {
-    const s = new Set()
-    for (const e of entrees) if (e.nature === 'reexamen') s.add(e.precedente_id)
-    return s
-  }, [entrees])
+  // « Formaliser en décision » depuis le livre de bord : on ouvre le formulaire prérempli, puis on prévient l'appelant
+  // pour qu'un second clic sur la même entrée rouvre bien le formulaire.
+  useEffect(() => {
+    if (!aFormaliser || lectureSeule) return
+    setFormulaire({ nature: 'decision', amorce: aFormaliser })
+    racine.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+    onFormaliseTraite?.()
+  }, [aFormaliser]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const echeancesDepassees = entrees.filter(
-    (e) => e.echeance && !remplaceePar[e.id] && !reexaminee.has(e.id) && new Date(e.echeance).getTime() <= maintenant,
+  // Une décision corrigée est « remplacée » ; une décision avec échéance est « suivie » dès qu'un réexamen la reprend.
+  const { parId, remplaceePar, reexaminee, depassees: echeancesDepassees, depasse } = useMemo(
+    () => etatsJournal(entrees, maintenant),
+    [entrees, maintenant],
   )
 
-  function libelleLien(e) {
-    const liens = []
-    if (e.declenchement_seuil_id) {
-      const d = declenchements.find((x) => x.id === e.declenchement_seuil_id)
-      liens.push(`seuil d'action : ${d?.seuils_action?.libelle ?? '—'}`)
-    }
-    if (e.activation_nucleaire_id) {
-      const a = activations.find((x) => x.id === e.activation_nucleaire_id)
-      liens.push(`plan nucléaire : ${a ? libelleClasseUrgence(a.classe_urgence) : '—'}`)
-    }
-    if (e.livre_de_bord_id) {
-      const l = livre.find((x) => x.id === e.livre_de_bord_id)
-      liens.push(`livre de bord${l ? ` n° ${l.numero_ordre}` : ''}`)
-    }
-    return liens
-  }
+  const libelleLien = (e) => liensEntree(e, { declenchements, activations, livre })
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
+    <div ref={racine}>
+      <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
         <h2 className="font-medium text-encre">Journal des décisions</h2>
-        {!lectureSeule && !formulaire && (
-          <BoutonPrincipal type="button" onClick={() => setFormulaire({ nature: 'decision' })}>
-            Enregistrer une décision
-          </BoutonPrincipal>
-        )}
+        <div className="flex items-center gap-3">
+          {entrees.length > 0 && (
+            <Link to={`/incidents/${incidentId}/journal-decisions`} className="lien">
+              Version imprimable
+            </Link>
+          )}
+          {!lectureSeule && !formulaire && (
+            <BoutonPrincipal type="button" onClick={() => setFormulaire({ nature: 'decision' })}>
+              Enregistrer une décision
+            </BoutonPrincipal>
+          )}
+        </div>
       </div>
       <p className="text-xs text-sourdine mb-3">
         Qui a décidé, sur quelle base, jusqu'à quand. Registre en ajout seul : une entrée ne se modifie ni ne se supprime ;
@@ -129,7 +124,7 @@ export default function JournalDecisions({ incidentId, contexteId }) {
 
       {formulaire && (
         <FormulaireDecision
-          key={`${formulaire.nature}-${formulaire.cible?.id ?? 'nouvelle'}`}
+          key={`${formulaire.nature}-${formulaire.cible?.id ?? formulaire.amorce?.id ?? 'nouvelle'}`}
           incidentId={incidentId}
           formulaire={formulaire}
           roles={roles}
@@ -138,6 +133,7 @@ export default function JournalDecisions({ incidentId, contexteId }) {
           livre={livre}
           onFini={async () => {
             setFormulaire(null)
+            onEnregistre?.()
             await rafraichir()
           }}
           onAnnuler={() => setFormulaire(null)}
@@ -156,7 +152,7 @@ export default function JournalDecisions({ incidentId, contexteId }) {
             const remplacee = remplaceePar[e.id]
             const cible = e.precedente_id ? parId[e.precedente_id] : null
             const apresCoup = new Date(e.enregistre_le).getTime() - new Date(e.decide_le).getTime() > 5 * 60000
-            const depassee = e.echeance && !remplacee && !reexaminee.has(e.id) && new Date(e.echeance).getTime() <= maintenant
+            const depassee = depasse(e)
             return (
               <li key={e.id} className="bg-surface border border-trait rounded p-3" style={remplacee ? { opacity: 0.7 } : undefined}>
                 <p className="text-xs text-sourdine">
@@ -168,6 +164,7 @@ export default function JournalDecisions({ incidentId, contexteId }) {
                   )}
                   {remplacee && <span className="jeton ml-2">remplacée par n° {remplacee.numero_ordre}</span>}
                   {apresCoup && <span className="jeton ml-2">enregistrée à {dateHeure(e.enregistre_le)}</span>}
+                  {auteurs[e.enregistre_par] && <> · saisie par {libelleAuteur(auteurs[e.enregistre_par])}</>}
                 </p>
                 <p className="text-sm text-encre mt-0.5" style={{ whiteSpace: 'pre-line', textDecoration: remplacee ? 'line-through' : 'none' }}>
                   {e.decision}
@@ -210,16 +207,18 @@ export default function JournalDecisions({ incidentId, contexteId }) {
 }
 
 function FormulaireDecision({ incidentId, formulaire, roles, declenchements, activations, livre, onFini, onAnnuler }) {
-  const { nature, cible } = formulaire
-  const [decision, setDecision] = useState(nature === 'correction' ? cible.decision : '')
-  const [base, setBase] = useState(nature === 'correction' ? cible.base_decision : '')
+  const { nature, cible, amorce } = formulaire
+  // Amorce : entrée du livre de bord à formaliser. On reprend sa décision (à défaut son message), sa justification de
+  // prévoyance et son heure : le registre doit dire quand la décision a été prise, pas quand on l'a recopiée.
+  const [decision, setDecision] = useState(nature === 'correction' ? cible.decision : amorce ? amorce.decision || amorce.message || '' : '')
+  const [base, setBase] = useState(nature === 'correction' ? cible.base_decision : amorce?.justification_prevoyance ?? '')
   const [decidePar, setDecidePar] = useState(cible?.decide_par ?? '')
-  const [decideLe, setDecideLe] = useState(valeurLocale())
+  const [decideLe, setDecideLe] = useState(valeurLocale(amorce?.horodatage ? new Date(amorce.horodatage) : new Date()))
   const [echeance, setEcheance] = useState('')
   const [motif, setMotif] = useState('')
   const [seuilId, setSeuilId] = useState(nature === 'correction' ? cible.declenchement_seuil_id ?? '' : '')
   const [activationId, setActivationId] = useState(nature === 'correction' ? cible.activation_nucleaire_id ?? '' : '')
-  const [livreId, setLivreId] = useState(nature === 'correction' ? cible.livre_de_bord_id ?? '' : '')
+  const [livreId, setLivreId] = useState(nature === 'correction' ? cible.livre_de_bord_id ?? '' : amorce?.id ?? '')
   const [enCours, setEnCours] = useState(false)
   const [erreur, setErreur] = useState(null)
 
@@ -263,6 +262,11 @@ function FormulaireDecision({ incidentId, formulaire, roles, declenchements, act
       <p className="text-sm font-medium text-encre">{titre}</p>
       {nature === 'reexamen' && (
         <p className="text-xs text-sourdine">« {cible.decision} »</p>
+      )}
+      {amorce && (
+        <p className="text-xs text-sourdine">
+          Prérempli depuis l'entrée n° {amorce.numero_ordre} du livre de bord : relisez, indiquez qui a décidé et sur quelle base, puis enregistrez.
+        </p>
       )}
 
       {erreur && <p role="alert" className="text-sm text-chaud">{erreur}</p>}

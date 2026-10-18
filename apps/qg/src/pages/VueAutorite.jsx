@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { CATEGORIES_COMPTAGE, totauxComptages } from '../components/RemonteesTerrain'
 import VeilleMeteo from '../components/VeilleMeteo'
+import { LIBELLE_NATURE, etatsJournal } from '../lib/journalDecisions'
 
 /**
  * Vue autorité : le point de situation d'un incident sur une seule page, en lecture, pour le bourgmestre
@@ -58,6 +59,43 @@ function Tuile({ valeur, libelle, sous, alerte = false }) {
   )
 }
 
+/** Décisions en vigueur (non remplacées), les plus récentes d'abord ; une échéance dépassée sans réexamen se voit. */
+function JournalEnCours({ entrees, maintenant, incidentId }) {
+  const { parId, remplaceePar, reexaminee, depasse } = etatsJournal(entrees, maintenant)
+  const enVigueur = entrees.filter((e) => !remplaceePar[e.id])
+  const visibles = enVigueur.slice(0, 6)
+  const nbDepassees = enVigueur.filter(depasse).length
+  return (
+    <>
+      {nbDepassees > 0 && (
+        <p className="text-chaud text-xs font-semibold mb-1">
+          {nbDepassees === 1 ? '1 décision a dépassé son échéance sans réexamen.' : `${nbDepassees} décisions ont dépassé leur échéance sans réexamen.`}
+        </p>
+      )}
+      <ul className="space-y-1.5">
+        {visibles.map((e) => (
+          <li key={e.id}>
+            <span className="text-xs text-sourdine">n° {e.numero_ordre} · {jourHeure(e.decide_le)} · {e.decide_par} · </span>
+            {e.decision}
+            {e.nature !== 'decision' && (
+              <span className="text-xs text-sourdine"> ({LIBELLE_NATURE[e.nature].toLowerCase()} de n° {parId[e.precedente_id]?.numero_ordre ?? '—'})</span>
+            )}
+            {e.echeance && (
+              <span className={`text-xs ml-1 ${depasse(e) ? 'text-chaud font-semibold' : 'text-sourdine'}`}>
+                {depasse(e) ? `— échéance dépassée (${jourHeure(e.echeance)})` : reexaminee.has(e.id) ? '— réexaminée' : `— jusqu'à ${jourHeure(e.echeance)}`}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+      {enVigueur.length > visibles.length && <p className="text-xs text-sourdine mt-1">+ {enVigueur.length - visibles.length} autre(s) décision(s) en vigueur.</p>}
+      <p className="mt-1.5 no-print">
+        <Link to={`/incidents/${incidentId}/journal-decisions`} className="lien text-xs">Journal complet et version imprimable →</Link>
+      </p>
+    </>
+  )
+}
+
 function Bloc({ titre, aide, children }) {
   return (
     <section className="bg-surface border border-trait rounded p-3" style={{ breakInside: 'avoid' }}>
@@ -101,7 +139,7 @@ export default function VueAutorite() {
     if (!incidentId || !contexteId) return
     const depuisEquipes = new Date(Date.now() - 2 * 3600000).toISOString()
     const q = supabase
-    const [inc, sitrep, attente, prises, moyens, zones, comptages, centres, objets, alertes, signalements, requisitions, equipes, aides, infos] = await Promise.all([
+    const [inc, sitrep, attente, prises, moyens, zones, comptages, centres, objets, alertes, signalements, requisitions, equipes, aides, infos, journal] = await Promise.all([
       q.from('incidents').select('*, niveaux_escalade(libelle)').eq('id', incidentId).single(),
       q.from('sitreps').select('numero, horodatage, canal_conditions, canal_actions, canal_besoins, canal_anticipation, victimes_u0, victimes_u1, victimes_u2, victimes_u3').eq('incident_id', incidentId).order('numero', { ascending: false }).limit(1).maybeSingle(),
       q.from('declenchements_seuils_action').select('id, horodatage_declenchement, seuils_action(libelle)').eq('incident_id', incidentId).eq('statut', 'en_attente').order('horodatage_declenchement'),
@@ -117,6 +155,7 @@ export default function VueAutorite() {
       q.from('positions_equipes').select('id', { count: 'exact', head: true }).eq('incident_id', incidentId).gte('maj_le', depuisEquipes),
       q.from('alertes_aide').select('id', { count: 'exact', head: true }).eq('incident_id', incidentId).neq('statut', 'close'),
       q.from('informations_parties_prenantes').select('id, partie, libelle, informe_le, note').eq('incident_id', incidentId).order('informe_le', { ascending: false }),
+      q.from('journal_decisions').select('id, numero_ordre, nature, precedente_id, decision, decide_par, decide_le, echeance').eq('incident_id', incidentId).order('numero_ordre', { ascending: false }),
     ])
     const erreur = [inc, sitrep, attente, prises, moyens, zones, comptages, centres, objets, alertes, signalements, requisitions, equipes, aides, infos].find((r) => r.error)
     if (erreur) {
@@ -142,6 +181,7 @@ export default function VueAutorite() {
       equipes: equipes.count ?? 0,
       aides: aides.count ?? 0,
       infos: infos.data ?? [],
+      journal: journal.error ? null : journal.data ?? [],
     })
   }, [incidentId, contexteId])
 
@@ -360,6 +400,16 @@ export default function VueAutorite() {
                 </li>
               ))}
             </ul>
+          )}
+        </Bloc>
+
+        <Bloc titre="Journal des décisions" aide="Qui a décidé, sur quelle base, jusqu'à quand. Registre en ajout seul : une décision corrigée est remplacée, jamais effacée.">
+          {d.journal === null ? (
+            <Vide>Journal indisponible pour le moment.</Vide>
+          ) : d.journal.length === 0 ? (
+            <Vide>Aucune décision enregistrée au journal.</Vide>
+          ) : (
+            <JournalEnCours entrees={d.journal} maintenant={maintenant} incidentId={i.id} />
           )}
         </Bloc>
 

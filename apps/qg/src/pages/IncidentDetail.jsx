@@ -21,6 +21,9 @@ export default function IncidentDetail() {
   const [chargementIncident, setChargementIncident] = useState(true)
   const [localisationOuverte, setLocalisationOuverte] = useState(false)
   const [parametresOuverts, setParametresOuverts] = useState(false)
+  // Entrée du livre de bord à formaliser dans le journal des décisions (les deux sections sont voisines, l'état vit ici).
+  const [aFormaliser, setAFormaliser] = useState(null)
+  const [versionJournal, setVersionJournal] = useState(0)
   // L'onglet actif vit dans l'URL (?onglet=...) : un rechargement ou un
   // retour arrière ramène sur le même écran, et un lien peut pointer
   // directement sur une discipline.
@@ -366,13 +369,24 @@ export default function IncidentDetail() {
         <>
           {afficher('journal_decisions') && (
             <div className="mb-6">
-              <JournalDecisions incidentId={id} contexteId={contexteId} />
+              <JournalDecisions
+                incidentId={id}
+                contexteId={contexteId}
+                aFormaliser={aFormaliser}
+                onFormaliseTraite={() => setAFormaliser(null)}
+                onEnregistre={() => setVersionJournal((v) => v + 1)}
+              />
             </div>
           )}
           {afficher('suivi_operationnel') && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
               <SectionSitReps incidentId={id} contexteId={contexteId} />
-              <SectionLivreDeBord incidentId={id} contexteId={contexteId} />
+              <SectionLivreDeBord
+                incidentId={id}
+                contexteId={contexteId}
+                onFormaliser={afficher('journal_decisions') ? setAFormaliser : null}
+                versionJournal={versionJournal}
+              />
             </div>
           )}
           {afficher('checklist') && (
@@ -3697,8 +3711,12 @@ function SectionChecklist({ incidentId, contexteId }) {
   )
 }
 
-function SectionLivreDeBord({ incidentId, contexteId }) {
+function SectionLivreDeBord({ incidentId, contexteId, onFormaliser = null, versionJournal = 0 }) {
+  const { contexteActuel } = useAuth()
+  const peutFormaliser = !!onFormaliser && contexteActuel?.niveau_acces !== 'lecture'
   const { lignes: contacts } = useTableContexte('contacts', contexteId, { tri: 'nom' })
+  // Entrées déjà reprises au journal des décisions : numéro de la décision, par entrée du livre de bord
+  const [formalisees, setFormalisees] = useState({})
   const [entrees, setEntrees] = useState([])
   const [chargement, setChargement] = useState(true)
   const [message, setMessage] = useState('')
@@ -3723,6 +3741,12 @@ function SectionLivreDeBord({ incidentId, contexteId }) {
     else {
       setErreur(null)
       setEntrees(data ?? [])
+      if (onFormaliser) {
+        const { data: jd } = await supabase.from('journal_decisions').select('numero_ordre, livre_de_bord_id').eq('incident_id', incidentId).not('livre_de_bord_id', 'is', null).order('numero_ordre')
+        const m = {}
+        for (const x of jd ?? []) (m[x.livre_de_bord_id] ??= []).push(x.numero_ordre)
+        setFormalisees(m)
+      }
       const idsPhotos = (data ?? []).filter((x) => x.source_type === 'photo').map((x) => x.source_id)
       const idsRapports = (data ?? []).filter((x) => x.source_type === 'rapport_can').map((x) => x.source_id)
       const [ph, ra] = await Promise.all([
@@ -3739,7 +3763,7 @@ function SectionLivreDeBord({ incidentId, contexteId }) {
       setPieces(m)
     }
     setChargement(false)
-  }, [incidentId])
+  }, [incidentId, !!onFormaliser, versionJournal])
 
   useEffect(() => {
     rafraichir()
@@ -3878,6 +3902,16 @@ function SectionLivreDeBord({ incidentId, contexteId }) {
                   {e.expediteur && e.destinataire && <> → </>}
                   {e.destinataire && <>à {e.destinataire.prenom} {e.destinataire.nom}</>}
                 </p>
+              )}
+              {formalisees[e.id]?.length > 0 && (
+                <p className="text-xs mt-1">
+                  <span className="jeton">au journal des décisions : n° {formalisees[e.id].join(', n° ')}</span>
+                </p>
+              )}
+              {peutFormaliser && !formalisees[e.id] && (
+                <div className="mt-2">
+                  <BoutonDiscret type="button" onClick={() => onFormaliser(e)}>Formaliser en décision</BoutonDiscret>
+                </div>
               )}
             </li>
           ))}

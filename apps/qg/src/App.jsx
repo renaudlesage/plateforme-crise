@@ -6,6 +6,7 @@ import Connexion from './pages/Connexion'
 import SelectionContexte from './pages/SelectionContexte'
 import Incidents from './pages/Incidents'
 import IncidentDetail from './pages/IncidentDetail'
+import JournalDecisionsImpression from './pages/JournalDecisionsImpression'
 import SignalementsCitoyens from './pages/SignalementsCitoyens'
 import Carte from './pages/Carte'
 import VueAutorite from './pages/VueAutorite'
@@ -53,6 +54,7 @@ export default function App() {
             <Route path="incidents" element={<Incidents />} />
             <Route path="autorite" element={<VueAutorite />} />
             <Route path="incidents/:id" element={<IncidentDetail />} />
+            <Route path="incidents/:id/journal-decisions" element={<JournalDecisionsImpression />} />
             <Route path="signalements-citoyens" element={<SignalementsCitoyens />} />
             <Route path="carte" element={<Carte />} />
             <Route path="exercices" element={<ReserveAuxActeurs><Exercices /></ReserveAuxActeurs>} />
