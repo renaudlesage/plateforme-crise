@@ -10,6 +10,7 @@ import { SectionDebriefings, SectionCohesionSociale } from '../components/Debrie
 import SyntheseIncident from '../components/SyntheseIncident'
 import Repliable from '../components/Repliable'
 import VeilleMeteo from '../components/VeilleMeteo'
+import JournalDecisions from '../components/JournalDecisions'
 import { BandeauAppelsAide, BandeauDemandes, SectionComptages, SectionTriage, chargerTriage } from '../components/RemonteesTerrain'
 import { SectionPlanNucleaire, SectionVeille, SectionCauseIncendie } from '../components/NucleaireVeilleIncendie'
 
@@ -363,6 +364,11 @@ export default function IncidentDetail() {
 
       {ongletActif?.cle === 'journal' && (
         <>
+          {afficher('journal_decisions') && (
+            <div className="mb-6">
+              <JournalDecisions incidentId={id} contexteId={contexteId} />
+            </div>
+          )}
           {afficher('suivi_operationnel') && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
               <SectionSitReps incidentId={id} contexteId={contexteId} />
@@ -435,7 +441,7 @@ const ONGLETS = [
   { cle: 'synthese', libelle: 'Synthèse', modules: ['phase_cycle_vie'] },
   { cle: 'pilotage', libelle: 'Pilotage', modules: ['phase_cycle_vie', 'escalade', 'activation_30min', 'seuils_action', 'organes', 'plan_nucleaire'] },
   { cle: 'operations', libelle: 'Terrain · PC-Ops', modules: ['zones', 'pc_ops', 'suivi_intervenants', 'requisitions'] },
-  { cle: 'journal', libelle: 'Journal & SitRep', modules: ['suivi_operationnel', 'checklist', 'veille'] },
+  { cle: 'journal', libelle: 'Journal & SitRep', modules: ['journal_decisions', 'suivi_operationnel', 'checklist', 'veille'] },
   { cle: 'communication', libelle: 'D5 · Communication', modules: ['messages_population', 'communication_d5'] },
   { cle: 'psychosocial', libelle: 'D2 · Psychosocial', modules: ['psychosocial_d2'] },
   { cle: 'retablissement', libelle: 'Rétablissement & REX', modules: ['retablissement', 'phase_transitoire', 'rex'] },
