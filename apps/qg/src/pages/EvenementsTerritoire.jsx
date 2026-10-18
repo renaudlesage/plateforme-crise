@@ -389,7 +389,7 @@ function CarteEmission({ emission: x, lien, onChange, onAnnonce }) {
             Envoyer ce message à <strong>{lien?.organisateur || lien?.nom}</strong>{hote && <> ({hote})</>} ? Il part tel qu'il est écrit ci-dessus et ne pourra plus être modifié.
           </p>
           {erreur && <p role="alert" className="text-sm text-chaud">{erreur}</p>}
-          {enCours && <p role="status" className="text-xs text-sourdine">Envoi en cours… (8 secondes au plus)</p>}
+          {enCours && <p role="status" className="text-xs text-sourdine">Envoi en cours… (5 secondes au plus)</p>}
           <div className="flex gap-2">
             <BoutonPrincipal type="button" onClick={envoyer} disabled={enCours}>{enCours ? 'Envoi…' : 'Confirmer l\'envoi'}</BoutonPrincipal>
             <BoutonDiscret type="button" onClick={() => setMode(null)} disabled={enCours}>Retour</BoutonDiscret>

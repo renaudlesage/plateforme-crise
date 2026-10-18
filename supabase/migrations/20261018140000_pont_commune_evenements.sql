@@ -546,8 +546,10 @@ begin
   );
 
   begin
-    perform extensions.http_set_curlopt('CURLOPT_TIMEOUT_MS', '8000');
-    perform extensions.http_set_curlopt('CURLOPT_CONNECTTIMEOUT_MS', '4000');
+    -- Le rôle de l'API (authenticated) est coupé par la base à 8 s : si la requête sortante durait autant, l'envoi pourrait
+    -- aboutir chez l'organisateur sans que son résultat soit enregistré. Délais volontairement plus courts.
+    perform extensions.http_set_curlopt('CURLOPT_TIMEOUT_MS', '5000');
+    perform extensions.http_set_curlopt('CURLOPT_CONNECTTIMEOUT_MS', '3000');
     v_reponse := extensions.http((
       'POST',
       l.url_recepteur,
