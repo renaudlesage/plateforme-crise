@@ -15,6 +15,8 @@ export function AuthProvider({ children }) {
 
   // Super-admin de la plateforme (admin du contexte "plateforme") : voit le module Clients
   const [estSuperAdmin, setEstSuperAdmin] = useState(false)
+  // Faux tant que la base n'a pas répondu : évite d'afficher « réservé au super-admin » pendant le chargement.
+  const [superAdminVerifie, setSuperAdminVerifie] = useState(false)
 
   const [contexteId, setContexteId] = useState(
     () => localStorage.getItem(STORAGE_KEY_CONTEXTE) || null
@@ -62,10 +64,13 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!session?.user) {
       setEstSuperAdmin(false)
+      setSuperAdminVerifie(false)
       return
     }
+    setSuperAdminVerifie(false)
     supabase.rpc('est_super_admin').then(({ data, error }) => {
       setEstSuperAdmin(!error && data === true)
+      setSuperAdminVerifie(true)
     })
   }, [session?.user?.id])
 
@@ -111,6 +116,7 @@ export function AuthProvider({ children }) {
     acces,
     chargementAcces,
     estSuperAdmin,
+    superAdminVerifie,
     contexteId,
     contexteActuel,
     selectionnerContexte,
