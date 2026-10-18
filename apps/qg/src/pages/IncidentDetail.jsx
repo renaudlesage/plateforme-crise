@@ -9,6 +9,7 @@ import MessagesPopulation from '../components/MessagesPopulation'
 import { SectionDebriefings, SectionCohesionSociale } from '../components/DebriefingsEtCohesion'
 import SyntheseIncident from '../components/SyntheseIncident'
 import Repliable from '../components/Repliable'
+import SourcesUtilesIncident from '../components/SourcesUtiles'
 import VeilleMeteo from '../components/VeilleMeteo'
 import JournalDecisions from '../components/JournalDecisions'
 import { BandeauAppelsAide, BandeauDemandes, SectionComptages, SectionTriage, chargerTriage } from '../components/RemonteesTerrain'
@@ -313,6 +314,7 @@ export default function IncidentDetail() {
               <SectionSeuilsAction incidentId={id} contexteId={contexteId} />
             </div>
           )}
+          {afficher('sources_situation') && <SourcesUtilesIncident incident={incident} contexteId={contexteId} />}
           {(afficher('organes') || afficher('plan_nucleaire')) && (
             <Repliable
               titre="Organes de crise · Plan d'urgence nucléaire"
@@ -453,7 +455,7 @@ export default function IncidentDetail() {
 // visible, donc l'onglet Pilotage ne disparaît jamais).
 const ONGLETS = [
   { cle: 'synthese', libelle: 'Synthèse', modules: ['phase_cycle_vie'] },
-  { cle: 'pilotage', libelle: 'Pilotage', modules: ['phase_cycle_vie', 'escalade', 'activation_30min', 'seuils_action', 'organes', 'plan_nucleaire'] },
+  { cle: 'pilotage', libelle: 'Pilotage', modules: ['phase_cycle_vie', 'escalade', 'activation_30min', 'seuils_action', 'sources_situation', 'organes', 'plan_nucleaire'] },
   { cle: 'operations', libelle: 'Terrain · PC-Ops', modules: ['zones', 'pc_ops', 'suivi_intervenants', 'requisitions'] },
   { cle: 'journal', libelle: 'Journal & SitRep', modules: ['journal_decisions', 'suivi_operationnel', 'checklist', 'veille'] },
   { cle: 'communication', libelle: 'D5 · Communication', modules: ['messages_population', 'communication_d5'] },
@@ -496,8 +498,8 @@ const PHASES_MODULES = {
   pre_alerte: { suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false, pc_ops: false, psychosocial_d2: false },
   alerte: { phase_transitoire: false, rex: false },
   phase_active: {},
-  levee: { activation_30min: false, checklist: false, rex: false, seuils_action: false, pc_ops: false },
-  post_crise: { activation_30min: false, escalade: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, seuils_action: false, requisitions: false, zones: false, pc_ops: false, communication_d5: false },
+  levee: { activation_30min: false, checklist: false, rex: false, seuils_action: false, pc_ops: false, sources_situation: false },
+  post_crise: { sources_situation: false, activation_30min: false, escalade: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, seuils_action: false, requisitions: false, zones: false, pc_ops: false, communication_d5: false },
 }
 
 const MODES_BE_ALERT = [
