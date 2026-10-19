@@ -47,9 +47,9 @@ function ParOuCommencer() {
 }
 
 export default function TableauDeBord() {
-  const { contexteActuel, estSuperAdmin } = useAuth()
+  const { contexteActuel } = useAuth()
   // Une tuile par section du menu (même source), titres sans entrée "racine".
-  const sections = sectionsDuMenu({ typeContexte: contexteActuel?.contextes?.type, estSuperAdmin }).filter(
+  const sections = sectionsDuMenu({ typeContexte: contexteActuel?.contextes?.type }).filter(
     (s) => s.titre
   )
 

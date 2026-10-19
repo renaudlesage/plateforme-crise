@@ -94,24 +94,17 @@ export const SECTIONS = [
 ]
 
 // Sections visibles selon le contexte : Conformité CER pour les entités
-// critiques, Plateforme pour le super-admin.
-export function sectionsDuMenu({ typeContexte, estSuperAdmin }) {
-  let sections =
-    typeContexte === 'entite_critique'
-      ? [
-          ...SECTIONS,
-          {
-            titre: 'Conformité',
-            resume: 'Conformité CER des entités critiques.',
-            liens: [{ to: '/conformite-cer', libelle: 'Conformité CER' }],
-          },
-        ]
-      : SECTIONS
-  if (estSuperAdmin) {
-    sections = [
-      { titre: 'Plateforme', resume: 'Gestion des clients.', liens: [{ to: '/clients', libelle: 'Clients' }] },
-      ...sections,
-    ]
-  }
-  return sections
+// critiques. La gestion des clients (super-admin) vit dans la console
+// Plateforme (apps/plateforme).
+export function sectionsDuMenu({ typeContexte }) {
+  return typeContexte === 'entite_critique'
+    ? [
+        ...SECTIONS,
+        {
+          titre: 'Conformité',
+          resume: 'Conformité CER des entités critiques.',
+          liens: [{ to: '/conformite-cer', libelle: 'Conformité CER' }],
+        },
+      ]
+    : SECTIONS
 }

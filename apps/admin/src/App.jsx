@@ -54,7 +54,6 @@ import ConnaissancesVeille from './pages/ConnaissancesVeille'
 import BeAlertTests from './pages/BeAlertTests'
 import SourcesSituation from './pages/SourcesSituation'
 import Comptes from './pages/Comptes'
-import Clients from './pages/Clients'
 import DefinirMotDePasse from './pages/DefinirMotDePasse'
 
 export default function App() {
@@ -140,7 +139,6 @@ export default function App() {
             <Route path="be-alert-tests" element={<BeAlertTests />} />
             <Route path="sources-situation" element={<SourcesSituation />} />
             <Route path="comptes" element={<Comptes />} />
-            <Route path="clients" element={<Clients />} />
           </Route>
         </Routes>
       </AuthProvider>
