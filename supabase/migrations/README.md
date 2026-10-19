@@ -11,6 +11,9 @@ reproduites ici : la base de production fait foi. Chaque fichier ci-dessous a é
 | `20261018160000_situation_capacite.sql` | Capacité `situation` ajoutée aux rôles |
 | `20261018160100_situation_societale.sql` | Page CC › Situation : sources, épingles personnelles, vérifications partagées (ajout seul) |
 | `20261018160200_situation_referentiel_national.sql` | Chargement des 42 sources nationales de départ |
+| `20261019090000_entraide_fondations.sql` | Entraide (bénévoles et moyens privés) : capacité `entraide`, coordinateur par incident, enrichissement de `benevoles_entraide`, `ressources`, `moyens_engages`, `requisitions`, fonctions de commandement |
+| `20261019090100_entraide_tables.sql` | Points d'accueil, présences, équipes, missions (historique en ajout seul), paramètres communaux, incidents bénévoles, points de collecte, besoins, consignes publiques |
+| `20261019090200_entraide_rpc_publiques.sql` | Accès sans compte par QR (enregistrement, suivi, sortie), déclaration d'un moyen privé, page publique de l'entraide |
 
-Attention : le fichier du pont est l'état final (deux correctifs appliqués après coup en base, sous les noms
+Attention : les fichiers de l'entraide sont l'état final (correctifs appliqués en base sous les noms `entraide_missions_affectation_close`, `entraide_missions_historique_after`, `entraide_equipes_chef_controle`, `entraide_fermeture_horodatee_serveur`, `entraide_code_erreur_pab_ferme`, `entraide_missions_zone_rouge_derogation`, y figurent déjà). Le fichier du pont est l'état final (deux correctifs appliqués après coup en base, sous les noms
 `pont_commune_evenements_correctif_rehausse` et `pont_commune_evenements_revoke_triggers`, y figurent déjà).
