@@ -12,6 +12,7 @@ import { useIncidentsEnCours, SelecteurIncident } from '../hooks/useIncidentsEnC
 import { Link } from 'react-router-dom'
 import { BoutonAide, PanneauPosition, AutourDeMoi, Passation } from '../components/OutilsPosition'
 import { RapportCan, PhotoGeo, ComptagePersonnes } from '../components/OutilsRapport'
+import MissionsEntraide from '../components/MissionsEntraide'
 import { usePosition } from '../context/PositionContext'
 
 const STORAGE_KEY_ROLE = 'terrain_role_id_selectionne'
@@ -199,6 +200,7 @@ function IncidentActif({ contexteId, roleId, roleLibelle, profil }) {
         <div className="space-y-6">
           <ChecklistRole incidentId={incident.id} contexteId={contexteId} roleId={roleId} />
           <SignalementRapide incidentId={incident.id} roleId={roleId} />
+          <MissionsEntraide incident={incident} contexteId={contexteId} profil={profil} />
         </div>
       )}
 

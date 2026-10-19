@@ -177,6 +177,36 @@ export function FormulaireObservation({ ecrire, contexteId, incidentId, selectio
           >
             Clore ce point (traité)
           </BoutonDiscret>
+          {existant.type === 'besoin' && (
+            <BoutonDiscret
+              type="button"
+              className="ml-2"
+              disabled={enCours}
+              onClick={async () => {
+                setEnCours(true)
+                // Un besoin constaté devient une mission d'entraide (bénévoles) : la base la place sous PC-Ops si elle est en zone.
+                const res = await ecrire({
+                  nature: 'insert',
+                  table: 'missions_entraide',
+                  champs: {
+                    incident_id: incidentId ?? existant.incident_id,
+                    titre: (existant.description || 'Besoin constaté sur le terrain').slice(0, 160),
+                    description: existant.description || null,
+                    priorite: 'P2',
+                    latitude: selection?.lat ?? existant.latitude,
+                    longitude: selection?.lon ?? existant.longitude,
+                    origine_type: 'observation_terrain',
+                    origine_id: existant.id,
+                  },
+                  libelle: `Mission d'entraide · ${(existant.description || 'besoin terrain').slice(0, 60)}`,
+                })
+                setEnCours(false)
+                await onEnvoyer(res, "Mission d'entraide créée depuis ce besoin (coordinateur et CC prévenus)")
+              }}
+            >
+              Convertir en mission d'entraide
+            </BoutonDiscret>
+          )}
         </div>
       )}
     </form>

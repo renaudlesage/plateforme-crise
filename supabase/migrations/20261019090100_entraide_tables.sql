@@ -402,7 +402,8 @@ create policy "missions_update" on public.missions_entraide for update to authen
   with check (public.peut_coordonner_entraide(incident_id) or public.peut_commander_zone_entraide(incident_id));
 revoke all on public.missions_entraide from public, anon, authenticated;
 grant select on public.missions_entraide to authenticated;
-grant insert (incident_id, titre, description, priorite, competence_requise, nb_personnes, materiel_requis, latitude, longitude, adresse, point_rdv,
+-- `id` saisissable : la file hors ligne de Terrain pose l'identifiant côté client (clé d'idempotence)
+grant insert (id, incident_id, titre, description, priorite, competence_requise, nb_personnes, materiel_requis, latitude, longitude, adresse, point_rdv,
   origine_type, origine_id, publie_besoin, derogation_motif) on public.missions_entraide to authenticated;
 grant update (titre, description, priorite, competence_requise, nb_personnes, materiel_requis, latitude, longitude, adresse, point_rdv,
   equipe_id, statut, raison_statut, publie_besoin, au_journal, derogation_motif) on public.missions_entraide to authenticated;
