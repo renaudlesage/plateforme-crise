@@ -1,7 +1,7 @@
 {
-  "name": "Crisiware — Terrain",
+  "name": "Crisiware 2 — Terrain",
   "short_name": "Terrain",
-  "description": "Application terrain Crisiware pour les intervenants mobiles en situation de crise.",
+  "description": "Application terrain Crisiware 2 pour les intervenants mobiles en situation de crise.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

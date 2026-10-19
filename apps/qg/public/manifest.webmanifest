@@ -1,7 +1,7 @@
 {
-  "name": "Crisiware — Comité de Coordination",
+  "name": "Crisiware 2 — Comité de Coordination",
   "short_name": "CC",
-  "description": "Poste de coordination de crise Crisiware — vue du Comité de Coordination (CC).",
+  "description": "Poste de coordination de crise Crisiware 2 — vue du Comité de Coordination (CC).",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

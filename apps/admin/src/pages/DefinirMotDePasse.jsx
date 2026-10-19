@@ -34,7 +34,7 @@ export default function DefinirMotDePasse() {
     <div className="acces">
       <div className="acces-carte">
         <div className="marque">
-          <span className="marque-nom">Plateforme de gestion de crise</span>
+          <span className="marque-nom">Crisiware 2</span>
         </div>
         <p className="acces-role">Définir votre mot de passe</p>
 
