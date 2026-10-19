@@ -102,9 +102,17 @@ export default function Accueil() {
           <span className="titre">Risques</span>
           <span className="aide">S'informer sur les risques près de chez moi</span>
         </Link>
+        <Link to="/entraide" className="tuile-citoyen">
+          <span className="titre">Aider ma commune</span>
+          <span className="aide">Points d'accueil des bénévoles, besoins, dons</span>
+        </Link>
         <Link to="/benevole" className="tuile-citoyen">
           <span className="titre">Devenir bénévole</span>
-          <span className="aide">Se proposer pour aider</span>
+          <span className="aide">Se pré-inscrire pour aider</span>
+        </Link>
+        <Link to="/ressource" className="tuile-citoyen">
+          <span className="titre">Proposer un moyen</span>
+          <span className="aide">Tracteur, pompe, bateau, local, camion…</span>
         </Link>
       </nav>
     </div>

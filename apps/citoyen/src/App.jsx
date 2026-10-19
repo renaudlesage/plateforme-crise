@@ -5,6 +5,7 @@ import PlanUrgence from './pages/PlanUrgence'
 import Soutien from './pages/Soutien'
 import Risques from './pages/Risques'
 import Signaler from './pages/Signaler'
+import { AccueilBenevole, SuiviBenevole, EntraidePublique, ProposerMoyen } from './pages/Entraide'
 
 export default function App() {
   return (
@@ -16,6 +17,10 @@ export default function App() {
         <Route path="/soutien" element={<Soutien />} />
         <Route path="/risques" element={<Risques />} />
         <Route path="/signaler" element={<Signaler />} />
+        <Route path="/entraide" element={<EntraidePublique />} />
+        <Route path="/entraide/accueil" element={<AccueilBenevole />} />
+        <Route path="/entraide/suivi" element={<SuiviBenevole />} />
+        <Route path="/ressource" element={<ProposerMoyen />} />
       </Routes>
     </BrowserRouter>
   )
