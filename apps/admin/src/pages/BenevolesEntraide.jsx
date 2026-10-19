@@ -54,8 +54,9 @@ export default function BenevolesEntraide() {
     <div>
       <h1 className="text-xl font-semibold text-encre mb-1">Réseau d'entraide citoyenne</h1>
       <p className="text-sm text-sourdine mb-4">
-        Candidatures reçues via l'app Citoyen. Les coordonnées ne sont visibles que par les
-        membres de ce contexte.
+        Pré-inscriptions reçues via l'app Citoyen, hors crise. Les coordonnées ne sont visibles que par les
+        membres de ce contexte. En crise, un bénévole validé ici qui se présente au point d'accueil avec son e-mail est
+        reconnu comme pré-inscrit (voir le volet Entraide de la fiche incident, dans le CC).
       </p>
 
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
@@ -116,6 +117,14 @@ export default function BenevolesEntraide() {
                   )}
                   {b.disponibilite && (
                     <p className="text-xs text-sourdine mt-0.5">Disponibilité : {b.disponibilite}</p>
+                  )}
+                  {(b.permis?.length > 0 || b.vehicule || b.zone_residence || b.contact_urgence_nom) && (
+                    <p className="text-xs text-sourdine mt-0.5">
+                      {b.permis?.length > 0 && <>Permis : {b.permis.join(', ')} · </>}
+                      {b.vehicule && <>Véhicule : {b.vehicule} · </>}
+                      {b.zone_residence && <>Zone : {b.zone_residence} · </>}
+                      {b.contact_urgence_nom && <>Urgence : {b.contact_urgence_nom} {b.contact_urgence_telephone}</>}
+                    </p>
                   )}
                   {b.missions_possibles?.length > 0 && (
                     <p className="text-xs text-sourdine mt-0.5">

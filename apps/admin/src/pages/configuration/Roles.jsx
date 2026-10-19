@@ -16,6 +16,7 @@ const RESSOURCES = [
   { valeur: 'conformite_legale', libelle: 'Conformité légale' },
   { valeur: 'comptes', libelle: 'Comptes' },
   { valeur: 'situation', libelle: 'Situation (veille sociétale)' },
+  { valeur: 'entraide', libelle: 'Entraide (bénévoles, moyens privés)' },
 ]
 const ACTIONS = [
   { valeur: 'lire', libelle: 'Lire' },

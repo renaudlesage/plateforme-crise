@@ -9,6 +9,8 @@ import Configuration from './pages/Configuration'
 import Contacts from './pages/Contacts'
 import ObjetsARisque from './pages/ObjetsARisque'
 import Ressources from './pages/Ressources'
+import Entraide from './pages/Entraide'
+import BenevolesEntraide from './pages/BenevolesEntraide'
 import SitesQG from './pages/SitesQG'
 import CentresAccueil from './pages/CentresAccueil'
 import CanauxRadio from './pages/CanauxRadio'
@@ -93,6 +95,8 @@ export default function App() {
             <Route path="annuaire" element={<Contacts />} />
             <Route path="risques" element={<ObjetsARisque />} />
             <Route path="ressources" element={<Ressources />} />
+            <Route path="entraide" element={<Entraide />} />
+            <Route path="benevoles-entraide" element={<BenevolesEntraide />} />
             <Route path="sites-qg" element={<SitesQG />} />
             <Route path="centres-accueil" element={<CentresAccueil />} />
             <Route path="canaux-radio" element={<CanauxRadio />} />

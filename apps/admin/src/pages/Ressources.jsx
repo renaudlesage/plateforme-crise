@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { STATUTS_JURIDIQUES_MOYEN, TYPES_PROPRIETAIRE, libelleStatutJuridique, libelleTypeProprietaire } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
@@ -160,7 +161,18 @@ function ListeRessources() {
                     <span className={`jeton ml-2 ${r.type_public_prive === 'public' ? 'text-info' : 'text-veille'}`}>
                       {r.type_public_prive}
                     </span>
+                    {r.statut_juridique && <span className="jeton ml-2">{libelleStatutJuridique(r.statut_juridique)}</span>}
+                    {r.actif === false && <span className="jeton ml-2 text-chaud">À vérifier</span>}
                   </p>
+                  {(r.proprietaire_nom || r.capacite || r.delai_mise_a_dispo) && (
+                    <p className="text-xs text-sourdine mt-0.5">
+                      {r.proprietaire_nom && <>{libelleTypeProprietaire(r.proprietaire_type) || 'Propriétaire'} : {r.proprietaire_nom}{r.proprietaire_telephone && <> · {r.proprietaire_telephone}</>}</>}
+                      {r.capacite && <> · {r.capacite}</>}
+                      {r.delai_mise_a_dispo && <> · délai {r.delai_mise_a_dispo}</>}
+                      {r.latitude != null && <> · localisé</>}
+                      {r.verifie_le && <> · vérifié le {new Date(r.verifie_le).toLocaleDateString('fr-BE')}</>}
+                    </p>
+                  )}
                   <p className="text-xs text-sourdine">
                     {r.categorie.replace(/_/g, ' ')}
                     {r.dimension_capacite && (
@@ -227,6 +239,15 @@ function FormulaireRessource({ contacts, conventions = [], valeursInitiales = {}
   const [operationnelDeNuit, setOperationnelDeNuit] = useState(valeursInitiales.operationnel_de_nuit ?? false)
   const [rayonPartageKm, setRayonPartageKm] = useState(valeursInitiales.rayon_partage_km ?? '')
   const [conditionsPartage, setConditionsPartage] = useState(valeursInitiales.conditions_partage ?? '')
+  const [proprietaireType, setProprietaireType] = useState(valeursInitiales.proprietaire_type ?? '')
+  const [proprietaireNom, setProprietaireNom] = useState(valeursInitiales.proprietaire_nom ?? '')
+  const [proprietaireTelephone, setProprietaireTelephone] = useState(valeursInitiales.proprietaire_telephone ?? '')
+  const [statutJuridique, setStatutJuridique] = useState(valeursInitiales.statut_juridique ?? '')
+  const [capacite, setCapacite] = useState(valeursInitiales.capacite ?? '')
+  const [delai, setDelai] = useState(valeursInitiales.delai_mise_a_dispo ?? '')
+  const [latitude, setLatitude] = useState(valeursInitiales.latitude ?? '')
+  const [longitude, setLongitude] = useState(valeursInitiales.longitude ?? '')
+  const [actif, setActif] = useState(valeursInitiales.actif ?? true)
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -260,6 +281,17 @@ function FormulaireRessource({ contacts, conventions = [], valeursInitiales = {}
       operationnel_de_nuit: operationnelDeNuit,
       rayon_partage_km: rayonPartageKm === '' ? null : Number(rayonPartageKm),
       conditions_partage: conditionsPartage.trim() || null,
+      proprietaire_type: proprietaireType || null,
+      proprietaire_nom: proprietaireNom.trim() || null,
+      proprietaire_telephone: proprietaireTelephone.trim() || null,
+      statut_juridique: statutJuridique || null,
+      capacite: capacite.trim() || null,
+      delai_mise_a_dispo: delai.trim() || null,
+      latitude: latitude === '' || latitude === null ? null : Number(latitude),
+      longitude: longitude === '' || longitude === null ? null : Number(longitude),
+      actif,
+      // Une vérification du cadastre : on date le contrôle quand la ressource est (re)déclarée active
+      ...(actif && !valeursInitiales.actif ? { verifie_le: new Date().toISOString() } : {}),
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -324,6 +356,58 @@ function FormulaireRessource({ contacts, conventions = [], valeursInitiales = {}
           ))}
         </select>
       </div>
+
+      {typePublicPrive === 'prive' && (
+        <fieldset className="border border-trait rounded p-3" data-bloc-prive>
+          <legend className="text-xs font-medium text-sourdine px-1">Moyen privé (entraide)</legend>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-sourdine mb-1">Propriétaire</label>
+              <select value={proprietaireType} onChange={(e) => setProprietaireType(e.target.value)} className="w-full">
+                <option value="">—</option>
+                {TYPES_PROPRIETAIRE.map((t) => <option key={t.valeur} value={t.valeur}>{t.libelle}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-sourdine mb-1">Nom / raison sociale</label>
+              <input value={proprietaireNom} onChange={(e) => setProprietaireNom(e.target.value)} className="w-full" maxLength={120} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-sourdine mb-1">Téléphone</label>
+              <input value={proprietaireTelephone} onChange={(e) => setProprietaireTelephone(e.target.value)} className="w-full" maxLength={30} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-sourdine mb-1">Statut juridique</label>
+              <select value={statutJuridique} onChange={(e) => setStatutJuridique(e.target.value)} className="w-full">
+                <option value="">—</option>
+                {STATUTS_JURIDIQUES_MOYEN.map((t) => <option key={t.valeur} value={t.valeur}>{t.libelle}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-sourdine mb-1">Capacité</label>
+              <input value={capacite} onChange={(e) => setCapacite(e.target.value)} className="w-full" maxLength={200} placeholder="ex. 8 t, 12 m³" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-sourdine mb-1">Délai de mise à disposition</label>
+              <input value={delai} onChange={(e) => setDelai(e.target.value)} className="w-full" maxLength={120} placeholder="ex. 2 h" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-sourdine mb-1">Latitude</label>
+              <input value={latitude ?? ''} onChange={(e) => setLatitude(e.target.value)} className="w-full" inputMode="decimal" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-sourdine mb-1">Longitude</label>
+              <input value={longitude ?? ''} onChange={(e) => setLongitude(e.target.value)} className="w-full" inputMode="decimal" />
+            </div>
+            <div className="flex items-end">
+              <label className="flex items-center gap-1.5 text-sm text-sourdine">
+                <input type="checkbox" checked={actif} onChange={(e) => setActif(e.target.checked)} />
+                Vérifié et mobilisable (visible au CC)
+              </label>
+            </div>
+          </div>
+        </fieldset>
+      )}
 
       <div>
         <label className="block text-xs font-medium text-sourdine mb-1">Convention associée</label>
