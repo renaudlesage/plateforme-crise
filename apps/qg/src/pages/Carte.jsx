@@ -33,7 +33,10 @@ const COUCHES = [
   // Rafraîchies à part toutes les 30 s (voir plus bas) : positions partagées par les équipes et appels d'aide
   { cle: 'equipes', libelle: 'Équipes (position partagée)', couleur: '#0891b2' },
   { cle: 'aides', libelle: "Appels d'aide", couleur: '#b91c1c' },
+  // Entraide (bénévoles) : rafraîchie avec les équipes
+  { cle: 'entraide', libelle: 'Entraide : accueil, collecte, missions', couleur: '#0f766e' },
 ]
+const COULEUR_PRIORITE = { P1: '#b91c1c', P2: '#d97706', P3: '#0f766e', P4: '#6b7280' }
 
 const COULEUR_AIDE = { attention: '#d97706', urgent: '#b91c1c', mayday: '#7f1d1d' }
 const POSITION_EQUIPE_VALIDE_MS = 2 * 3600000 // au-delà, la position est trop ancienne pour être affichée
@@ -159,17 +162,22 @@ export default function Carte() {
   // Équipes et appels d'aide : rechargés toutes les 30 s sans refaire tout le chargement de la carte.
   const [equipes, setEquipes] = useState([])
   const [aides, setAides] = useState([])
+  const [entraide, setEntraide] = useState({ pabs: [], collectes: [], missions: [] })
   useEffect(() => {
     if (!contexteId) return undefined
     let annule = false
     const rafraichir = async () => {
-      const [eq, ai] = await Promise.all([
+      const [eq, ai, pabs, collectes, missions] = await Promise.all([
         supabase.from('positions_equipes').select('id, incident_id, libelle, latitude, longitude, maj_le').eq('contexte_id', contexteId).gte('maj_le', new Date(Date.now() - POSITION_EQUIPE_VALIDE_MS).toISOString()),
         supabase.from('alertes_aide').select('id, incident_id, niveau, role_libelle, message, latitude, longitude, created_at').eq('contexte_id', contexteId).neq('statut', 'close').not('latitude', 'is', null).gte('created_at', new Date(Date.now() - 6 * 3600000).toISOString()),
+        supabase.from('points_accueil_benevoles').select('id, incident_id, nom, adresse, latitude, longitude').eq('contexte_id', contexteId).is('ferme_le', null).not('latitude', 'is', null),
+        supabase.from('points_collecte').select('id, incident_id, nom, adresse, horaires, latitude, longitude').eq('contexte_id', contexteId).is('ferme_le', null).not('latitude', 'is', null),
+        supabase.from('missions_entraide').select('id, incident_id, numero, titre, priorite, statut, type_zone, sous_pc_ops, latitude, longitude, equipe_id').eq('contexte_id', contexteId).in('statut', ['ouverte', 'affectee', 'en_cours']).not('latitude', 'is', null),
       ])
       if (annule) return
       setEquipes(eq.data ?? [])
       setAides(ai.data ?? [])
+      setEntraide({ pabs: pabs.data ?? [], collectes: collectes.data ?? [], missions: missions.data ?? [] })
     }
     rafraichir()
     const t = setInterval(rafraichir, 30000)
@@ -196,7 +204,7 @@ export default function Carte() {
   const marqueurs = useMemo(() => {
     const tous = []
     for (const c of COUCHES) {
-      if (!couches[c.cle] || c.cle === 'equipes' || c.cle === 'aides') continue
+      if (!couches[c.cle] || c.cle === 'equipes' || c.cle === 'aides' || c.cle === 'entraide') continue
       const source =
         c.cle === 'incidents'
           ? incidentsAffiches.filter((i) => i.latitude != null)
@@ -242,9 +250,27 @@ export default function Carte() {
         })
       }
     }
+    if (couches.entraide) {
+      for (const p of entraide.pabs.filter(visible)) {
+        extra.push({ id: `pab-${p.id}`, lat: Number(p.latitude), lon: Number(p.longitude), titre: `Accueil bénévoles · ${p.nom}`, sousTitre: p.adresse ?? undefined, couleur: '#0f766e', symbole: 'infra_ca' })
+      }
+      for (const c of entraide.collectes.filter(visible)) {
+        extra.push({ id: `collecte-${c.id}`, lat: Number(c.latitude), lon: Number(c.longitude), titre: `Collecte · ${c.nom}`, sousTitre: [c.adresse, c.horaires].filter(Boolean).join(' · ') || undefined, couleur: '#0f766e' })
+      }
+      for (const m of entraide.missions.filter(visible)) {
+        extra.push({
+          id: `mission-${m.id}`,
+          lat: Number(m.latitude),
+          lon: Number(m.longitude),
+          titre: `${m.priorite} ${m.numero} · ${m.titre}`,
+          sousTitre: [m.statut, m.sous_pc_ops ? `sous PC-Ops (${m.type_zone})` : null].filter(Boolean).join(' · '),
+          couleur: COULEUR_PRIORITE[m.priorite] ?? '#0f766e',
+        })
+      }
+    }
     return extra.length ? [...marqueurs, ...extra] : marqueurs
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [marqueurs, equipes, aides, couches.equipes, couches.aides, ids])
+  }, [marqueurs, equipes, aides, entraide, couches.equipes, couches.aides, couches.entraide, ids])
 
   // Incident auquel rattacher un nouveau point : le seul affiché, sinon celui choisi dans la liste.
   const incidentId = incidentsAffiches.length === 1 ? incidentsAffiches[0].id : (incidentsAffiches.find((i) => i.id === incidentCible) ?? incidentsAffiches[0])?.id ?? null

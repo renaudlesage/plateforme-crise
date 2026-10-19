@@ -12,6 +12,7 @@ import Repliable from '../components/Repliable'
 import SourcesUtilesIncident from '../components/SourcesUtiles'
 import VeilleMeteo from '../components/VeilleMeteo'
 import JournalDecisions from '../components/JournalDecisions'
+import Entraide from '../components/Entraide'
 import { BandeauAppelsAide, BandeauDemandes, SectionComptages, SectionTriage, chargerTriage } from '../components/RemonteesTerrain'
 import { SectionPlanNucleaire, SectionVeille, SectionCauseIncendie } from '../components/NucleaireVeilleIncendie'
 
@@ -404,6 +405,8 @@ export default function IncidentDetail() {
         </>
       )}
 
+      {ongletActif?.cle === 'entraide' && afficher('entraide') && <Entraide incidentId={id} />}
+
       {ongletActif?.cle === 'communication' && (
         <>
           {afficher('messages_population') && <MessagesPopulation incidentId={id} />}
@@ -457,6 +460,7 @@ const ONGLETS = [
   { cle: 'synthese', libelle: 'Synthèse', modules: ['phase_cycle_vie'] },
   { cle: 'pilotage', libelle: 'Pilotage', modules: ['phase_cycle_vie', 'escalade', 'activation_30min', 'seuils_action', 'sources_situation', 'organes', 'plan_nucleaire'] },
   { cle: 'operations', libelle: 'Terrain · PC-Ops', modules: ['zones', 'pc_ops', 'suivi_intervenants', 'requisitions'] },
+  { cle: 'entraide', libelle: 'Entraide · bénévoles', modules: ['entraide'] },
   { cle: 'journal', libelle: 'Journal & SitRep', modules: ['journal_decisions', 'suivi_operationnel', 'checklist', 'veille'] },
   { cle: 'communication', libelle: 'D5 · Communication', modules: ['messages_population', 'communication_d5'] },
   { cle: 'psychosocial', libelle: 'D2 · Psychosocial', modules: ['psychosocial_d2'] },
@@ -468,7 +472,7 @@ const ONGLETS = [
 const GROUPES = [
   { cle: 'maintenant', libelle: 'Maintenant', onglets: ['synthese'] },
   { cle: 'piloter', libelle: 'Piloter', onglets: ['pilotage'] },
-  { cle: 'agir', libelle: 'Agir', onglets: ['operations', 'communication', 'psychosocial', 'journal'] },
+  { cle: 'agir', libelle: 'Agir', onglets: ['operations', 'entraide', 'communication', 'psychosocial', 'journal'] },
   { cle: 'apres', libelle: 'Après', onglets: ['retablissement'] },
 ]
 
@@ -493,8 +497,8 @@ const ONGLET_PAR_DEFAUT = {
 // en aval (levée/post-crise, où le travail devient REX plutôt
 // qu'opérationnel).
 const PHASES_MODULES = {
-  veille: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false, pc_ops: false, communication_d5: false, psychosocial_d2: false },
-  vigilance: { activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false, pc_ops: false, communication_d5: false, psychosocial_d2: false },
+  veille: { entraide: false, activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false, pc_ops: false, communication_d5: false, psychosocial_d2: false },
+  vigilance: { entraide: false, activation_30min: false, checklist: false, organes: false, suivi_operationnel: false, suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false, pc_ops: false, communication_d5: false, psychosocial_d2: false },
   pre_alerte: { suivi_intervenants: false, phase_transitoire: false, rex: false, requisitions: false, retablissement: false, zones: false, pc_ops: false, psychosocial_d2: false },
   alerte: { phase_transitoire: false, rex: false },
   phase_active: {},

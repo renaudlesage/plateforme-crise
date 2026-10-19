@@ -515,7 +515,7 @@ begin
   end if;
   if new.statut = 'en_cours' and (tg_op = 'INSERT' or old.statut <> 'en_cours') then new.debut_le := clock_timestamp(); end if;
   if new.statut in ('close', 'annulee', 'refusee') and (tg_op = 'INSERT' or old.statut not in ('close', 'annulee', 'refusee')) then new.fin_le := clock_timestamp(); end if;
-  if new.statut = 'ouverte' then new.debut_le := null; new.fin_le := null; end if;
+  if new.statut = 'ouverte' then new.debut_le := null; new.fin_le := null; new.equipe_id := null; end if;
 
   new.titre := trim(new.titre);
   new.maj_le := clock_timestamp();
@@ -525,6 +525,7 @@ begin
   elsif new.sous_pc_ops and not old.sous_pc_ops then v_evt := 'passage_pc_ops';
   elsif old.sous_pc_ops and not new.sous_pc_ops then v_evt := 'retour_coordinateur';
   elsif new.derogation_motif is distinct from old.derogation_motif and new.derogation_motif is not null then v_evt := 'derogation';
+  elsif new.statut = 'ouverte' and old.statut in ('close', 'annulee') then v_evt := 'reouverture';
   elsif new.equipe_id is distinct from old.equipe_id then v_evt := case when new.equipe_id is null then 'desaffectation' else 'affectation' end;
   elsif new.statut <> old.statut then v_evt := case new.statut when 'en_cours' then 'demarrage' when 'close' then 'cloture' when 'annulee' then 'annulation'
       when 'refusee' then 'refus' when 'ouverte' then 'reouverture' else 'modification' end;

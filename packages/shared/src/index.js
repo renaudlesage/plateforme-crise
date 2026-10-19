@@ -67,3 +67,5 @@ export {
   etatControle,
   correspondRecherche,
 } from './situation.js'
+export * from './entraide.js'
+export { matriceQr, svgQr } from './qr.js'
