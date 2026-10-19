@@ -21,6 +21,5 @@ Attention : les fichiers de l'entraide sont l'état final (correctifs appliqués
 
 Console Plateforme : le fichier est l'état final. Il a été appliqué en base en plusieurs morceaux
 (`console_plateforme_1_suspension`, `_2_journal`, `_3_droits_internes`, `_4_clients`,
-`_5_utilisateurs`, `_7_supervision`). Les fonctions `plateforme_retirer_acces` et
-`plateforme_desactiver_utilisateur` restent à appliquer à la main dans le SQL Editor (copier leur
-définition depuis le fichier) : l'outil d'application automatique bloquait sur leurs `delete`/`update`.
+`_5_utilisateurs`, `_7_supervision`) ; `plateforme_retirer_acces` et `plateforme_desactiver_utilisateur`
+ont été créées à la main dans le SQL Editor le 19 octobre 2026.
