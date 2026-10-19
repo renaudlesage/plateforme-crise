@@ -4,6 +4,9 @@ import { useAuth } from '../context/AuthContext'
 import BasculeTheme from './BasculeTheme'
 import { sectionsDuMenu } from '../lib/menu'
 
+// Gestion des clients et des comptes de la plateforme : console à part, réservée au super-admin.
+const URL_PLATEFORME = import.meta.env.VITE_URL_PLATEFORME || null
+
 // Un lien reste actif sur ses sous-pages (/plans-urgence/:id garde "Plans
 // d'urgence" allumé), sauf la racine qui ne correspond qu'à elle-même.
 function estActif(chemin, to) {
@@ -33,7 +36,7 @@ export default function MisEnPage() {
     navigate('/selection-contexte')
   }
 
-  const sections = sectionsDuMenu({ typeContexte: contexteActuel?.contextes?.type, estSuperAdmin })
+  const sections = sectionsDuMenu({ typeContexte: contexteActuel?.contextes?.type })
 
   const contientActif = (section) => section.liens.some((l) => estActif(location.pathname, l.to))
   const estOuverte = (section) => surcharges[section.titre] ?? contientActif(section)
@@ -50,6 +53,11 @@ export default function MisEnPage() {
             {contexteActuel?.contextes?.nom ?? 'Aucun contexte'}
           </button>
           <div className="pousse" />
+          {estSuperAdmin && URL_PLATEFORME && (
+            <a className="lien" href={URL_PLATEFORME}>
+              Console Plateforme
+            </a>
+          )}
           <span className="compte">{utilisateur?.email}</span>
           <BasculeTheme />
           <button type="button" className="sortie discret" onClick={deconnexion}>

@@ -13,7 +13,7 @@ export function AuthProvider({ children }) {
   const [acces, setAcces] = useState([])
   const [chargementAcces, setChargementAcces] = useState(false)
 
-  // Super-admin de la plateforme (admin du contexte "plateforme") : voit le module Clients
+  // Super-admin de la plateforme (admin du contexte "plateforme") : édite les référentiels nationaux
   const [estSuperAdmin, setEstSuperAdmin] = useState(false)
   // Faux tant que la base n'a pas répondu : évite d'afficher « réservé au super-admin » pendant le chargement.
   const [superAdminVerifie, setSuperAdminVerifie] = useState(false)

@@ -1,0 +1,30 @@
+@import './tokens.css';
+@import './eventware.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light dark; }
+
+/* Ligne cliquable qui déplie son contenu (catalogue de messages…) : le style global des boutons
+   (fond foncé, texte clair) rendait le titre illisible, car il est écrit dans la couleur du fond. */
+button.ligne-depliable {
+  all: unset;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  cursor: pointer;
+  text-align: left;
+}
+button.ligne-depliable:focus-visible { outline: 2px solid var(--etat-info); outline-offset: 2px; }
+
+/* Pastilles de filtre : celle qui est active doit se voir. */
+button.pastille-filtre {
+  padding: 4px 11px;
+  font-size: 12px;
+  background: transparent;
+  color: var(--encre);
+  border-color: var(--trait);
+}
+button.pastille-filtre.actif { background: var(--encre); color: var(--fond); border-color: var(--encre); }
