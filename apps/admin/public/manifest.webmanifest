@@ -1,7 +1,7 @@
 {
-  "name": "Crisiware — Admin",
+  "name": "Crisiware 2 — Admin",
   "short_name": "Admin",
-  "description": "Administration et configuration de la plateforme de gestion de crise Crisiware.",
+  "description": "Administration et configuration de la plateforme de gestion de crise Crisiware 2.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

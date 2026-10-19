@@ -1,4 +1,4 @@
-# Plateforme de gestion de crise — monorepo
+# Crisiware 2 — plateforme de gestion de crise (monorepo)
 
 ## Structure
 

@@ -1,7 +1,7 @@
 {
-  "name": "Crisiware — Citoyen",
+  "name": "Crisiware 2 — Citoyen",
   "short_name": "Citoyen",
-  "description": "Information et préparation aux crises pour les citoyens, par Crisiware.",
+  "description": "Information et préparation aux crises pour les citoyens, par Crisiware 2.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
