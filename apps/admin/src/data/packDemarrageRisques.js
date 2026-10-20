@@ -1,8 +1,11 @@
-// Pack de démarrage — 18 fiches risque pré-remplies, prêtes à importer dans
+import { FICHES_REX_2026 } from './packDemarrageRex2026'
+
+// Pack de démarrage — fiches risque pré-remplies, prêtes à importer dans
 // n'importe quel contexte communal. 12 scénarios génériques (dont plusieurs
 // enrichis de cas belges réels documentés) + 6 scénarios nucléaires (doctrine
 // PUI/PPUI belge publique — préalerte, mise à l'abri, évacuation, iode,
-// contamination denrées, sortie de crise).
+// contamination denrées, sortie de crise) + les fiches tirées des REX de 2026
+// (packDemarrageRex2026.js), qui portent aussi leurs seuils et plan d'action.
 //
 // Chaque entrée correspond directement aux colonnes de objets_a_risque.
 // Le champ `code` est préfixé "STARTER-" pour permettre de détecter si le
@@ -268,4 +271,9 @@ export const PACK_DEMARRAGE_RISQUES = [
     decisions_a_preparer: "Rythme du retour de la population par zone, communication sur les suites (suivi sanitaire, indemnisations éventuelles), retour d'expérience à documenter.",
     messages_publics_predefinis: "La phase aiguë de l'incident est terminée. Le retour dans [zone] est autorisé depuis [date/heure]. Un suivi sanitaire reste recommandé — plus d'informations à [lieu/contact].",
   },
+
+  // ============================================================
+  // FICHES TIRÉES DES REX 2026 (seuils et plan d'action inclus)
+  // ============================================================
+  ...FICHES_REX_2026,
 ]

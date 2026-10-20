@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { SelecteurLocalisation } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
@@ -42,16 +43,46 @@ export default function ObjetsARisque() {
   const [erreurImport, setErreurImport] = useState(null)
 
   const packDejaImporte = objets.some((o) => o.code?.startsWith('STARTER-'))
+  // Seules les fiches dont le code manque sont proposées : un contexte qui a déjà
+  // le pack reçoit les fiches ajoutées depuis, sans doublon des autres.
+  const codesPresents = new Set(objets.map((o) => o.code).filter(Boolean))
+  const fichesAImporter = PACK_DEMARRAGE_RISQUES.filter((r) => !codesPresents.has(r.code))
 
   async function importerPackDemarrage() {
-    if (!confirm(`Importer les ${PACK_DEMARRAGE_RISQUES.length} fiches du pack de démarrage (12 génériques + 6 nucléaire) ?`)) return
+    const n = fichesAImporter.length
+    if (!confirm(`Importer ${n} fiche${n > 1 ? 's' : ''} du pack de démarrage ?`)) return
     setImportEnCours(true)
     setErreurImport(null)
-    const lignes = PACK_DEMARRAGE_RISQUES.map((r) => ({ ...r, contexte_id: contexteId }))
-    const { error } = await supabase.from('objets_a_risque').insert(lignes)
+    const { error } = await importerFiches(fichesAImporter)
     setImportEnCours(false)
     if (error) setErreurImport(error.message)
     else await rafraichir()
+  }
+
+  // Une fiche peut porter des seuils d'action et un plan d'action : ils sont insérés
+  // après elle, puis restent éditables dans leurs formulaires habituels.
+  async function importerFiches(fiches) {
+    const lignes = fiches.map(({ seuils, plan_action, ...r }) => ({ ...r, contexte_id: contexteId }))
+    const { data: crees, error } = await supabase.from('objets_a_risque').insert(lignes).select('id, code')
+    if (error) return { error }
+    const idParCode = Object.fromEntries(crees.map((o) => [o.code, o.id]))
+    const seuils = fiches.flatMap((f) =>
+      (f.seuils ?? []).map((s) => ({ ...s, contexte_id: contexteId, objet_risque_id: idParCode[f.code] }))
+    )
+    const etapes = fiches.flatMap((f) =>
+      (f.plan_action ?? []).map((libelle, i) => ({ objet_risque_id: idParCode[f.code], ordre: i + 1, libelle, statut: 'a_faire' }))
+    )
+    const [s, e] = await Promise.all([
+      seuils.length ? supabase.from('seuils_action').insert(seuils) : { error: null },
+      etapes.length ? supabase.from('plans_action_risque').insert(etapes) : { error: null },
+    ])
+    const erreurLiee = s.error || e.error
+    if (erreurLiee) {
+      // Pas de fiche importée à moitié : on retire les fiches créées (seuils et étapes suivent en cascade).
+      await supabase.from('objets_a_risque').delete().in('id', crees.map((o) => o.id))
+      return { error: erreurLiee }
+    }
+    return { error: null }
   }
 
   const objetsFiltres = filtreCategorie
@@ -63,9 +94,13 @@ export default function ObjetsARisque() {
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-xl font-semibold text-encre">Objets à risque</h1>
         <div className="flex gap-2">
-          {!packDejaImporte && (
+          {fichesAImporter.length > 0 && !chargement && (
             <BoutonDiscret onClick={importerPackDemarrage} disabled={importEnCours}>
-              {importEnCours ? 'Import…' : 'Importer le pack de démarrage (18 fiches)'}
+              {importEnCours
+                ? 'Import…'
+                : packDejaImporte
+                  ? `Importer les nouvelles fiches du pack (${fichesAImporter.length})`
+                  : `Importer le pack de démarrage (${fichesAImporter.length} fiches)`}
             </BoutonDiscret>
           )}
           {!enAjout && (
@@ -166,7 +201,8 @@ export default function ObjetsARisque() {
                     )}
                   </p>
                 </div>
-                <div className="flex gap-2 flex-shrink-0 ml-3">
+                <div className="flex gap-2 flex-shrink-0 ml-3 items-center">
+                  <Link to={`/risques/${o.id}/impression`} className="lien text-sm">Imprimer</Link>
                   <BoutonDiscret onClick={() => setLigneEnEdition(o.id)}>Modifier</BoutonDiscret>
                   <BoutonDiscret
                     onClick={() => {
