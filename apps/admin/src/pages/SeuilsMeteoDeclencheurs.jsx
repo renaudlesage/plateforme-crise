@@ -25,10 +25,11 @@ export default function SeuilsMeteoDeclencheurs() {
     modifier,
     supprimer,
   } = useTableContexte('seuils_meteo_declencheurs', contexteId, {
-    colonnes: '*, objets_a_risque(id, identification)',
+    colonnes: '*, objets_a_risque(id, identification), risques_territoire(id, titre)',
     tri: 'libelle',
   })
   const { lignes: objetsRisque } = useTableContexte('objets_a_risque', contexteId, { tri: 'identification' })
+  const { lignes: risques } = useTableContexte('risques_territoire', contexteId, { tri: 'titre' })
 
   const [enAjout, setEnAjout] = useState(false)
   const [ligneEnEdition, setLigneEnEdition] = useState(null)
@@ -50,7 +51,7 @@ export default function SeuilsMeteoDeclencheurs() {
 
       {enAjout && (
         <FormulaireSeuilMeteo
-          objetsRisque={objetsRisque}
+          objetsRisque={objetsRisque} risques={risques}
           onAnnuler={() => setEnAjout(false)}
           onValider={async (valeurs) => {
             const { error } = await creer(valeurs)
@@ -72,7 +73,7 @@ export default function SeuilsMeteoDeclencheurs() {
             ligneEnEdition === s.id ? (
               <li key={s.id} className="bg-fond p-3">
                 <FormulaireSeuilMeteo
-                  objetsRisque={objetsRisque}
+                  objetsRisque={objetsRisque} risques={risques}
                   valeursInitiales={s}
                   onAnnuler={() => setLigneEnEdition(null)}
                   onValider={async (valeurs) => {
@@ -93,6 +94,9 @@ export default function SeuilsMeteoDeclencheurs() {
                     {PARAMETRES.find((p) => p.valeur === s.parametre)?.libelle ?? s.parametre} {s.operateur} {s.valeur_seuil} {s.unite}
                   </p>
                   {s.action_associee && <p className="text-xs text-sourdine mt-0.5">action : {s.action_associee}</p>}
+                  {s.risques_territoire?.titre && (
+                    <p className="text-xs text-sourdine mt-0.5">risque : {s.risques_territoire.titre}</p>
+                  )}
                   {s.objets_a_risque?.identification && (
                     <p className="text-xs text-sourdine mt-0.5">objet : {s.objets_a_risque.identification}</p>
                   )}
@@ -116,7 +120,7 @@ export default function SeuilsMeteoDeclencheurs() {
   )
 }
 
-function FormulaireSeuilMeteo({ objetsRisque, valeursInitiales = {}, onValider, onAnnuler }) {
+function FormulaireSeuilMeteo({ objetsRisque, risques = [], valeursInitiales = {}, onValider, onAnnuler }) {
   const [libelle, setLibelle] = useState(valeursInitiales.libelle ?? '')
   const [parametre, setParametre] = useState(valeursInitiales.parametre ?? PARAMETRES[0].valeur)
   const [operateur, setOperateur] = useState(valeursInitiales.operateur ?? '>')
@@ -124,6 +128,7 @@ function FormulaireSeuilMeteo({ objetsRisque, valeursInitiales = {}, onValider, 
   const [unite, setUnite] = useState(valeursInitiales.unite ?? '')
   const [actionAssociee, setActionAssociee] = useState(valeursInitiales.action_associee ?? '')
   const [objetRisqueId, setObjetRisqueId] = useState(valeursInitiales.objet_risque_id ?? '')
+  const [risqueId, setRisqueId] = useState(valeursInitiales.risque_id ?? '')
   const [actif, setActif] = useState(valeursInitiales.actif ?? true)
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
@@ -139,6 +144,7 @@ function FormulaireSeuilMeteo({ objetsRisque, valeursInitiales = {}, onValider, 
       unite: unite.trim() || null,
       action_associee: actionAssociee.trim() || null,
       objet_risque_id: objetRisqueId || null,
+      risque_id: risqueId || null,
       actif,
     })
     setEnCours(false)
@@ -185,6 +191,15 @@ function FormulaireSeuilMeteo({ objetsRisque, valeursInitiales = {}, onValider, 
         <div>
           <label className="block text-xs font-medium text-sourdine mb-1">Unité</label>
           <input value={unite} onChange={(e) => setUnite(e.target.value)} placeholder="ex. °C, km/h, m" className="w-full" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Risque lié</label>
+          <select value={risqueId} onChange={(e) => setRisqueId(e.target.value)} className="w-full">
+            <option value="">— générique —</option>
+            {risques.map((r) => (
+              <option key={r.id} value={r.id}>{r.titre}</option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block text-xs font-medium text-sourdine mb-1">Objet à risque lié</label>

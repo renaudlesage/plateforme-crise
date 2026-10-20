@@ -13,10 +13,11 @@ export default function SeuilsAction() {
     modifier,
     supprimer,
   } = useTableContexte('seuils_action', contexteId, {
-    colonnes: '*, objets_a_risque(id, identification), roles(id, libelle)',
+    colonnes: '*, objets_a_risque(id, identification), risques_territoire(id, titre), roles(id, libelle)',
     tri: 'ordre',
   })
   const { lignes: objetsRisque } = useTableContexte('objets_a_risque', contexteId, { tri: 'identification' })
+  const { lignes: risques } = useTableContexte('risques_territoire', contexteId, { tri: 'titre' })
   const { lignes: roles } = useTableContexte('roles', contexteId, { tri: 'libelle' })
   const { lignes: ressources } = useTableContexte('ressources', contexteId, { tri: 'nom' })
 
@@ -42,7 +43,7 @@ export default function SeuilsAction() {
 
       {enAjout && (
         <FormulaireSeuil
-          objetsRisque={objetsRisque}
+          objetsRisque={objetsRisque} risques={risques}
           roles={roles}
           ressources={ressources}
           prioriteParDefaut={seuils.length + 1}
@@ -67,7 +68,7 @@ export default function SeuilsAction() {
             ligneEnEdition === s.id ? (
               <li key={s.id} className="bg-fond rounded p-3 border border-trait">
                 <FormulaireSeuil
-                  objetsRisque={objetsRisque}
+                  objetsRisque={objetsRisque} risques={risques}
                   roles={roles}
                   ressources={ressources}
                   valeursInitiales={s}
@@ -95,6 +96,7 @@ export default function SeuilsAction() {
                     </p>
                     <p className="text-xs text-sourdine mt-1">
                       {s.roles?.libelle && <>responsable : {s.roles.libelle}</>}
+                      {s.risques_territoire?.titre && <> · risque : {s.risques_territoire.titre}</>}
                       {s.objets_a_risque?.identification && <> · objet : {s.objets_a_risque.identification}</>}
                     </p>
                     {s.action_degradee && (
@@ -123,12 +125,13 @@ export default function SeuilsAction() {
   )
 }
 
-function FormulaireSeuil({ objetsRisque, roles, ressources = [], valeursInitiales = {}, prioriteParDefaut = 1, onValider, onAnnuler }) {
+function FormulaireSeuil({ objetsRisque, risques = [], roles, ressources = [], valeursInitiales = {}, prioriteParDefaut = 1, onValider, onAnnuler }) {
   const [libelle, setLibelle] = useState(valeursInitiales.libelle ?? '')
   const [seuilDescription, setSeuilDescription] = useState(valeursInitiales.seuil_description ?? '')
   const [action, setAction] = useState(valeursInitiales.action ?? '')
   const [responsableRoleId, setResponsableRoleId] = useState(valeursInitiales.responsable_role_id ?? '')
   const [objetRisqueId, setObjetRisqueId] = useState(valeursInitiales.objet_risque_id ?? '')
+  const [risqueId, setRisqueId] = useState(valeursInitiales.risque_id ?? '')
   const [ordre, setOrdre] = useState(valeursInitiales.ordre ?? prioriteParDefaut)
   const [actif, setActif] = useState(valeursInitiales.actif ?? true)
   const [ressourceSubstitutionId, setRessourceSubstitutionId] = useState(valeursInitiales.ressource_substitution_id ?? '')
@@ -145,6 +148,7 @@ function FormulaireSeuil({ objetsRisque, roles, ressources = [], valeursInitiale
       action: action.trim(),
       responsable_role_id: responsableRoleId || null,
       objet_risque_id: objetRisqueId || null,
+      risque_id: risqueId || null,
       ordre: Number(ordre),
       actif,
       ressource_substitution_id: ressourceSubstitutionId || null,
@@ -190,13 +194,22 @@ function FormulaireSeuil({ objetsRisque, roles, ressources = [], valeursInitiale
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div>
           <label className="block text-xs font-medium text-sourdine mb-1">Responsable</label>
           <select value={responsableRoleId} onChange={(e) => setResponsableRoleId(e.target.value)} className="w-full">
             <option value="">—</option>
             {roles.map((r) => (
               <option key={r.id} value={r.id}>{r.libelle}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Risque lié</label>
+          <select value={risqueId} onChange={(e) => setRisqueId(e.target.value)} className="w-full">
+            <option value="">— générique —</option>
+            {risques.map((r) => (
+              <option key={r.id} value={r.id}>{r.titre}</option>
             ))}
           </select>
         </div>
