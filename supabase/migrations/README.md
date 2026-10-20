@@ -24,3 +24,7 @@ Console Plateforme : le fichier est l'état final. Il a été appliqué en base 
 (`console_plateforme_1_suspension`, `_2_journal`, `_3_droits_internes`, `_4_clients`,
 `_5_utilisateurs`, `_7_supervision`) ; `plateforme_retirer_acces` et `plateforme_desactiver_utilisateur`
 ont été créées à la main dans le SQL Editor le 19 octobre 2026.
+
+Risques du territoire : le fichier a été exécuté tel quel dans le SQL Editor le 20 octobre 2026 (l'outil de
+migration n'a pas pu faire afficher sa demande de confirmation des instructions destructrices). Il n'apparaît
+donc pas dans l'historique `supabase_migrations.schema_migrations`.
