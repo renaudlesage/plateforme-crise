@@ -28,3 +28,11 @@ button.pastille-filtre {
   border-color: var(--trait);
 }
 button.pastille-filtre.actif { background: var(--encre); color: var(--fond); border-color: var(--encre); }
+
+/* Impression (fiche risque en mode dégradé) : seul le contenu de la page sort. */
+@media print {
+  header.tete, nav.menu, .no-print { display: none !important; }
+  body { background: #fff !important; color: #000 !important; }
+  .fiche-impression { font-size: 10pt; }
+  .fiche-impression h2 { break-after: avoid; }
+}
