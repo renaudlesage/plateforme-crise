@@ -11,15 +11,17 @@ ce qui a été constaté dans le code est consigné à part, dans [CORRESPONDANC
 
 ## À lire à chaque session
 
-1. [ETAT.md](ETAT.md) — où on en est, décisions de Ren, questions ouvertes, dette.
-2. [00-contexte-et-regles.md](00-contexte-et-regles.md) — produit, principes non négociables, terminologie, règles de travail, RGPD et sécurité, définition de terminé.
-3. Le fichier du chantier en cours, et sa ligne dans [CORRESPONDANCE.md](CORRESPONDANCE.md).
+1. [ETAT.md](ETAT.md) — où on en est, sessions réalisées, capacité, migrations à approuver, décisions de Ren, questions ouvertes, dette.
+2. [SPRINTS.md](SPRINTS.md) — le sprint en cours et sa coupe prévue. Le briefing fixe le *quoi* et les critères d'acceptation ; le plan de sprint fixe le *quand* et le *combien*.
+3. [00-contexte-et-regles.md](00-contexte-et-regles.md) — produit, principes non négociables, terminologie, règles de travail, RGPD et sécurité, définition de terminé.
+4. Le fichier du chantier en cours, et sa ligne dans [CORRESPONDANCE.md](CORRESPONDANCE.md).
 
 ## Fichiers
 
 | Fichier | Contenu |
 |---|---|
 | [ETAT.md](ETAT.md) | État de la feuille de route (mis à jour à chaque session) |
+| [SPRINTS.md](SPRINTS.md) | Plan de sprint 2026-2027 : vagues 1 et 2, sprints de deux semaines, jalons D1–D10, coupes, capacité |
 | [CORRESPONDANCE.md](CORRESPONDANCE.md) | Chantiers et fondations ↔ modules existants du dépôt, écarts avec le briefing |
 | [00-contexte-et-regles.md](00-contexte-et-regles.md) | Sections 0, 5 et 6 du briefing |
 | [F00-fondations.md](F00-fondations.md) | Fondations transversales F1–F8 |

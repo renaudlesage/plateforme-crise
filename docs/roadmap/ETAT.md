@@ -1,5 +1,7 @@
 # État de la feuille de route
-Dernière session : 2026-10-20 — chantier : Session 0 — résultat : briefing découpé dans `docs/roadmap/`, existant relevé chantier par chantier ([CORRESPONDANCE.md](CORRESPONDANCE.md)), fondations F1–F8 évaluées, références externes vérifiées ([references.md](references.md)), plan de sprint 15 modules introuvable, une faille critique et plusieurs failles de sécurité relevées.
+Dernière session : 2026-10-20 — chantier : Session 0 — résultat : briefing découpé dans `docs/roadmap/`, plan de sprint versé ([SPRINTS.md](SPRINTS.md)), existant relevé chantier par chantier ([CORRESPONDANCE.md](CORRESPONDANCE.md)), fondations F1–F8 évaluées, références externes vérifiées ([references.md](references.md)), une faille critique et plusieurs failles de sécurité relevées.
+
+Sessions : 1 réalisée / 16 planifiées (vague 1) — la Session 0 a été faite en avance, le 20 octobre, au lieu de la semaine du 2 novembre.
 
 ## Terminé
 - Session 0 (2026-10-20, branche feat/s00-feuille-de-route, mergé : non)
@@ -9,26 +11,59 @@ Dernière session : 2026-10-20 — chantier : Session 0 — résultat : briefing
   - Risques du territoire distincts des objets à risque (2026-10-20, PR #4, mergé : oui)
 
 ## En cours
-- Aucun chantier commencé.
-- Prochain proposé : correctifs de sécurité (section 6 de [CORRESPONDANCE.md](CORRESPONDANCE.md)), puis C1 Réveil automatique — tranche 1 : fondations F3 (pg_cron, pg_net, `jobs_etat`) et F1 (communes ↔ provinces), ingestion serveur des avertissements IRM dans `alertes_externes`, Vitest et fixtures CAP.
+- Vague 1 : du 2 novembre 2026 au 21 février 2027, réévaluation la semaine du 22 février ([SPRINTS.md](SPRINTS.md)).
+- Sprint 1 « Fondations » (2 → 15 nov) : Session 0 faite ; reste la session « F1, F5, F3 » (semaine du 9 nov).
+- Proposition : utiliser le créneau libéré de la semaine du 2 novembre pour les **correctifs de sécurité** (migration à préparer, non destructive, à approuver ci-dessous), afin que la session du 9 novembre reste consacrée à F1, F5 et F3.
+- Ajustements du sprint 1 issus de la Session 0 :
+  - **F5** : `journal_decisions` est déjà en ajout seul (horodatages client et serveur, auteur, numérotation) ; il reste à ajouter l'empreinte chaînée (coupe prévue), les références (signalement, alerte, message), un journal hors incident (`incident_id` est obligatoire) et à décider du sort de `livre_de_bord`, qui reste modifiable.
+  - **F1** : `communes_be` à créer et charger depuis le fichier REFNIS 2025 de Statbel (565 communes, CC BY 4.0) par script de seed ; y ajouter la correspondance province ↔ zone MeteoAlarm (9 zones, un seul « Brabant ») dont C1 a besoin.
+  - **F3** : `pg_cron` et `pg_net` sont disponibles mais pas installés ; `vault.secrets` est vide.
+
+## Capacité
+Capacité prévue par le plan ; capacité déclarée par Ren au début de chaque sprint (« Sprint n : 1 ou 2 sessions »).
+
+| Sprint | Dates | Chantier | Prévue | Déclarée par Ren |
+|---|---|---|---|---|
+| 1 | 2 → 15 nov 2026 | Session 0 + F1 F3 F5 | 2 (Session 0 déjà faite) | |
+| 2 | 16 → 29 nov | C1 Réveil automatique — **D1** | 2 | |
+| 3 | 30 nov → 13 déc | C4 Pack papier — **D2** | 2 | |
+| 4 | 14 → 27 déc | C3 Rapport d'événement — **D3** | 1–2 (R, Noël) | |
+| 5 | 28 déc → 10 jan 2027 | C2a Formulaire public | 1–2 (R, Nouvel An) | |
+| 6 | 11 → 24 jan | C2b Carte et tri — **D4** | 2 | |
+| 7 | 25 jan → 7 fév | C2c + C2d | 2 | |
+| 8 | 8 → 21 fév | Consolidation — **D5** | 2 (R possible, congé de détente) | |
+
+Congés de Ren : **à confirmer avant le 14 décembre** (semaines de congé, et congés scolaires de la Fédération Wallonie-Bruxelles si elles comptent), pour que la capacité déclarée corresponde au calendrier.
+
+## À faire par Ren avant le 14 décembre
+1. Fournir un **exemplaire réel de SITREP provincial** (Liège de préférence) pour le sprint 4. À défaut : format provisoire en-tête / situation / mesures prises / besoins / prochain point.
+2. **Confirmer les semaines de congé** dans la section Capacité ci-dessus.
+
+## Migrations à approuver
+Approbation asynchrone : écrire « approuvée le AAAA-MM-JJ » à côté de la ligne ; application à la session suivante, puis vérification de l'effet réel en SQL.
+- [ ] **Correctifs de sécurité** (fichier à préparer à la prochaine session) : `contextes` (colonnes `est_plateforme`, `suspendu*`, `motif_suspension`, `notes_plateforme`, `type` non modifiables hors super-admin), `benevoles_entraide` (plus d'insertion anonyme directe de toutes les colonnes), `plans_urgence_menages` et `creer_plan_urgence_menage`, `contextes_publics()` (masquer la plateforme et les clients suspendus), révocation de droits inutiles d'`anon`. Détail : [CORRESPONDANCE.md](CORRESPONDANCE.md), section 6.
+- [ ] **Sprint 1 — F1, F5, F3** (fichier à préparer en session) : `communes_be` et son seed, compléments de journal, extensions `pg_cron` et `pg_net`, `jobs_etat`.
 
 ## Décisions de Ren
+- 2026-10-20 : le plan de sprint de référence est [SPRINTS.md](SPRINTS.md) (vague 1 : 8 sprints de deux semaines du 2 novembre au 21 février, jalons D1–D5 ; vague 2 : mars à novembre 2027, jalons D6–D10, tampon en août pour le festival ; au plus deux coupes en vague 1).
 - 2026-10-20 : migration `risques_territoire` approuvée ; exécutée par Ren dans le SQL Editor (hors historique `schema_migrations`).
 - 2026-10-20 : STARTER-04 (ruissellement urbain) et STARTER-07 (cyberattaque communale) retirés du pack et supprimés de la Commune Test.
 - 2026-10-20 : pas de régénération des `database.types.ts` (périmés, importés nulle part) dans le cadre des chantiers récents.
 - 2026-10-19 : nom affiché « Crisiware 2 » ; noms des projets Vercel et adresses `*.vercel.app` inchangés.
 
 ## Questions ouvertes
-1. **Plan de sprint 15 modules en quatre paliers** : introuvable (dépôt, historique GitHub, base, Google Drive). Seules traces : « Tier 1.1 » (fiche de risque) et « Tier 1.2 » (seuils d'action) dans une migration du 30/07/2026. À coller ou à retrouver dans le projet claude.ai pour la réconciliation.
-2. **Correctifs de sécurité** : approuver la migration de correction de `contextes` (critique) et des écritures anonymes (`benevoles_entraide`, `plans_urgence_menages`, `contextes_publics()`…).
-3. **Purge des exercices (C5)** : la base applique « exercice terminé = preuve non supprimable » ; le briefing demande une purge. Lequel prime ?
-4. **Licences (décisions réservées)** : MeteoAlarm, géoportail wallon (aléa d'inondation, axes de ruissellement), tuiles de carte (le pré-téléchargement est interdit sur `tile.openstreetmap.org` ; imagerie Esri sous licence) — voir [references.md](references.md).
-5. **Modèle de SITREP provincial** (C3, T2) : exemplaire réel à fournir.
-6. **Source unique du « message D5 validé »** (C8, T2) : catalogue national, modèles de messages ou messages réflexes de l'incident ?
-7. **« N défini » (C6)** : à quoi correspond ce paramètre de fiche ?
-8. **Edge Functions** : versionner dans le dépôt `diffuser-alerte`, `irm-vigilance`, `ingestion-alerte-externe` ? Supprimer `bootstrap-super-admin` et `reset-password-ferrieres-test` (neutralisées) ?
-9. **Marque** : « FERRU » doit-il apparaître dans l'interface à côté de « Crisiware 2 » ?
-10. Reprises du briefing REX : point de départ du délai de 21 jours ouvrables du Fonds des calamités ; IMIO, CyberFundamentals et NIS2 pour la commune cible.
+1. **Plan « 15 modules en quatre paliers »** : toujours introuvable ; [SPRINTS.md](SPRINTS.md) le cite encore (session 1). Proposition : le considérer remplacé par SPRINTS.md et clore la recherche, sauf avis contraire.
+2. **Correctifs de sécurité** : approuver le principe pour que le fichier soit préparé la semaine du 2 novembre (voir « Migrations à approuver »).
+3. **E-mail de F2 (sprint 2)** : aucun canal e-mail n'existe (`diffuser-alerte` ne gère que des webhooks). « E-mail via le webhook existant » suppose un relais externe (automate type n8n ou Make) ou un fournisseur d'envoi (SMTP, Resend…), donc une dépendance et un secret à choisir avant la semaine du 23 novembre.
+4. **Push sur le téléphone (D1)** : sur iPhone, le web push ne fonctionne que si l'app est installée sur l'écran d'accueil (iOS 16.4 ou plus) ; sur Android, depuis le navigateur. Quel téléphone pour la démo ?
+5. **Purge des exercices (C5)** : la base applique « exercice terminé = preuve non supprimable » ; le briefing demande une purge totale. Lequel prime ?
+6. **Licences (décisions réservées)** : MeteoAlarm (confirmation écrite pour un usage commercial), IRM, géoportail wallon (série LIDAXES complète non republiable en ligne), tuiles de carte (le pré-téléchargement est interdit sur `tile.openstreetmap.org`) — voir [references.md](references.md). À régler avant la session du 16 novembre (ingestion) pour MeteoAlarm et l'IRM.
+7. **Source météo de C1** : open data IRM (CAP mis à jour toutes les heures), MeteoAlarm (redistribution à 10 min maximum), ou les deux ?
+8. **Source unique du « message D5 validé »** (C8, T2) : catalogue national, modèles de messages ou messages réflexes de l'incident ?
+9. **« N défini » (C6)** : à quoi correspond ce paramètre de fiche ?
+10. **Edge Functions** : versionner dans le dépôt `diffuser-alerte`, `irm-vigilance`, `ingestion-alerte-externe` ? Supprimer `bootstrap-super-admin` et `reset-password-ferrieres-test` (neutralisées) ?
+11. **Marque** : « FERRU » doit-il apparaître dans l'interface à côté de « Crisiware 2 » ?
+12. Reprises du briefing REX : point de départ du délai de 21 jours ouvrables du Fonds des calamités ; IMIO, CyberFundamentals et NIS2 pour la commune cible.
 
 ## Dette / à revoir
 - 3 Edge Functions déployées absentes du dépôt ; 2 fonctions neutralisées encore déployées.

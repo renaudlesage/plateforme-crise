@@ -40,14 +40,26 @@ Légende de couverture : **aucune**, **faible**, **partielle**, **forte**.
 - **Types générés** : les 5 copies de `database.types.ts` datent du 7 octobre (52 tables) et ne sont importées nulle part.
 - Le README racine renvoie à un `.env.example` absent et à un projet « pcops-generique-test » ; des commentaires citent `briefing-eventware-pour-crisiware.md`, absent du dépôt.
 
-## 3. Plan de sprint « 15 modules en quatre paliers »
+## 3. Plan de sprint ([SPRINTS.md](SPRINTS.md)) ↔ existant
 
-**Introuvable** : ni dans le dépôt et son historique GitHub complet (depuis le 27/07/2026), ni en base, ni sur le
-Google Drive du projet (dossier « FERRU » : un seul zip ; corpus PGUI/PPUI). Seules traces : la migration
-`fiche_risque_cascade_et_seuils_action` (30/07/2026) cite « TIER 1.1 — fiche risque unifiée avec cascade »
-(aujourd'hui `risques_territoire` et les fonctions critiques) et « TIER 1.2 — seuils d'action communaux formalisés »
-(`seuils_action`, `declenchements_seuils_action`). Le plan vit probablement dans un chat du projet claude.ai.
-**À fournir par Ren** pour la réconciliation (voir [ETAT.md](ETAT.md), questions ouvertes).
+Le plan de sprint de référence est [SPRINTS.md](SPRINTS.md), versé le 20 octobre 2026. Le plan « 15 modules en
+quatre paliers » cité par le briefing (et par la session 1 de SPRINTS.md) reste introuvable : ni dans le dépôt et
+son historique GitHub, ni en base, ni sur le Google Drive du projet. Seules traces : « TIER 1.1 — fiche risque
+unifiée avec cascade » et « TIER 1.2 — seuils d'action communaux formalisés » dans la migration
+`fiche_risque_cascade_et_seuils_action` du 30/07/2026, aujourd'hui portés par `risques_territoire` et `seuils_action`.
+
+Ce que la Session 0 change pour chaque sprint de la vague 1 (les noms existants sont gardés, conformément au briefing) :
+
+| Sprint | Chantier | Écarts avec le plan à prendre en compte |
+|---|---|---|
+| 1 | Session 0 + F1 F3 F5 | Session 0 faite le 20/10. F5 : `journal_decisions` est déjà en ajout seul → compléter (empreinte, références, journal hors incident) plutôt que créer ; `livre_de_bord` reste modifiable. F1 : seed REFNIS 2025 + correspondance province ↔ zones MeteoAlarm. F3 : extensions à installer, Vault vide. Correctifs de sécurité proposés dans le créneau libéré (section 6). |
+| 2 | C1 Réveil — D1 | L'Edge Function `irm-vigilance` (déployée, absente du dépôt) lit déjà le flux MeteoAlarm : la récupérer et la versionner avant d'écrire `ingest-meteoalarm`. Aucun canal e-mail n'existe (webhooks seulement) → fournisseur ou relais à choisir. Web push sur iPhone : app installée sur l'écran d'accueil obligatoire. Les seuils n'ont pas de rang structuré (S0, S1… dans le libellé). `declenchements_seuils_action.incident_id` est obligatoire. |
+| 3 | C4 Pack papier — D2 | Fiche dans l'app Admin, événement dans l'app QG → composants du pack dans `packages/shared`. Route existante `/risques-territoire/:id/impression` (convention `…/impression` dans la mise en page) à concilier avec `/print/pack/…`. Couches WMS : ERRUISSOL obsolète, remplacé par LIDAXES (série complète non republiable en ligne). |
+| 4 | C3 Rapport — D3 | Sources de chronologie nombreuses mais dispersées (section 5, C3). Deux REX parallèles (`evaluations_crise`, `debriefings_post_crise`). SITREP CAN(AL) existant = celui du PC-Ops, pas le SITREP provincial (modèle à fournir par Ren avant le 14/12). |
+| 5 | C2a Formulaire public | Le plan nomme `signalements` et un bucket `signalements` : l'existant s'appelle `signalements_citoyens` et `photos-citoyens` → garder ces noms. La file hors ligne existe (localStorage, sans photos) → passer à IndexedDB. Les écritures passent aujourd'hui par des RPC appelées par `anon`, sans Edge Function. |
+| 6 | C2b Carte et tri — D4 | Realtime jamais utilisé : publication `supabase_realtime` vide, RLS vérifiée par abonné. « Danger de mort » n'existe pas encore (pas de gravité). |
+| 7 | C2c + C2d | Le plan nomme `ressources_temporaires` : proposition d'étendre `ressources` (déjà alimentée par `declarer_moyen_prive`, avec validation dans l'Admin) plutôt que de créer une table en doublon. Mode dégâts : la réception des signalements se ferme aujourd'hui en levée et post-crise (trigger à adapter). |
+| 8 | Consolidation — D5 | Purge RGPD : aucune fonction de purge ni tâche planifiée aujourd'hui (dépend de F3). |
 
 ## 4. Fondations F1–F8
 
