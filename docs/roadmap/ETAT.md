@@ -1,11 +1,14 @@
 # État de la feuille de route
-Dernière session : 2026-10-20 — chantier : correctifs de sécurité — résultat : migration `supabase/migrations/20261020160000_correctifs_securite.sql` répétée dans des transactions annulées (9 constats avant, 42 contrôles après, conformes), approuvée par Ren, **appliquée** le 20 octobre (version `20261020211056`) et vérifiée sur la base réelle (18 contrôles conformes) ; le constat « critique » de la Session 0 est requalifié « moyenne » (un index unique empêchait déjà un admin communal de devenir super-admin).
+Dernière session : 2026-10-20 — chantier : fondations F1, F5, F3 (sprint 1, session 2) — résultat : trois migrations préparées et répétées dans des transactions annulées (tests conformes), **non appliquées**, à approuver ci-dessous ; seed des 565 communes généré depuis l'export ODWB fourni par Ren ; correspondance province ↔ zones MeteoAlarm reportée à C1.
 
-Sessions : 2 réalisées / 16 planifiées (vague 1) — Session 0 et correctifs de sécurité faits le 20 octobre, avant le début prévu du 2 novembre. Depuis le 20 octobre, on avance sans attendre les dates du plan (décision de Ren).
+Session précédente (même jour) : correctifs de sécurité, migration `20261020160000_correctifs_securite.sql` appliquée (version `20261020211056`) et vérifiée ; constat « critique » de la Session 0 requalifié « moyenne ».
+
+Sessions : 3 réalisées / 16 planifiées (vague 1) — Session 0, correctifs de sécurité et F1 F5 F3 faits le 20 octobre, avant le début prévu du 2 novembre. Depuis le 20 octobre, on avance sans attendre les dates du plan (décision de Ren).
 
 ## Terminé
 - Session 0 (2026-10-20, branche feat/s00-feuille-de-route, mergé : non)
 - Correctifs de sécurité (2026-10-20, branche feat/securite-correctifs empilée sur feat/s00-feuille-de-route, mergé : non ; migration appliquée et vérifiée)
+- Fondations F1, F5, F3 (2026-10-20, branche feat/f01-f03-f05-fondations empilée sur feat/securite-correctifs, mergé : non ; migrations non appliquées)
 - Avant la feuille de route, utiles aux chantiers :
   - Renommage « Crisiware 2 » (2026-10-20, PR #2, mergé : oui)
   - Fiches REX 2026 orages éclair (A) et cyberattaque (B), import avec seuils et plan d'action, impression de fiche (2026-10-20, PR #3, mergé : oui)
@@ -13,11 +16,12 @@ Sessions : 2 réalisées / 16 planifiées (vague 1) — Session 0 et correctifs 
 
 ## En cours
 - Vague 1 : du 2 novembre 2026 au 21 février 2027, réévaluation la semaine du 22 février ([SPRINTS.md](SPRINTS.md)) ; dates indicatives depuis le 20 octobre, l'ordre des chantiers reste celui du plan.
-- Sprint 1 « Fondations » : Session 0 et correctifs de sécurité faits ; reste la session « F1, F5, F3 », prochaine session.
-- Ajustements du sprint 1 issus de la Session 0 :
-  - **F5** : `journal_decisions` est déjà en ajout seul (horodatages client et serveur, auteur, numérotation) ; il reste à ajouter l'empreinte chaînée (coupe prévue), les références (signalement, alerte, message), un journal hors incident (`incident_id` est obligatoire) et à décider du sort de `livre_de_bord`, qui reste modifiable.
-  - **F1** : `communes_be` à créer et charger depuis le fichier REFNIS 2025 de Statbel (565 communes, CC BY 4.0) par script de seed ; y ajouter la correspondance province ↔ zone MeteoAlarm (9 zones, un seul « Brabant ») dont C1 a besoin.
-  - **F3** : `pg_cron` et `pg_net` sont disponibles mais pas installés ; `vault.secrets` est vide.
+- Sprint 1 « Fondations » : sessions faites ; il reste à appliquer les trois migrations F5, F3, F1 et le seed après approbation, puis à rejouer `supabase/tests/fondations_f1_f3_f5.sql` sur la base réelle.
+- Résultat de la session F1, F5, F3 :
+  - **F5** : références signalement et alerte, empreinte SHA-256 chaînée calculée par le serveur (une valeur envoyée par le client est remplacée), `verifier_journal_decisions()` qui détecte une falsification (prouvé en répétition). Restent : référence « message » (question 8), journal hors incident (C7), `livre_de_bord` modifiable (T1).
+  - **F3** : `pg_cron`, `pg_net`, `jobs_etat`, `jobs_signaler()` (clé de service seulement), `jobs_muets()`. Aucune tâche planifiée ni secret dans le Vault avant C1.
+  - **F1** : `communes_be` et seed des 565 communes (noms FR/NL/DE, arrondissement, province, région, langues, point de la commune). Source : export ODWB « communes et localités » envoyé par Ren, car `statbel.fgov.be` est refusé par le réseau de l'environnement ; licence du jeu à confirmer. La correspondance province ↔ zones MeteoAlarm passe à C1 : `feeds.meteoalarm.org` est aussi refusé et les codes de zone ne sont pas vérifiables d'ici.
+- Prochain chantier : sprint 2, C1 Réveil automatique (**D1**). Préalables : questions 3 (e-mail), 4 (téléphone), 6 (licences MeteoAlarm et IRM), 7 (source météo) et accès réseau aux flux météo (question 13).
 
 ## Capacité
 Capacité prévue par le plan ; capacité déclarée par Ren au début de chaque sprint (« Sprint n : 1 ou 2 sessions »). Depuis le 20 octobre, les dates sont indicatives : une session suit la précédente dès qu'elle est livrée.
@@ -43,7 +47,10 @@ Congés de Ren : **à confirmer avant le 14 décembre** (semaines de congé, et 
 ## Migrations à approuver
 Approbation asynchrone : écrire « approuvée le AAAA-MM-JJ » à côté de la ligne ; application à la session suivante, puis vérification de l'effet réel en SQL.
 - [x] **Correctifs de sécurité** — approuvée le 2026-10-20 (« Applique »), appliquée le 2026-10-20 (version `20261020211056`), effet vérifié. `supabase/migrations/20261020160000_correctifs_securite.sql` (branche feat/securite-correctifs). Non destructif, aucune app à modifier. `contextes` : un membre ne modifie plus que `config`, coordonnées et province, notes de la plateforme réservées à la console, trigger de garde ; bénévoles inscrits par le public toujours « en_attente » ; plus d'insertion directe de plans de ménage, RPC bornée ; liste publique sans plateforme ni clients suspendus ; journal des ingestions externes borné ; 19 fonctions retirées d'`anon` ; TRUNCATE, REFERENCES, TRIGGER retirés d'`anon` et `authenticated`. Répétée le 2026-10-20 : détail et preuves dans [CORRESPONDANCE.md](CORRESPONDANCE.md), section 6.
-- [ ] **Sprint 1 — F1, F5, F3** (fichier à préparer en session) : `communes_be` et son seed, compléments de journal, extensions `pg_cron` et `pg_net`, `jobs_etat`.
+- [ ] **F5 — journal** — `supabase/migrations/20261020213000_f5_journal_empreinte.sql` : colonnes `signalement_id`, `alerte_publique_id`, `empreinte_precedente`, `empreinte` sur `journal_decisions` ; trigger d'insertion complété ; `journal_decisions_empreinte()`, `verifier_journal_decisions()`. Non destructif, aucune app à modifier.
+- [ ] **F3 — planification** — `supabase/migrations/20261020213100_f3_planification.sql` : extensions `pg_cron` et `pg_net`, table `jobs_etat`, `jobs_signaler()`, `jobs_muets()`. Aucune tâche planifiée.
+- [ ] **F1 — communes** — `supabase/migrations/20261020213200_f1_communes_be.sql` puis le seed `supabase/seed/communes_be.sql` (565 lignes, source ODWB, licence à confirmer).
+Répétées le 2026-10-20 (seed réduit à 13 communes) ; tests rejouables après application : `supabase/tests/fondations_f1_f3_f5.sql`. Ordre d'application : F5, F3, F1, seed.
 
 ## Décisions de Ren
 - 2026-10-20 : migration `correctifs_securite` approuvée (« Applique ») ; appliquée par l'outil de migration (version `20261020211056`, dans l'historique `schema_migrations`), effet vérifié en SQL.
@@ -67,10 +74,12 @@ Approbation asynchrone : écrire « approuvée le AAAA-MM-JJ » à côté de la 
 10. **Edge Functions** : versionner dans le dépôt `diffuser-alerte`, `irm-vigilance`, `ingestion-alerte-externe` ? Supprimer `bootstrap-super-admin` et `reset-password-ferrieres-test` (neutralisées) ?
 11. **Marque** : « FERRU » doit-il apparaître dans l'interface à côté de « Crisiware 2 » ?
 12. Reprises du briefing REX : point de départ du délai de 21 jours ouvrables du Fonds des calamités ; IMIO, CyberFundamentals et NIS2 pour la commune cible.
+13. **Accès réseau de l'environnement de travail** : `statbel.fgov.be`, `feeds.meteoalarm.org` et `opendata.brussels.be` sont refusés (403). Pour C1, autoriser au moins `feeds.meteoalarm.org` (et l'hôte de l'open data IRM si retenu) dans les réglages réseau de l'environnement, ou fournir des exemples de flux en fichier. Les Edge Functions de Supabase, elles, ne sont pas concernées.
+14. **Source du référentiel des communes** : le seed F1 vient de l'export ODWB « communes et localités » plutôt que de la liste REFNIS de Statbel prévue par le briefing (même nomenclature, 565 communes, fusions 2025). Confirmer ce choix et la licence du jeu ODWB.
 
 ## Dette / à revoir
 - 3 Edge Functions déployées absentes du dépôt ; 2 fonctions neutralisées encore déployées.
-- 119 migrations en prod pour 11 fichiers versionnés ; `risques_territoire` hors historique.
+- 119 migrations en prod pour 14 fichiers versionnés (dont F5, F3, F1 non appliqués) ; `risques_territoire` hors historique.
 - `database.types.ts` périmés (52 tables) en 5 copies.
 - `role_capacites` vide : la grille des capacités de l'Admin n'a aucun effet (repli sur le niveau d'accès).
 - `livre_de_bord` modifiable et supprimable (à rendre ajout seul pour C3 et T1) ; changement de phase en deux écritures client.

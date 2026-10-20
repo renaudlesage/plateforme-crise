@@ -34,6 +34,7 @@ page non ouverte (l'environnement de la session bloque la plupart des sites offi
 - **Licence Statbel** : CC BY 4.0 (`https://statbel.fgov.be/en/cc-40`), attribution « Source : Statbel » [E].
 - **Géométries** : secteurs statistiques 2025 (`https://statbel.fgov.be/en/open-data/statistical-sectors-2025`, GeoPackage/GML), à fusionner par `CD_MUNTY_REFNIS` pour obtenir les communes [E]. NGI AdminVector : CC BY 4.0 selon la FAQ du NGI, contredit par une fiche ancienne (« usage commercial interdit ») [E] → s'en tenir aux secteurs Statbel ou confirmer auprès du NGI.
 - Variante prête à l'emploi (codes INS et postaux, CSV/JSON/GeoJSON) : `https://opendata.brussels.be/explore/dataset/codes-postaux-et-codes-ins-communes-belges-20250101/` [E].
+- **Source retenue pour le seed F1 (20 octobre 2026)** : export GPX `communes-et-localites.gpx` du jeu « communes et localités » d'Open Data Wallonie-Bruxelles (`https://www.odwb.be`, plateforme Huwise), fourni par Ren, `statbel.fgov.be` étant refusé par le réseau de l'environnement. Contenu vérifié [V] : 7 402 lignes commune × code postal × localité ; 565 codes INS, conformes aux fusions du 1/1/2025 (Hasselt 71072, Bastogne 82039) ; 285 communes flamandes, 261 wallonnes, 19 bruxelloises ; noms FR / NL / DE, province (vide pour Bruxelles), arrondissement, région et un point par commune, sans valeur divergente ; province cohérente avec le préfixe du code NIS pour les 565 communes ; 24 « & » non échappés (XML invalide, corrigé à la lecture). Empreinte SHA-256 du fichier : `5fbfc6ed0898bd972ee393bd39dafff5eca1d08d861311052943a1987a98bc5a`. **Licence du jeu à confirmer** sur sa fiche ODWB [NT].
 
 ### Géoportail de Wallonie
 - **Aléa d'inondation (AGW du 4/3/2021)** : REST `https://geoservices.wallonie.be/arcgis/rest/services/EAU/ALEA_INOND/MapServer` [E] ; WMS `…/arcgis/services/EAU/ALEA_INOND/MapServer/WMSServer?request=GetCapabilities&service=WMS` [D] ; données sous **CC BY 4.0** [E].
@@ -63,5 +64,5 @@ page non ouverte (l'environnement de la session bloque la plupart des sites offi
 1. **MeteoAlarm** : usage commercial (confirmation écrite), statut de redistributeur opérationnel (délais), attribution, choix ATOM sans compte / API EDR / CAP de l'IRM.
 2. **IRM** : la CC BY 4.0 de l'open data couvre-t-elle un SaaS commercial ?
 3. **Géoportail wallon** : WMS en direct ou données réhébergées (impossible pour la série LIDAXES complète) ; mise en cache assimilable ou non à une redistribution.
-4. **Statbel / NGI** : attribution ; lever le doute sur AdminVector ou s'en tenir aux secteurs Statbel.
+4. **Statbel / NGI / ODWB** : attribution ; lever le doute sur AdminVector ou s'en tenir aux secteurs Statbel ; confirmer la licence du jeu ODWB « communes et localités » utilisé pour le seed F1.
 5. **Fond de carte** : choisir un fournisseur (commercial ou tuiles auto-hébergées), conditions et localisation des données.
