@@ -1,25 +1,29 @@
 import { FICHES_REX_2026 } from './packDemarrageRex2026'
 
-// Pack de démarrage — fiches risque pré-remplies, prêtes à importer dans
-// n'importe quel contexte communal. 12 scénarios génériques (dont plusieurs
+// Pack de démarrage — fiches de risque pré-remplies, prêtes à importer dans
+// n'importe quel contexte communal. 10 scénarios génériques (dont plusieurs
 // enrichis de cas belges réels documentés) + 6 scénarios nucléaires (doctrine
 // PUI/PPUI belge publique — préalerte, mise à l'abri, évacuation, iode,
-// contamination denrées, sortie de crise) + les fiches tirées des REX de 2026
+// contamination denrées, sortie de crise) + les 2 fiches tirées des REX de 2026
 // (packDemarrageRex2026.js), qui portent aussi leurs seuils et plan d'action.
+// Le ruissellement urbain et la cyberattaque communale, versions courtes des
+// deux fiches REX, ont été retirés du pack.
 //
-// Chaque entrée correspond directement aux colonnes de objets_a_risque.
-// Le champ `code` est préfixé "STARTER-" pour permettre de détecter si le
-// pack a déjà été importé dans un contexte donné.
+// Chaque entrée correspond directement aux colonnes de risques_territoire :
+// un risque est une menace potentielle, pas une particularité du territoire
+// (celles-là sont des objets à risque). `categorie` suit la nomenclature NCCN
+// (naturel, technologique, man_made, sanitaire). Le champ `code` est préfixé
+// "STARTER-" : seules les fiches dont le code manque sont proposées à l'import.
 
 export const PACK_DEMARRAGE_RISQUES = [
   // ============================================================
-  // 12 SCÉNARIOS GÉNÉRIQUES
+  // 10 SCÉNARIOS GÉNÉRIQUES
   // ============================================================
   {
     code: 'STARTER-01',
-    categorie: 'industriel',
+    categorie: 'technologique',
     type_risque: 'incendie_industriel_amiante',
-    identification: 'Incendie industriel avec risque amiante',
+    titre: 'Incendie industriel avec risque amiante',
     declencheur: "Départ de feu dans un bâtiment industriel ou artisanal construit avant 2000, susceptible de contenir de l'amiante en toiture ou bardage.",
     effets_directs: "Fumées toxiques, panache de combustion pouvant contenir des fibres d'amiante, périmètre de sécurité étendu, contamination potentielle des eaux d'extinction.",
     effets_cascade: "Fermeture prolongée d'axes routiers, nécessité de décontamination du site et des riverains proches, gestion des déchets dangereux (débris amiantés), impact sur l'activité économique du site et des voisins.",
@@ -31,9 +35,9 @@ export const PACK_DEMARRAGE_RISQUES = [
   },
   {
     code: 'STARTER-02',
-    categorie: 'batiment_particulier',
+    categorie: 'technologique',
     type_risque: 'incendie_immeuble_grande_hauteur',
-    identification: 'Incendie immeuble de grande hauteur',
+    titre: 'Incendie immeuble de grande hauteur',
     declencheur: "Départ de feu dans un immeuble à étages multiples (habitation collective, tour), avec risque de propagation verticale rapide.",
     effets_directs: "Enfumage des cages d'escalier, personnes bloquées en étage, difficulté d'accès des moyens de secours en hauteur, risque de panique et de mouvement de foule.",
     effets_cascade: "Saturation des capacités hospitalières locales en cas de nombreuses victimes de fumée, besoin de relogement d'urgence pour les résidents évacués, enquête technique sur la conformité incendie du bâtiment.",
@@ -47,7 +51,7 @@ export const PACK_DEMARRAGE_RISQUES = [
     code: 'STARTER-03',
     categorie: 'technologique',
     type_risque: 'rupture_conduite_eau',
-    identification: "Rupture de conduite d'eau majeure",
+    titre: "Rupture de conduite d'eau majeure",
     declencheur: "Rupture d'une canalisation principale d'adduction d'eau, affaissement de voirie ou fuite massive détectée.",
     effets_directs: "Coupure ou baisse de pression d'eau potable sur tout ou partie du réseau communal, inondation localisée de voirie ou de caves, affaissement possible de chaussée.",
     effets_cascade: "Impact sur les établissements sensibles (écoles, maisons de repos, hôpitaux) nécessitant une distribution d'eau de secours, risque sanitaire si mélange avec réseau d'égouttage, fermeture de voirie prolongée pour réparation.",
@@ -58,24 +62,10 @@ export const PACK_DEMARRAGE_RISQUES = [
     messages_publics_predefinis: "Suite à une rupture de canalisation, le quartier [zone] est privé d'eau. Une distribution de secours est organisée à [lieu]. Nous vous informerons dès le rétablissement.",
   },
   {
-    code: 'STARTER-04',
-    categorie: 'naturel',
-    type_risque: 'ruissellement_urbain',
-    identification: 'Ruissellement urbain / inondation pluviale',
-    declencheur: "Précipitations intenses en peu de temps (orage, pluie décennale) sur un réseau d'égouttage sous-dimensionné ou saturé.",
-    effets_directs: "Inondation rapide de voiries et de caves, obstruction d'avaloirs par débris, coupures de routes en points bas.",
-    effets_cascade: "Pollution de surface (hydrocarbures, égouts), dommages matériels multiples nécessitant expertise assurances, saturation des services de secours par de nombreux appels simultanés de faible gravité individuelle.",
-    signaux_faibles: "Alerte météo orage/pluie intense émise, historique de points noirs connus (avaloirs récurrents bouchés, points bas déjà inondés par le passé).",
-    mesures_preventives: "Curage préventif des avaloirs avant la saison à risque, cartographie des points bas et des zones historiquement inondables.",
-    mesures_compensatoires: "Prépositionnement de pompes et de barrières anti-inondation aux points noirs identifiés, déviation de circulation anticipée.",
-    decisions_a_preparer: "Fermeture préventive de voiries en points bas, mobilisation du service travaux avant même le pic de précipitation.",
-    messages_publics_predefinis: "De fortes précipitations touchent la commune. Évitez tout déplacement non essentiel, ne vous engagez pas sur une voirie inondée, même à faible profondeur apparente.",
-  },
-  {
     code: 'STARTER-05',
     categorie: 'naturel',
     type_risque: 'feu_vegetation_acces_difficile',
-    identification: "Feu de végétation en zone difficile d'accès",
+    titre: "Feu de végétation en zone difficile d'accès",
     declencheur: "Départ de feu en zone boisée, friche ou lande éloignée des voiries carrossables, par conditions sèches et venteuses.",
     effets_directs: "Propagation rapide selon le vent, difficulté d'accès des moyens terrestres, risque pour les habitations en lisière de bois.",
     effets_cascade: "Nécessité de moyens aériens (hélicoptère bombardier d'eau) si disponibles, évacuation préventive des habitations isolées en lisière, fermeture de sentiers/routes forestières.",
@@ -87,9 +77,9 @@ export const PACK_DEMARRAGE_RISQUES = [
   },
   {
     code: 'STARTER-06',
-    categorie: 'evenement',
+    categorie: 'man_made',
     type_risque: 'evenement_securitaire_majeur',
-    identification: 'Événement sécuritaire majeur',
+    titre: 'Événement sécuritaire majeur',
     declencheur: "Menace ou passage à l'acte violent (attentat, fusillade, prise d'otage) sur le territoire communal, dans un lieu public ou rassemblement.",
     effets_directs: "Mouvement de panique, victimes potentielles, périmètre de sécurité et d'enquête judiciaire, présence prolongée des forces de l'ordre.",
     effets_cascade: "Impact psychologique durable nécessitant un accompagnement psychosocial, fermeture prolongée de commerces/lieux publics dans le périmètre, forte pression médiatique nationale.",
@@ -100,24 +90,10 @@ export const PACK_DEMARRAGE_RISQUES = [
     messages_publics_predefinis: "Un événement de sécurité est en cours à [lieu]. Évitez le secteur, suivez les consignes des forces de l'ordre. Plus d'informations dès que possible.",
   },
   {
-    code: 'STARTER-07',
-    categorie: 'technologique',
-    type_risque: 'cyberattaque_communale',
-    identification: 'Cyberattaque communale (paralysie des systèmes informatiques)',
-    declencheur: "Détection d'un rançongiciel ou d'une intrusion informatique bloquant les systèmes de l'administration communale (état civil, paie, sites web, guichets numériques).",
-    effets_directs: "Indisponibilité des services communaux numériques, impossibilité de délivrer des documents administratifs, potentielle fuite de données personnelles des citoyens.",
-    effets_cascade: "Perte de confiance des citoyens, obligation de revenir à des procédures papier temporaires, coût de restauration des systèmes et obligations légales de notification (RGPD, Centre pour la Cybersécurité Belgique).",
-    signaux_faibles: "Lenteurs informatiques inhabituelles signalées par le personnel, messages de rançon apparaissant sur les postes, alertes de l'antivirus/EDR.",
-    mesures_preventives: "Sauvegardes régulières hors ligne testées, plan de continuité informatique, sensibilisation du personnel au phishing.",
-    mesures_compensatoires: "Procédures papier de secours pour les actes urgents (décès, naissance), communication proactive sur les canaux non affectés (réseaux sociaux, affichage physique).",
-    decisions_a_preparer: "Paiement ou non d'une éventuelle rançon (déconseillé, à trancher avec les autorités), notification RGPD aux citoyens concernés, priorisation des services à restaurer en premier.",
-    messages_publics_predefinis: "Suite à un incident informatique, certains services communaux sont temporairement indisponibles. Les urgences [état civil...] restent assurées via [procédure alternative].",
-  },
-  {
     code: 'STARTER-08',
     categorie: 'naturel',
     type_risque: 'inondation_crue',
-    identification: 'Inondation par crue de cours d\'eau',
+    titre: 'Inondation par crue de cours d\'eau',
     declencheur: "Montée du niveau d'un cours d'eau au-delà des seuils d'alerte, suite à précipitations soutenues ou fonte des neiges en amont.",
     effets_directs: "Débordement progressif, submersion de voiries et habitations riveraines, isolement de hameaux.",
     effets_cascade: "Coupure de routes d'accès, pollution des captages d'eau potable proches, nécessité d'évacuation et d'hébergement temporaire, dégâts agricoles.",
@@ -131,7 +107,7 @@ export const PACK_DEMARRAGE_RISQUES = [
     code: 'STARTER-09',
     categorie: 'naturel',
     type_risque: 'tempete_vent_violent',
-    identification: 'Tempête / vent violent avec chutes d\'arbres',
+    titre: 'Tempête / vent violent avec chutes d\'arbres',
     declencheur: "Vigilance météo orange/rouge vent, rafales dépassant 100 km/h prévues ou en cours.",
     effets_directs: "Chutes d'arbres sur voiries et habitations, toitures endommagées, coupures électriques localisées.",
     effets_cascade: "Routes coupées empêchant l'intervention des secours ailleurs, coupures électriques prolongées affectant le chauffage/pompes, sursollicitation du service travaux.",
@@ -145,7 +121,7 @@ export const PACK_DEMARRAGE_RISQUES = [
     code: 'STARTER-10',
     categorie: 'technologique',
     type_risque: 'coupure_electrique_prolongee',
-    identification: 'Coupure électrique prolongée (black-out)',
+    titre: 'Coupure électrique prolongée (black-out)',
     declencheur: "Défaillance du réseau électrique affectant tout ou partie de la commune pour une durée dépassant plusieurs heures.",
     effets_directs: "Perte de chauffage/éclairage pour les habitants, arrêt des pompes (eau, égouttage), indisponibilité des communications si antennes non secourues.",
     effets_cascade: "Risque sanitaire pour les personnes dépendantes d'équipements médicaux électriques à domicile, perte de denrées alimentaires réfrigérées, panique si prolongée au-delà de 24h.",
@@ -159,7 +135,7 @@ export const PACK_DEMARRAGE_RISQUES = [
     code: 'STARTER-11',
     categorie: 'naturel',
     type_risque: 'vague_de_chaleur_canicule',
-    identification: 'Vague de chaleur / canicule',
+    titre: 'Vague de chaleur / canicule',
     declencheur: "Vigilance météo canicule déclenchée, températures élevées prévues sur plusieurs jours consécutifs.",
     effets_directs: "Risque de déshydratation et coup de chaleur, surmortalité chez les personnes âgées/fragiles isolées.",
     effets_cascade: "Sursollicitation des services d'urgence médicale, tension sur les maisons de repos, restrictions d'eau potentielles en cas de sécheresse associée.",
@@ -171,9 +147,9 @@ export const PACK_DEMARRAGE_RISQUES = [
   },
   {
     code: 'STARTER-12',
-    categorie: 'non_localisable',
+    categorie: 'technologique',
     type_risque: 'accident_transport_matieres_dangereuses',
-    identification: 'Accident de transport de matières dangereuses (route/rail)',
+    titre: 'Accident de transport de matières dangereuses (route/rail)',
     declencheur: "Accident impliquant un véhicule ou wagon transportant des matières dangereuses (chimique, inflammable, toxique) traversant le territoire.",
     effets_directs: "Fuite ou risque de fuite du produit transporté, périmètre de sécurité à établir selon la fiche du produit (numéro ADR/RID), possible nuage toxique.",
     effets_cascade: "Coupure prolongée de l'axe routier/ferroviaire concerné, mise à l'abri ou évacuation selon le produit et le vent, dépollution du site nécessitant une entreprise spécialisée.",
@@ -189,9 +165,9 @@ export const PACK_DEMARRAGE_RISQUES = [
   // ============================================================
   {
     code: 'STARTER-N1',
-    categorie: 'industriel',
+    categorie: 'technologique',
     type_risque: 'nucleaire_prealerte',
-    identification: 'Alerte réacteur — phase de préalerte (PUI déclenché, pas de rejet)',
+    titre: 'Alerte réacteur — phase de préalerte (PUI déclenché, pas de rejet)',
     declencheur: "Déclenchement du Plan Interne d'Urgence (PUI) de la centrale nucléaire, sans rejet radioactif ni menace immédiate pour l'extérieur.",
     effets_directs: "Aucun effet direct sur la population à ce stade ; mobilisation interne du site et information des autorités.",
     effets_cascade: "Attention médiatique et inquiétude publique possible malgré l'absence de danger réel, sursollicitation des lignes téléphoniques communales par des riverains inquiets.",
@@ -203,9 +179,9 @@ export const PACK_DEMARRAGE_RISQUES = [
   },
   {
     code: 'STARTER-N2',
-    categorie: 'industriel',
+    categorie: 'technologique',
     type_risque: 'nucleaire_mise_a_labri',
-    identification: 'Rejet radioactif accidentel — mise à l\'abri de la population',
+    titre: 'Rejet radioactif accidentel — mise à l\'abri de la population',
     declencheur: "Rejet radioactif accidentel avéré ou imminent, avec consigne officielle de mise à l'abri dans le périmètre concerné.",
     effets_directs: "Population invitée à rester à l'intérieur, portes/fenêtres fermées, ventilation arrêtée, dans le périmètre défini par les autorités.",
     effets_cascade: "Interruption des activités scolaires/économiques dans le périmètre, gestion de l'anxiété de la population, afflux de questions vers les services communaux.",
@@ -217,9 +193,9 @@ export const PACK_DEMARRAGE_RISQUES = [
   },
   {
     code: 'STARTER-N3',
-    categorie: 'industriel',
+    categorie: 'technologique',
     type_risque: 'nucleaire_evacuation',
-    identification: 'Rejet radioactif accidentel — évacuation du périmètre immédiat',
+    titre: 'Rejet radioactif accidentel — évacuation du périmètre immédiat',
     declencheur: "Consigne officielle d'évacuation d'un périmètre donné autour de la centrale, suite à rejet radioactif significatif.",
     effets_directs: "Déplacement organisé de la population hors du périmètre, saturation des axes de sortie, besoin d'hébergement temporaire hors zone.",
     effets_cascade: "Séparation potentielle de familles (enfants à l'école, parents au travail), prise en charge des personnes sans moyen de transport, gestion des animaux domestiques/élevages.",
@@ -231,9 +207,9 @@ export const PACK_DEMARRAGE_RISQUES = [
   },
   {
     code: 'STARTER-N4',
-    categorie: 'industriel',
+    categorie: 'technologique',
     type_risque: 'nucleaire_prise_iode',
-    identification: 'Distribution / prise d\'iode stable (préventive)',
+    titre: 'Distribution / prise d\'iode stable (préventive)',
     declencheur: "Consigne officielle de prise de comprimés d'iode stable, en prévention d'une contamination thyroïdienne par iode radioactif.",
     effets_directs: "Distribution ou consigne de prise des comprimés pré-distribués aux ménages du périmètre concerné, selon posologie par âge.",
     effets_cascade: "Confusion possible sur le moment exact de prise (trop tôt = inefficace, trop tard = inefficace), demandes de réassurance sur les effets secondaires.",
@@ -245,9 +221,9 @@ export const PACK_DEMARRAGE_RISQUES = [
   },
   {
     code: 'STARTER-N5',
-    categorie: 'industriel',
+    categorie: 'technologique',
     type_risque: 'nucleaire_contamination_denrees',
-    identification: 'Contamination de l\'eau ou des denrées agricoles en périmètre',
+    titre: 'Contamination de l\'eau ou des denrées agricoles en périmètre',
     declencheur: "Détection ou suspicion de contamination radioactive de l'eau potable, du lait, des légumes ou d'autres denrées produites dans le périmètre concerné.",
     effets_directs: "Interdiction de consommation ou de commercialisation des denrées concernées, impact sur les exploitations agricoles locales.",
     effets_cascade: "Perte économique pour les agriculteurs concernés, nécessité de contrôles sanitaires prolongés, image négative des produits locaux au-delà du périmètre réel.",
@@ -259,9 +235,9 @@ export const PACK_DEMARRAGE_RISQUES = [
   },
   {
     code: 'STARTER-N6',
-    categorie: 'industriel',
+    categorie: 'technologique',
     type_risque: 'nucleaire_sortie_de_crise',
-    identification: 'Fin de crise nucléaire — levée des mesures et suivi sanitaire',
+    titre: 'Fin de crise nucléaire — levée des mesures et suivi sanitaire',
     declencheur: "Confirmation officielle de la fin de la phase aiguë de l'incident nucléaire et levée progressive des mesures de protection (mise à l'abri, évacuation).",
     effets_directs: "Retour progressif de la population évacuée, levée des restrictions de circulation et de consommation selon les zones.",
     effets_cascade: "Besoin de suivi sanitaire à long terme de la population exposée, questions sur la valeur des biens immobiliers dans l'ancien périmètre, gestion du retour psychologique à la normale.",
