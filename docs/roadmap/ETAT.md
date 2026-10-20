@@ -1,26 +1,26 @@
 # État de la feuille de route
-Dernière session : 2026-10-20 — chantier : Session 0 — résultat : briefing découpé dans `docs/roadmap/`, plan de sprint versé ([SPRINTS.md](SPRINTS.md)), existant relevé chantier par chantier ([CORRESPONDANCE.md](CORRESPONDANCE.md)), fondations F1–F8 évaluées, références externes vérifiées ([references.md](references.md)), une faille critique et plusieurs failles de sécurité relevées.
+Dernière session : 2026-10-20 — chantier : correctifs de sécurité — résultat : migration `supabase/migrations/20261020160000_correctifs_securite.sql` préparée et répétée dans des transactions annulées (9 constats avant, 42 contrôles après, conformes), **non appliquée**, à approuver ci-dessous ; le constat « critique » de la Session 0 est requalifié « moyenne » (un index unique empêchait déjà un admin communal de devenir super-admin).
 
-Sessions : 1 réalisée / 16 planifiées (vague 1) — la Session 0 a été faite en avance, le 20 octobre, au lieu de la semaine du 2 novembre.
+Sessions : 2 réalisées / 16 planifiées (vague 1) — Session 0 et correctifs de sécurité faits le 20 octobre, avant le début prévu du 2 novembre. Depuis le 20 octobre, on avance sans attendre les dates du plan (décision de Ren).
 
 ## Terminé
 - Session 0 (2026-10-20, branche feat/s00-feuille-de-route, mergé : non)
+- Correctifs de sécurité : migration préparée et répétée (2026-10-20, branche feat/securite-correctifs empilée sur feat/s00-feuille-de-route, mergé : non, migration non appliquée)
 - Avant la feuille de route, utiles aux chantiers :
   - Renommage « Crisiware 2 » (2026-10-20, PR #2, mergé : oui)
   - Fiches REX 2026 orages éclair (A) et cyberattaque (B), import avec seuils et plan d'action, impression de fiche (2026-10-20, PR #3, mergé : oui)
   - Risques du territoire distincts des objets à risque (2026-10-20, PR #4, mergé : oui)
 
 ## En cours
-- Vague 1 : du 2 novembre 2026 au 21 février 2027, réévaluation la semaine du 22 février ([SPRINTS.md](SPRINTS.md)).
-- Sprint 1 « Fondations » (2 → 15 nov) : Session 0 faite ; reste la session « F1, F5, F3 » (semaine du 9 nov).
-- Proposition : utiliser le créneau libéré de la semaine du 2 novembre pour les **correctifs de sécurité** (migration à préparer, non destructive, à approuver ci-dessous), afin que la session du 9 novembre reste consacrée à F1, F5 et F3.
+- Vague 1 : du 2 novembre 2026 au 21 février 2027, réévaluation la semaine du 22 février ([SPRINTS.md](SPRINTS.md)) ; dates indicatives depuis le 20 octobre, l'ordre des chantiers reste celui du plan.
+- Sprint 1 « Fondations » : Session 0 et correctifs de sécurité faits ; reste la session « F1, F5, F3 », prochaine session.
 - Ajustements du sprint 1 issus de la Session 0 :
   - **F5** : `journal_decisions` est déjà en ajout seul (horodatages client et serveur, auteur, numérotation) ; il reste à ajouter l'empreinte chaînée (coupe prévue), les références (signalement, alerte, message), un journal hors incident (`incident_id` est obligatoire) et à décider du sort de `livre_de_bord`, qui reste modifiable.
   - **F1** : `communes_be` à créer et charger depuis le fichier REFNIS 2025 de Statbel (565 communes, CC BY 4.0) par script de seed ; y ajouter la correspondance province ↔ zone MeteoAlarm (9 zones, un seul « Brabant ») dont C1 a besoin.
   - **F3** : `pg_cron` et `pg_net` sont disponibles mais pas installés ; `vault.secrets` est vide.
 
 ## Capacité
-Capacité prévue par le plan ; capacité déclarée par Ren au début de chaque sprint (« Sprint n : 1 ou 2 sessions »).
+Capacité prévue par le plan ; capacité déclarée par Ren au début de chaque sprint (« Sprint n : 1 ou 2 sessions »). Depuis le 20 octobre, les dates sont indicatives : une session suit la précédente dès qu'elle est livrée.
 
 | Sprint | Dates | Chantier | Prévue | Déclarée par Ren |
 |---|---|---|---|---|
@@ -35,16 +35,19 @@ Capacité prévue par le plan ; capacité déclarée par Ren au début de chaque
 
 Congés de Ren : **à confirmer avant le 14 décembre** (semaines de congé, et congés scolaires de la Fédération Wallonie-Bruxelles si elles comptent), pour que la capacité déclarée corresponde au calendrier.
 
-## À faire par Ren avant le 14 décembre
-1. Fournir un **exemplaire réel de SITREP provincial** (Liège de préférence) pour le sprint 4. À défaut : format provisoire en-tête / situation / mesures prises / besoins / prochain point.
-2. **Confirmer les semaines de congé** dans la section Capacité ci-dessus.
+## À faire par Ren
+1. **Approuver la migration des correctifs de sécurité** (section suivante).
+2. Fournir un **exemplaire réel de SITREP provincial** (Liège de préférence) avant le chantier C3 (sprint 4) : au plus tard le 14 décembre, plus tôt si l'on continue d'avancer sans attendre les dates. À défaut : format provisoire en-tête / situation / mesures prises / besoins / prochain point.
+3. **Confirmer les semaines de congé** dans la section Capacité ci-dessus (avant le 14 décembre).
+4. Activer dans le tableau de bord Supabase, réglages d'authentification, la **protection contre les mots de passe divulgués** (signalée par le conseiller de sécurité ; disponibilité selon l'offre Supabase).
 
 ## Migrations à approuver
 Approbation asynchrone : écrire « approuvée le AAAA-MM-JJ » à côté de la ligne ; application à la session suivante, puis vérification de l'effet réel en SQL.
-- [ ] **Correctifs de sécurité** (fichier à préparer à la prochaine session) : `contextes` (colonnes `est_plateforme`, `suspendu*`, `motif_suspension`, `notes_plateforme`, `type` non modifiables hors super-admin), `benevoles_entraide` (plus d'insertion anonyme directe de toutes les colonnes), `plans_urgence_menages` et `creer_plan_urgence_menage`, `contextes_publics()` (masquer la plateforme et les clients suspendus), révocation de droits inutiles d'`anon`. Détail : [CORRESPONDANCE.md](CORRESPONDANCE.md), section 6.
+- [ ] **Correctifs de sécurité** — `supabase/migrations/20261020160000_correctifs_securite.sql` (branche feat/securite-correctifs). Non destructif, aucune app à modifier. `contextes` : un membre ne modifie plus que `config`, coordonnées et province, notes de la plateforme réservées à la console, trigger de garde ; bénévoles inscrits par le public toujours « en_attente » ; plus d'insertion directe de plans de ménage, RPC bornée ; liste publique sans plateforme ni clients suspendus ; journal des ingestions externes borné ; 19 fonctions retirées d'`anon` ; TRUNCATE, REFERENCES, TRIGGER retirés d'`anon` et `authenticated`. Répétée le 2026-10-20 : détail et preuves dans [CORRESPONDANCE.md](CORRESPONDANCE.md), section 6.
 - [ ] **Sprint 1 — F1, F5, F3** (fichier à préparer en session) : `communes_be` et son seed, compléments de journal, extensions `pg_cron` et `pg_net`, `jobs_etat`.
 
 ## Décisions de Ren
+- 2026-10-20 : « On avance et on ne se soucie pas des délais » : les sessions s'enchaînent dans l'ordre de [SPRINTS.md](SPRINTS.md) sans attendre les dates ; les correctifs de sécurité sont préparés tout de suite.
 - 2026-10-20 : le plan de sprint de référence est [SPRINTS.md](SPRINTS.md) (vague 1 : 8 sprints de deux semaines du 2 novembre au 21 février, jalons D1–D5 ; vague 2 : mars à novembre 2027, jalons D6–D10, tampon en août pour le festival ; au plus deux coupes en vague 1).
 - 2026-10-20 : migration `risques_territoire` approuvée ; exécutée par Ren dans le SQL Editor (hors historique `schema_migrations`).
 - 2026-10-20 : STARTER-04 (ruissellement urbain) et STARTER-07 (cyberattaque communale) retirés du pack et supprimés de la Commune Test.
@@ -53,11 +56,11 @@ Approbation asynchrone : écrire « approuvée le AAAA-MM-JJ » à côté de la 
 
 ## Questions ouvertes
 1. **Plan « 15 modules en quatre paliers »** : toujours introuvable ; [SPRINTS.md](SPRINTS.md) le cite encore (session 1). Proposition : le considérer remplacé par SPRINTS.md et clore la recherche, sauf avis contraire.
-2. **Correctifs de sécurité** : approuver le principe pour que le fichier soit préparé la semaine du 2 novembre (voir « Migrations à approuver »).
-3. **E-mail de F2 (sprint 2)** : aucun canal e-mail n'existe (`diffuser-alerte` ne gère que des webhooks). « E-mail via le webhook existant » suppose un relais externe (automate type n8n ou Make) ou un fournisseur d'envoi (SMTP, Resend…), donc une dépendance et un secret à choisir avant la semaine du 23 novembre.
+2. **Secrets en clair** (`canaux_diffusion.config.secret_value`, `sources_externes_alertes.secret`) : non couverts par la migration de sécurité. Les sortir de l'API suppose de modifier `diffuser-alerte` (qui lit le secret avec le jeton de l'utilisateur) et `ingestion-alerte-externe`, absentes du dépôt : à trancher avec la question 10.
+3. **E-mail de F2 (sprint 2)** : aucun canal e-mail n'existe (`diffuser-alerte` ne gère que des webhooks). « E-mail via le webhook existant » suppose un relais externe (automate type n8n ou Make) ou un fournisseur d'envoi (SMTP, Resend…), donc une dépendance et un secret à choisir avant la deuxième session de C1 (prévue la semaine du 23 novembre, plus tôt si l'on avance).
 4. **Push sur le téléphone (D1)** : sur iPhone, le web push ne fonctionne que si l'app est installée sur l'écran d'accueil (iOS 16.4 ou plus) ; sur Android, depuis le navigateur. Quel téléphone pour la démo ?
 5. **Purge des exercices (C5)** : la base applique « exercice terminé = preuve non supprimable » ; le briefing demande une purge totale. Lequel prime ?
-6. **Licences (décisions réservées)** : MeteoAlarm (confirmation écrite pour un usage commercial), IRM, géoportail wallon (série LIDAXES complète non republiable en ligne), tuiles de carte (le pré-téléchargement est interdit sur `tile.openstreetmap.org`) — voir [references.md](references.md). À régler avant la session du 16 novembre (ingestion) pour MeteoAlarm et l'IRM.
+6. **Licences (décisions réservées)** : MeteoAlarm (confirmation écrite pour un usage commercial), IRM, géoportail wallon (série LIDAXES complète non republiable en ligne), tuiles de carte (le pré-téléchargement est interdit sur `tile.openstreetmap.org`) — voir [references.md](references.md). À régler avant la première session de C1 (ingestion, prévue le 16 novembre, en fait juste après F1, F5, F3) pour MeteoAlarm et l'IRM.
 7. **Source météo de C1** : open data IRM (CAP mis à jour toutes les heures), MeteoAlarm (redistribution à 10 min maximum), ou les deux ?
 8. **Source unique du « message D5 validé »** (C8, T2) : catalogue national, modèles de messages ou messages réflexes de l'incident ?
 9. **« N défini » (C6)** : à quoi correspond ce paramètre de fiche ?
@@ -67,7 +70,7 @@ Approbation asynchrone : écrire « approuvée le AAAA-MM-JJ » à côté de la 
 
 ## Dette / à revoir
 - 3 Edge Functions déployées absentes du dépôt ; 2 fonctions neutralisées encore déployées.
-- 118 migrations en prod pour 10 fichiers versionnés ; `risques_territoire` hors historique.
+- 118 migrations en prod pour 10 fichiers versionnés (11 avec la migration de sécurité, non appliquée) ; `risques_territoire` hors historique.
 - `database.types.ts` périmés (52 tables) en 5 copies.
 - `role_capacites` vide : la grille des capacités de l'Admin n'a aucun effet (repli sur le niveau d'accès).
 - `livre_de_bord` modifiable et supprimable (à rendre ajout seul pour C3 et T1) ; changement de phase en deux écritures client.
@@ -75,6 +78,7 @@ Approbation asynchrone : écrire « approuvée le AAAA-MM-JJ » à côté de la 
 - Secrets de webhooks en clair (`canaux_diffusion`, `sources_externes_alertes`).
 - Aucun test automatisé (Vitest à installer au C1).
 - Interrogation périodique partout, Realtime inutilisé.
-- File d'écritures Terrain non liée à l'utilisateur.
+- File d'écritures Terrain non liée à l'utilisateur ni vidée à la déconnexion.
 - README racine : `.env.example` absent, référence à « pcops-generique-test ».
-- Tables résiduelles `_test_gen`, `_test_gen2`, `_test_gen3`.
+- Tables résiduelles `_test_gen`, `_test_gen2`, `_test_gen3` (suppression destructive, à décider).
+- `spatial_ref_sys` et `st_estimatedextent` (PostGIS, propriétaire `supabase_admin`) : droits d'`anon` non révocables par une migration.
