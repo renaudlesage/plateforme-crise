@@ -626,7 +626,7 @@ function FormulaireProposition({ fiches, contacts, onValider, onAnnuler }) {
 }
 
 function SectionRisquesIdentifies({ planId, contexteId }) {
-  const { lignes: objetsRisque } = useTableContexte('objets_a_risque', contexteId, { tri: 'identification' })
+  const { lignes: fichesRisque } = useTableContexte('risques_territoire', contexteId, { tri: 'titre' })
   const [risques, setRisques] = useState([])
   const [chargement, setChargement] = useState(true)
   const [erreur, setErreur] = useState(null)
@@ -637,7 +637,7 @@ function SectionRisquesIdentifies({ planId, contexteId }) {
     setChargement(true)
     const { data, error } = await supabase
       .from('risques_identifies_pgui')
-      .select('*, objets_a_risque(id, identification)')
+      .select('*, risques_territoire(id, titre)')
       .eq('plan_id', planId)
       .order('created_at')
     if (error) setErreur(error.message)
@@ -684,7 +684,7 @@ function SectionRisquesIdentifies({ planId, contexteId }) {
       {enAjout && (
         <div className="border border-trait rounded p-3 mb-3 bg-fond">
           <FormulaireRisqueIdentifie
-            objetsRisque={objetsRisque}
+            fichesRisque={fichesRisque}
             onAnnuler={() => setEnAjout(false)}
             onValider={async (valeurs) => {
               const { error } = await creer(valeurs)
@@ -705,7 +705,7 @@ function SectionRisquesIdentifies({ planId, contexteId }) {
             ligneEnEdition === r.id ? (
               <li key={r.id} className="p-3 bg-fond">
                 <FormulaireRisqueIdentifie
-                  objetsRisque={objetsRisque}
+                  fichesRisque={fichesRisque}
                   valeursInitiales={r}
                   onAnnuler={() => setLigneEnEdition(null)}
                   onValider={async (valeurs) => {
@@ -733,8 +733,8 @@ function SectionRisquesIdentifies({ planId, contexteId }) {
                         {MODES_TRAITEMENT.find((m) => m.valeur === r.mode_traitement)?.libelle ?? r.mode_traitement}
                       </span>
                     </p>
-                    {r.objets_a_risque?.identification && (
-                      <p className="text-xs text-sourdine mt-0.5">→ fiche détaillée : {r.objets_a_risque.identification}</p>
+                    {r.risques_territoire?.titre && (
+                      <p className="text-xs text-sourdine mt-0.5">→ fiche de risque : {r.risques_territoire.titre}</p>
                     )}
                     {r.commentaire && <p className="text-xs text-sourdine mt-0.5">{r.commentaire}</p>}
                   </div>
@@ -758,10 +758,10 @@ function SectionRisquesIdentifies({ planId, contexteId }) {
   )
 }
 
-function FormulaireRisqueIdentifie({ objetsRisque, valeursInitiales = {}, onValider, onAnnuler }) {
+function FormulaireRisqueIdentifie({ fichesRisque = [], valeursInitiales = {}, onValider, onAnnuler }) {
   const [risque, setRisque] = useState(valeursInitiales.risque ?? '')
   const [modeTraitement, setModeTraitement] = useState(valeursInitiales.mode_traitement ?? 'pgui_suffisant')
-  const [objetRisqueId, setObjetRisqueId] = useState(valeursInitiales.objet_risque_id ?? '')
+  const [risqueId, setRisqueId] = useState(valeursInitiales.risque_id ?? '')
   const [commentaire, setCommentaire] = useState(valeursInitiales.commentaire ?? '')
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
@@ -772,7 +772,7 @@ function FormulaireRisqueIdentifie({ objetsRisque, valeursInitiales = {}, onVali
     const { error } = await onValider({
       risque: risque.trim(),
       mode_traitement: modeTraitement,
-      objet_risque_id: objetRisqueId || null,
+      risque_id: risqueId || null,
       commentaire: commentaire.trim() || null,
     })
     setEnCours(false)
@@ -796,11 +796,11 @@ function FormulaireRisqueIdentifie({ objetsRisque, valeursInitiales = {}, onVali
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Fiche à risque détaillée liée</label>
-          <select value={objetRisqueId} onChange={(e) => setObjetRisqueId(e.target.value)} className="w-full">
+          <label className="block text-xs font-medium text-sourdine mb-1">Fiche de risque liée</label>
+          <select value={risqueId} onChange={(e) => setRisqueId(e.target.value)} className="w-full">
             <option value="">—</option>
-            {objetsRisque.map((o) => (
-              <option key={o.id} value={o.id}>{o.identification}</option>
+            {fichesRisque.map((r) => (
+              <option key={r.id} value={r.id}>{r.titre}</option>
             ))}
           </select>
         </div>

@@ -8,6 +8,7 @@ import TableauDeBord from './pages/TableauDeBord'
 import Configuration from './pages/Configuration'
 import Contacts from './pages/Contacts'
 import ObjetsARisque from './pages/ObjetsARisque'
+import RisquesTerritoire from './pages/RisquesTerritoire'
 import FicheRisqueImpression from './pages/FicheRisqueImpression'
 import Ressources from './pages/Ressources'
 import Entraide from './pages/Entraide'
@@ -94,7 +95,8 @@ export default function App() {
             <Route path="configuration" element={<Configuration />} />
             <Route path="annuaire" element={<Contacts />} />
             <Route path="risques" element={<ObjetsARisque />} />
-            <Route path="risques/:id/impression" element={<FicheRisqueImpression />} />
+            <Route path="risques-territoire" element={<RisquesTerritoire />} />
+            <Route path="risques-territoire/:id/impression" element={<FicheRisqueImpression />} />
             <Route path="ressources" element={<Ressources />} />
             <Route path="entraide" element={<Entraide />} />
             <Route path="benevoles-entraide" element={<BenevolesEntraide />} />

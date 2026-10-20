@@ -5,6 +5,9 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 
 const LIBELLE_STATUT_ETAPE = { a_faire: 'à faire', en_cours: 'en cours', fait: 'fait', abandonne: 'abandonné' }
+const LIBELLE_CATEGORIE = { naturel: 'Naturel', technologique: 'Technologique', man_made: 'Anthropique', sanitaire: 'Sanitaire' }
+const LIBELLE_STATUT = { a_evaluer: 'à évaluer', retenu: 'retenu', ecarte: 'écarté' }
+const LIBELLE_ROLE = { source: 'source du risque', enjeu: 'enjeu exposé' }
 
 // Champs texte de la fiche, dans l'ordre de lecture en crise.
 const SECTIONS = [
@@ -16,12 +19,14 @@ const SECTIONS = [
   ['mesures_compensatoires', 'Mesures compensatoires et mode dégradé'],
   ['decisions_a_preparer', 'Décisions à préparer'],
   ['mesures_preventives', 'Mesures préventives'],
+  ['sources', 'Sources'],
 ]
 
 /**
- * Fiche risque mise en page pour être imprimée ou enregistrée en PDF (mode dégradé : la fiche doit rester
- * utilisable sans réseau). Reprend la fiche, ses seuils d'action et son plan d'action tels qu'encodés dans le
- * contexte ; l'extrait porte la date à laquelle il a été établi.
+ * Fiche de risque mise en page pour être imprimée ou enregistrée en PDF (mode dégradé : la fiche doit rester
+ * utilisable sans réseau). Reprend le risque du territoire, ses seuils d'action, son plan d'action et les
+ * objets à risque qui lui sont liés, tels qu'encodés dans le contexte ; l'extrait porte la date à laquelle
+ * il a été établi.
  */
 export default function FicheRisqueImpression() {
   const { id } = useParams()
@@ -29,19 +34,21 @@ export default function FicheRisqueImpression() {
   const [fiche, setFiche] = useState(null)
   const [seuils, setSeuils] = useState([])
   const [etapes, setEtapes] = useState([])
+  const [objets, setObjets] = useState([])
   const [erreur, setErreur] = useState(null)
   const [etabliLe] = useState(() => new Date())
 
   useEffect(() => {
     let annule = false
     async function charger() {
-      const [f, s, e] = await Promise.all([
-        supabase.from('objets_a_risque').select('*').eq('id', id).single(),
-        supabase.from('seuils_action').select('*').eq('objet_risque_id', id).order('ordre'),
-        supabase.from('plans_action_risque').select('*').eq('objet_risque_id', id).order('ordre'),
+      const [f, s, e, o] = await Promise.all([
+        supabase.from('risques_territoire').select('*').eq('id', id).single(),
+        supabase.from('seuils_action').select('*').eq('risque_id', id).order('ordre'),
+        supabase.from('plans_action_risque').select('*').eq('risque_id', id).order('ordre'),
+        supabase.from('objets_a_risque_risques').select('role, objets_a_risque(id, identification, adresse)').eq('risque_id', id),
       ])
       if (annule) return
-      const premiere = f.error || s.error || e.error
+      const premiere = f.error || s.error || e.error || o.error
       if (premiere) {
         setErreur(texteErreur(premiere))
         return
@@ -49,6 +56,7 @@ export default function FicheRisqueImpression() {
       setFiche(f.data)
       setSeuils(s.data ?? [])
       setEtapes(e.data ?? [])
+      setObjets(o.data ?? [])
     }
     charger()
     return () => {
@@ -62,17 +70,21 @@ export default function FicheRisqueImpression() {
   return (
     <div className="fiche-impression">
       <div className="no-print flex items-center justify-between gap-3 flex-wrap mb-4">
-        <Link to="/risques" className="lien">← Retour aux objets à risque</Link>
+        <Link to="/risques-territoire" className="lien">← Retour aux risques du territoire</Link>
         <button type="button" className="principal" onClick={() => window.print()}>Imprimer / enregistrer en PDF</button>
       </div>
 
       <header className="mb-3" style={{ borderBottom: '2px solid currentColor', paddingBottom: 6 }}>
         <p className="text-xs text-sourdine">{contexteActuel?.contextes?.nom ?? ''}</p>
-        <h1 className="text-lg font-semibold text-encre">{fiche.identification}</h1>
+        <h1 className="text-lg font-semibold text-encre">{fiche.titre}</h1>
         <p className="text-xs text-sourdine">
           {fiche.code && <>{fiche.code} · </>}
-          {fiche.type_risque}
-          {fiche.adresse && <> · {fiche.adresse}</>}
+          {LIBELLE_CATEGORIE[fiche.categorie] ?? fiche.categorie}
+          {fiche.type_risque && <> · {fiche.type_risque}</>}
+          {fiche.statut && fiche.statut !== 'retenu' && <> · {LIBELLE_STATUT[fiche.statut] ?? fiche.statut}</>}
+          {fiche.niveau_calcule != null && (
+            <> · niveau {fiche.niveau_calcule} (probabilité {fiche.probabilite} × impact {fiche.impact}){fiche.date_evaluation && <>, évalué le {fiche.date_evaluation}</>}</>
+          )}
           {' · '}extrait du {etabliLe.toLocaleDateString('fr-BE', { dateStyle: 'long' })}
         </p>
       </header>
@@ -101,9 +113,24 @@ export default function FicheRisqueImpression() {
       {SECTIONS.filter(([cle]) => fiche[cle]).map(([cle, titre]) => (
         <section key={cle} className="mb-3">
           <h2 className="text-sm font-semibold text-encre mb-1">{titre}</h2>
-          <p className="text-xs text-encre" style={{ whiteSpace: 'pre-line' }}>{fiche[cle]}</p>
+          <p className="text-xs text-encre" style={{ whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>{fiche[cle]}</p>
         </section>
       ))}
+
+      {objets.length > 0 && (
+        <section className="mb-3" style={{ breakInside: 'avoid' }}>
+          <h2 className="text-sm font-semibold text-encre mb-1">Objets à risque concernés</h2>
+          <ul className="text-xs text-encre" style={{ paddingLeft: 18, margin: 0 }}>
+            {objets.map((l) => (
+              <li key={l.objets_a_risque?.id}>
+                {l.objets_a_risque?.identification}
+                {l.objets_a_risque?.adresse && <span className="text-sourdine"> — {l.objets_a_risque.adresse}</span>}
+                <span className="text-sourdine"> ({LIBELLE_ROLE[l.role] ?? l.role})</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {etapes.length > 0 && (
         <section className="mb-3" style={{ breakInside: 'avoid' }}>

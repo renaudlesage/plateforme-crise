@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
@@ -231,126 +232,54 @@ function FormulaireReunion({ onValider, onAnnuler }) {
 
 function BlocMatriceRisques({ contexteId }) {
   const [categories, setCategories] = useState([])
-  const { lignes, chargement, erreur, creer, modifier, supprimer } = useTableContexte(
-    'matrice_risques',
-    contexteId,
-    { colonnes: '*, categories_risques_nccn(id, libelle)', tri: 'risque' }
-  )
-  const [enAjout, setEnAjout] = useState(false)
-
+  const { lignes, chargement, erreur } = useTableContexte('risques_territoire', contexteId, { tri: 'titre' })
   useEffect(() => {
     supabase.from('categories_risques_nccn').select('*').then(({ data }) => setCategories(data ?? []))
   }, [])
-
+  const libelleCategorie = (code) => categories.find((c) => c.categorie === code)?.libelle ?? code
+  const nbEvalues = lignes.filter((r) => r.niveau_calcule != null).length
   return (
     <div>
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
         <h2 className="text-lg font-semibold text-encre">Matrice de risques</h2>
-        {!enAjout && <BoutonPrincipal onClick={() => setEnAjout(true)}>Ajouter un risque</BoutonPrincipal>}
+        <Link to="/risques-territoire" className="lien text-sm">Gérer les risques du territoire</Link>
       </div>
       <p className="text-sm text-sourdine mb-3">
-        Registre générique par catégorie officielle NCCN (probabilité × impact), distinct de
-        l'analyse détaillée par objet à risque.
+        Registre des risques du territoire par catégorie officielle NCCN, classés par niveau (probabilité × impact).
+        La probabilité et l'impact se renseignent sur chaque fiche de risque.
+        {lignes.length > 0 && <> {nbEvalues} évalué{nbEvalues > 1 ? 's' : ''} sur {lignes.length}.</>}
       </p>
-
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
-
-      {enAjout && (
-        <FormulaireRisque
-          categories={categories}
-          onAnnuler={() => setEnAjout(false)}
-          onValider={async (valeurs) => {
-            const { error } = await creer(valeurs)
-            if (!error) setEnAjout(false)
-            return { error }
-          }}
-        />
-      )}
-
       {chargement ? (
         <p className="text-sm text-sourdine">Chargement…</p>
-      ) : lignes.length === 0 && !enAjout ? (
+      ) : lignes.length === 0 ? (
         <p className="text-sm text-sourdine border border-dashed border-trait rounded p-6 text-center">
-          Aucun risque enregistré.
+          Aucun risque du territoire enregistré.
         </p>
       ) : (
         <ul className="divide-y divide-trait border border-trait rounded overflow-hidden shadow">
-          {[...lignes].sort((a, b) => (b.niveau_calcule ?? 0) - (a.niveau_calcule ?? 0)).map((r) => (
-            <li key={r.id} className="flex items-center justify-between px-4 py-3 bg-surface gap-3">
-              <div>
-                <p className="text-sm font-medium text-encre">
-                  {r.risque}
-                  {r.categories_risques_nccn && <span className="jeton ml-2 text-info">{r.categories_risques_nccn.libelle}</span>}
-                </p>
-                <p className="text-xs text-sourdine mt-0.5">
-                  probabilité {r.probabilite ?? '—'} × impact {r.impact ?? '—'} = niveau {r.niveau_calcule ?? '—'}
-                  {' · '}évalué le {r.date_evaluation}
-                </p>
-              </div>
-              <BoutonDiscret onClick={() => { if (confirm(`Supprimer le risque "${r.risque}" ?`)) supprimer(r.id) }}>Supprimer</BoutonDiscret>
+          {[...lignes].sort((a, b) => (b.niveau_calcule ?? -1) - (a.niveau_calcule ?? -1)).map((r) => (
+            <li key={r.id} className="px-4 py-3 bg-surface">
+              <p className="text-sm font-medium text-encre">
+                {r.titre}
+                <span className="jeton ml-2 text-info">{libelleCategorie(r.categorie)}</span>
+                {r.statut === 'ecarte' && <span className="jeton ml-2 text-sourdine">écarté</span>}
+                {r.statut === 'a_evaluer' && <span className="jeton ml-2 text-veille">à évaluer</span>}
+              </p>
+              <p className="text-xs text-sourdine mt-0.5">
+                {r.niveau_calcule != null ? (
+                  <>
+                    probabilité {r.probabilite} × impact {r.impact} = niveau {r.niveau_calcule}
+                    {r.date_evaluation && <> · évalué le {r.date_evaluation}</>}
+                  </>
+                ) : (
+                  'probabilité et impact non renseignés'
+                )}
+              </p>
             </li>
           ))}
         </ul>
       )}
     </div>
-  )
-}
-
-function FormulaireRisque({ categories, onValider, onAnnuler }) {
-  const [risque, setRisque] = useState('')
-  const [categorieId, setCategorieId] = useState('')
-  const [probabilite, setProbabilite] = useState('3')
-  const [impact, setImpact] = useState('3')
-  const [erreur, setErreur] = useState(null)
-  const [enCours, setEnCours] = useState(false)
-
-  async function soumettre(e) {
-    e.preventDefault()
-    setEnCours(true)
-    const { error } = await onValider({
-      risque: risque.trim(),
-      categorie_id: categorieId || null,
-      probabilite: Number(probabilite),
-      impact: Number(impact),
-    })
-    setEnCours(false)
-    if (error) setErreur(error.message)
-  }
-
-  return (
-    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-4 bg-fond space-y-3">
-      <div>
-        <label className="block text-xs font-medium text-sourdine mb-1">Risque</label>
-        <input required value={risque} onChange={(e) => setRisque(e.target.value)} placeholder="ex. pénurie d'eau potable" className="w-full" />
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Catégorie NCCN</label>
-          <select value={categorieId} onChange={(e) => setCategorieId(e.target.value)} className="w-full">
-            <option value="">—</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.libelle}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Probabilité (1-5)</label>
-          <select value={probabilite} onChange={(e) => setProbabilite(e.target.value)} className="w-full">
-            {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Impact (1-5)</label>
-          <select value={impact} onChange={(e) => setImpact(e.target.value)} className="w-full">
-            {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
-          </select>
-        </div>
-      </div>
-      {erreur && <p className="text-sm text-chaud">{erreur}</p>}
-      <div className="flex gap-2">
-        <BoutonPrincipal type="submit" disabled={enCours}>{enCours ? 'Enregistrement…' : 'Enregistrer'}</BoutonPrincipal>
-        <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
-      </div>
-    </form>
   )
 }

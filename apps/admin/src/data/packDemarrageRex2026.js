@@ -1,13 +1,12 @@
 // Pack de démarrage — fiches scénario dérivées des REX belges de 2026.
 //
-// Même format que PACK_DEMARRAGE_RISQUES (colonnes de objets_a_risque), avec
+// Même format que PACK_DEMARRAGE_RISQUES (colonnes de risques_territoire), avec
 // deux listes rattachées, insérées à l'import et éditables ensuite :
 //   - `seuils`      → seuils_action (page « Seuils d'action »)
 //   - `plan_action` → plans_action_risque (plan d'action de la fiche)
 // Les paramètres propres à une commune (N habitations, délais, lieux, liens)
 // restent entre crochets dans le texte : à remplacer dans les formulaires.
-// Sources, injects détaillés et correspondance contenu → champs :
-// packDemarrageRex2026.md.
+// Correspondance contenu → champs et points à valider : packDemarrageRex2026.md.
 
 const lignes = (...l) => l.join('\n')
 
@@ -20,7 +19,7 @@ export const FICHES_REX_2026 = [
     code: 'STARTER-REX-2026-ORAGES',
     categorie: 'naturel',
     type_risque: 'orages_ruissellement_coulees_boue',
-    identification: 'Orages éclair, inondations par ruissellement et coulées de boue (REX 30 mai 2026)',
+    titre: 'Orages éclair, inondations par ruissellement et coulées de boue (REX 30 mai 2026)',
     declencheur: "Avertissement orange ou rouge IRM « orages » (S1), ou ≥ 3 signalements citoyens concordants de ruissellement ou de coulée de boue (S2).",
     effets_directs: lignes(
       "Pluies stationnaires très localisées (40 l/m² ou plus en une heure ; 50 à 100 mm en peu de temps), grêle, rafales jusqu'à 90 km/h. Petits cours d'eau qui débordent, coulées de boue en aval des champs, caves et rez-de-chaussée inondés par centaines, routes coupées (passages sous voie, gués), personnes bloquées en voiture ou réfugiées sur les toits, arbres sur les voies et les véhicules.",
@@ -91,6 +90,15 @@ export const FICHES_REX_2026 = [
       "M4 Centre d'accueil : « Centre d'accueil ouvert à [lieu]. Emportez médicaments, papiers, chargeur. Animaux acceptés. »",
       "M5 Post-crise : « Photographiez les dégâts avant de nettoyer et déclarez-les à votre assureur. Encombrants : [modalités]. Fonds des calamités : [lien, délai]. »",
       "Principes : qui gère la phase communique ; un seul porte-parole ; pas d'attribution de causes à chaud.",
+    ),
+    sources: lignes(
+      "La Libre, 31/05/2026 — séquence orageuse la plus dévastatrice depuis 2021 : https://www.lalibre.be/belgique/societe/2026/05/31/la-belgique-frappee-par-de-fortes-inondations-un-cocktail-ideal-pour-une-forte-instabilite-atmospherique-6EQFLP6J4NHU7NA3NGS3BRSNSE/",
+      "L'Avenir, 03/06/2026 — bilan au Parlement wallon, Huy et CORTEX, Fonds des calamités : https://www.lavenir.net/actu/belgique/politique/2026/06/03/un-premier-bilan-des-inondations-a-la-region-dabord-les-assurances-et-puis-peut-etre-le-fonds-des-calamites-73TXAZAZWNERBO5KVHSWZDDNWE/",
+      "Wallonie.be — point sur les orages du 30 mai : https://www.wallonie.be/fr/actualites/alerte-orages-du-samedi-30-mai-fin-dapres-midi-jusquau-milieu-de-la-nuit",
+      "Belgorage — analyse de l'épisode du 29 au 31 mai : https://belgorage.be/breves-et-articles/inondations/bases-de-donnees-breves-et-articles-2026-06-30-orages/",
+      "L'Avenir, 31/05/2026 — dégâts en Wallonie, Basse-Sambre, La Hulpe : https://www.lavenir.net/actu/belgique/2026/05/31/fin-de-lalerte-orange-aux-orages-de-nombreux-degats-en-wallonie-ce-dimanche-sannonce-plus-sec-VZPLVCMDJBEQBEEZFSR5HNXKUA/",
+      "Paris Match Belgique, 31/05/2026 — zone Wapi, routes inondées : https://www.parismatch.be/actualites/environnement/2026/05/31/intemperies-de-nombreux-degats-en-wallonie-et-a-bruxelles-lirm-maintient-un-avertissement-jaune-pour-des-orages-violents-ce-dimanche-videos-EIDB6XKKJBE73AGQVR2EUE55BM/",
+      "BW Response — communiqués du gouverneur du Brabant wallon : https://bwresponse.be/actualites/",
     ),
     seuils: [
       {
@@ -199,9 +207,9 @@ export const FICHES_REX_2026 = [
   // ============================================================
   {
     code: 'STARTER-REX-2026-CYBER',
-    categorie: 'technologique',
+    categorie: 'man_made',
     type_risque: 'cyberattaque_indisponibilite_si',
-    identification: "Cyberattaque ou indisponibilité du système d'information communal (REX 2026)",
+    titre: "Cyberattaque ou indisponibilité du système d'information communal (REX 2026)",
     declencheur: "Signal de compromission (alerte CCB, prestataire, EDR, fichiers chiffrés, note d'extorsion) ou indisponibilité inexpliquée du SI communal (S1).",
     effets_directs: lignes(
       "Arrêt brutal des services dépendant du SI : état civil, population, CPAS, paie, taxes, courrier, mails, téléphonie IP, badges et accès, bâtiments pilotés. Données de citoyens chiffrées ou exfiltrées ; comptes administrateur volés ; fraudes dérivées (phishing, faux appels au nom de la commune).",
@@ -287,6 +295,13 @@ export const FICHES_REX_2026 = [
       "M4 Données (si fuite, avec le DPO et l'APD) : nature des données, risques, précautions, point de contact : [contact].",
       "M5 Rétablissement : services rétablis, ce qui a été fait, remerciements, leçons.",
       "Principes : qui gère la phase communique ; un porte-parole ; cohérence avec le CCB ; jamais de détail technique exploitable ; ne pas nommer d'attaquant.",
+    ),
+    sources: lignes(
+      "Belga, 23/06/2026 — 270 organisations belges touchées : https://belganewsagency-eu.prezly.com/hundreds-of-belgian-organisations-hit-by-cyber-attack",
+      "Le Soir, 19/04/2026 — Temse désactive ses systèmes informatiques : https://www.lesoir.be/741730/article/2026-04-19/une-commune-desactive-ses-systemes-informatiques-apres-une-cyberattaque",
+      "L'Avenir, 16/06/2026 — Mont-Saint-Guibert et la cybersécurité : https://www.lavenir.net/regions/brabantwallon/mont-saint-guibert/2026/06/16/la-commune-de-mont-saint-guibert-veut-etre-prete-en-cas-dattaque-informatique-Z7Q6TAP4RRBUTJMSRN3YYLXV7M/",
+      "EUISS — Global Risks to the EU in 2026 : https://www.iss.europa.eu/publications/commentary/global-risks-eu-2026-what-are-main-conflict-threats-europe",
+      "Connaissance des énergies / AFP, 28/09/2026 — exercice black-out français de novembre 2026 : https://www.connaissancedesenergies.org/afp/le-reseau-electrique-infrastructure-cruciale-a-proteger-notamment-des-cyberattaques-260928",
     ),
     seuils: [
       {

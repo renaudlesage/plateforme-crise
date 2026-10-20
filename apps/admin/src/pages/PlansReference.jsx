@@ -15,10 +15,11 @@ export default function PlansReference() {
     modifier,
     supprimer,
   } = useTableContexte('plans_reference', contexteId, {
-    colonnes: '*, objets_a_risque!plans_reference_objet_risque_id_fkey(id, identification)',
+    colonnes: '*, objets_a_risque!plans_reference_objet_risque_id_fkey(id, identification), risques_territoire(id, titre)',
     tri: 'nom',
   })
   const { lignes: objetsRisque } = useTableContexte('objets_a_risque', contexteId, { tri: 'identification' })
+  const { lignes: risques } = useTableContexte('risques_territoire', contexteId, { tri: 'titre' })
 
   const [enAjout, setEnAjout] = useState(false)
   const [ligneEnEdition, setLigneEnEdition] = useState(null)
@@ -42,7 +43,7 @@ export default function PlansReference() {
 
       {enAjout && (
         <FormulairePlan
-          objetsRisque={objetsRisque}
+          objetsRisque={objetsRisque} risques={risques}
           onAnnuler={() => setEnAjout(false)}
           onValider={async (valeurs) => {
             const { error } = await creer(valeurs)
@@ -77,7 +78,7 @@ export default function PlansReference() {
             ligneEnEdition === p.id ? (
               <li key={p.id} className="bg-fond p-3">
                 <FormulairePlan
-                  objetsRisque={objetsRisque}
+                  objetsRisque={objetsRisque} risques={risques}
                   valeursInitiales={p}
                   onAnnuler={() => setLigneEnEdition(null)}
                   onValider={async (valeurs) => {
@@ -95,6 +96,9 @@ export default function PlansReference() {
                     <span className="jeton ml-2 bg-surface-2 text-sourdine">{p.type}</span>
                     {p.version && <span className="ml-1 text-xs text-sourdine">v{p.version}</span>}
                   </p>
+                  {p.risques_territoire?.titre && (
+                    <p className="text-xs text-sourdine">risque : {p.risques_territoire.titre}</p>
+                  )}
                   {p.objets_a_risque?.identification && (
                     <p className="text-xs text-sourdine">objet à risque : {p.objets_a_risque.identification}</p>
                   )}
@@ -129,11 +133,12 @@ export default function PlansReference() {
   )
 }
 
-function FormulairePlan({ objetsRisque, valeursInitiales = {}, onValider, onAnnuler }) {
+function FormulairePlan({ objetsRisque, risques = [], valeursInitiales = {}, onValider, onAnnuler }) {
   const [type, setType] = useState(valeursInitiales.type ?? 'PGUI')
   const [nom, setNom] = useState(valeursInitiales.nom ?? '')
   const [version, setVersion] = useState(valeursInitiales.version ?? '')
   const [objetRisqueId, setObjetRisqueId] = useState(valeursInitiales.objet_risque_id ?? '')
+  const [risqueId, setRisqueId] = useState(valeursInitiales.risque_id ?? '')
   const [dateAgrementLocal, setDateAgrementLocal] = useState(valeursInitiales.date_agrement_local ?? '')
   const [dateApprobation, setDateApprobation] = useState(valeursInitiales.date_approbation_autorite ?? '')
   const [autoriteApprobatrice, setAutoriteApprobatrice] = useState(valeursInitiales.autorite_approbatrice ?? '')
@@ -150,6 +155,7 @@ function FormulairePlan({ objetsRisque, valeursInitiales = {}, onValider, onAnnu
       nom: nom.trim(),
       version: version.trim() || null,
       objet_risque_id: objetRisqueId || null,
+      risque_id: risqueId || null,
       date_agrement_local: dateAgrementLocal || null,
       date_approbation_autorite: dateApprobation || null,
       autorite_approbatrice: autoriteApprobatrice.trim() || null,
@@ -187,6 +193,15 @@ function FormulairePlan({ objetsRisque, valeursInitiales = {}, onValider, onAnnu
         <div>
           <label className="block text-xs font-medium text-sourdine mb-1">Version</label>
           <input value={version} onChange={(e) => setVersion(e.target.value)} placeholder="ex. 2026-1" className="w-full" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Risque lié</label>
+          <select value={risqueId} onChange={(e) => setRisqueId(e.target.value)} className="w-full">
+            <option value="">—</option>
+            {risques.map((r) => (
+              <option key={r.id} value={r.id}>{r.titre}</option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block text-xs font-medium text-sourdine mb-1">Objet à risque lié</label>

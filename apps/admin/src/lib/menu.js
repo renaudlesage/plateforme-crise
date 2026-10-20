@@ -30,6 +30,7 @@ export const SECTIONS = [
     resume: "Annuaire, risques, ressources, sites, centres et canaux.",
     liens: [
       { to: '/annuaire', libelle: 'Annuaire' },
+      { to: '/risques-territoire', libelle: 'Risques du territoire' },
       { to: '/risques', libelle: 'Objets à risque' },
       { to: '/ressources', libelle: 'Ressources' },
       { to: '/conventions', libelle: 'Conventions' },
