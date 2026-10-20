@@ -1,11 +1,11 @@
 # État de la feuille de route
-Dernière session : 2026-10-20 — chantier : correctifs de sécurité — résultat : migration `supabase/migrations/20261020160000_correctifs_securite.sql` préparée et répétée dans des transactions annulées (9 constats avant, 42 contrôles après, conformes), **non appliquée**, à approuver ci-dessous ; le constat « critique » de la Session 0 est requalifié « moyenne » (un index unique empêchait déjà un admin communal de devenir super-admin).
+Dernière session : 2026-10-20 — chantier : correctifs de sécurité — résultat : migration `supabase/migrations/20261020160000_correctifs_securite.sql` répétée dans des transactions annulées (9 constats avant, 42 contrôles après, conformes), approuvée par Ren, **appliquée** le 20 octobre (version `20261020211056`) et vérifiée sur la base réelle (18 contrôles conformes) ; le constat « critique » de la Session 0 est requalifié « moyenne » (un index unique empêchait déjà un admin communal de devenir super-admin).
 
 Sessions : 2 réalisées / 16 planifiées (vague 1) — Session 0 et correctifs de sécurité faits le 20 octobre, avant le début prévu du 2 novembre. Depuis le 20 octobre, on avance sans attendre les dates du plan (décision de Ren).
 
 ## Terminé
 - Session 0 (2026-10-20, branche feat/s00-feuille-de-route, mergé : non)
-- Correctifs de sécurité : migration préparée et répétée (2026-10-20, branche feat/securite-correctifs empilée sur feat/s00-feuille-de-route, mergé : non, migration non appliquée)
+- Correctifs de sécurité (2026-10-20, branche feat/securite-correctifs empilée sur feat/s00-feuille-de-route, mergé : non ; migration appliquée et vérifiée)
 - Avant la feuille de route, utiles aux chantiers :
   - Renommage « Crisiware 2 » (2026-10-20, PR #2, mergé : oui)
   - Fiches REX 2026 orages éclair (A) et cyberattaque (B), import avec seuils et plan d'action, impression de fiche (2026-10-20, PR #3, mergé : oui)
@@ -36,17 +36,17 @@ Capacité prévue par le plan ; capacité déclarée par Ren au début de chaque
 Congés de Ren : **à confirmer avant le 14 décembre** (semaines de congé, et congés scolaires de la Fédération Wallonie-Bruxelles si elles comptent), pour que la capacité déclarée corresponde au calendrier.
 
 ## À faire par Ren
-1. **Approuver la migration des correctifs de sécurité** (section suivante).
-2. Fournir un **exemplaire réel de SITREP provincial** (Liège de préférence) avant le chantier C3 (sprint 4) : au plus tard le 14 décembre, plus tôt si l'on continue d'avancer sans attendre les dates. À défaut : format provisoire en-tête / situation / mesures prises / besoins / prochain point.
-3. **Confirmer les semaines de congé** dans la section Capacité ci-dessus (avant le 14 décembre).
-4. Activer dans le tableau de bord Supabase, réglages d'authentification, la **protection contre les mots de passe divulgués** (signalée par le conseiller de sécurité ; disponibilité selon l'offre Supabase).
+1. Fournir un **exemplaire réel de SITREP provincial** (Liège de préférence) avant le chantier C3 (sprint 4) : au plus tard le 14 décembre, plus tôt si l'on continue d'avancer sans attendre les dates. À défaut : format provisoire en-tête / situation / mesures prises / besoins / prochain point.
+2. **Confirmer les semaines de congé** dans la section Capacité ci-dessus (avant le 14 décembre).
+3. Activer dans le tableau de bord Supabase, réglages d'authentification, la **protection contre les mots de passe divulgués** (signalée par le conseiller de sécurité ; disponibilité selon l'offre Supabase).
 
 ## Migrations à approuver
 Approbation asynchrone : écrire « approuvée le AAAA-MM-JJ » à côté de la ligne ; application à la session suivante, puis vérification de l'effet réel en SQL.
-- [ ] **Correctifs de sécurité** — `supabase/migrations/20261020160000_correctifs_securite.sql` (branche feat/securite-correctifs). Non destructif, aucune app à modifier. `contextes` : un membre ne modifie plus que `config`, coordonnées et province, notes de la plateforme réservées à la console, trigger de garde ; bénévoles inscrits par le public toujours « en_attente » ; plus d'insertion directe de plans de ménage, RPC bornée ; liste publique sans plateforme ni clients suspendus ; journal des ingestions externes borné ; 19 fonctions retirées d'`anon` ; TRUNCATE, REFERENCES, TRIGGER retirés d'`anon` et `authenticated`. Répétée le 2026-10-20 : détail et preuves dans [CORRESPONDANCE.md](CORRESPONDANCE.md), section 6.
+- [x] **Correctifs de sécurité** — approuvée le 2026-10-20 (« Applique »), appliquée le 2026-10-20 (version `20261020211056`), effet vérifié. `supabase/migrations/20261020160000_correctifs_securite.sql` (branche feat/securite-correctifs). Non destructif, aucune app à modifier. `contextes` : un membre ne modifie plus que `config`, coordonnées et province, notes de la plateforme réservées à la console, trigger de garde ; bénévoles inscrits par le public toujours « en_attente » ; plus d'insertion directe de plans de ménage, RPC bornée ; liste publique sans plateforme ni clients suspendus ; journal des ingestions externes borné ; 19 fonctions retirées d'`anon` ; TRUNCATE, REFERENCES, TRIGGER retirés d'`anon` et `authenticated`. Répétée le 2026-10-20 : détail et preuves dans [CORRESPONDANCE.md](CORRESPONDANCE.md), section 6.
 - [ ] **Sprint 1 — F1, F5, F3** (fichier à préparer en session) : `communes_be` et son seed, compléments de journal, extensions `pg_cron` et `pg_net`, `jobs_etat`.
 
 ## Décisions de Ren
+- 2026-10-20 : migration `correctifs_securite` approuvée (« Applique ») ; appliquée par l'outil de migration (version `20261020211056`, dans l'historique `schema_migrations`), effet vérifié en SQL.
 - 2026-10-20 : « On avance et on ne se soucie pas des délais » : les sessions s'enchaînent dans l'ordre de [SPRINTS.md](SPRINTS.md) sans attendre les dates ; les correctifs de sécurité sont préparés tout de suite.
 - 2026-10-20 : le plan de sprint de référence est [SPRINTS.md](SPRINTS.md) (vague 1 : 8 sprints de deux semaines du 2 novembre au 21 février, jalons D1–D5 ; vague 2 : mars à novembre 2027, jalons D6–D10, tampon en août pour le festival ; au plus deux coupes en vague 1).
 - 2026-10-20 : migration `risques_territoire` approuvée ; exécutée par Ren dans le SQL Editor (hors historique `schema_migrations`).
@@ -70,7 +70,7 @@ Approbation asynchrone : écrire « approuvée le AAAA-MM-JJ » à côté de la 
 
 ## Dette / à revoir
 - 3 Edge Functions déployées absentes du dépôt ; 2 fonctions neutralisées encore déployées.
-- 118 migrations en prod pour 10 fichiers versionnés (11 avec la migration de sécurité, non appliquée) ; `risques_territoire` hors historique.
+- 119 migrations en prod pour 11 fichiers versionnés ; `risques_territoire` hors historique.
 - `database.types.ts` périmés (52 tables) en 5 copies.
 - `role_capacites` vide : la grille des capacités de l'Admin n'a aucun effet (repli sur le niveau d'accès).
 - `livre_de_bord` modifiable et supprimable (à rendre ajout seul pour C3 et T1) ; changement de phase en deux écritures client.
