@@ -16,10 +16,10 @@ reproduites ici : la base de production fait foi. Chaque fichier ci-dessous a é
 | `20261019090200_entraide_rpc_publiques.sql` | Accès sans compte par QR (enregistrement, suivi, sortie), déclaration d'un moyen privé, page publique de l'entraide |
 | `20261019120000_console_plateforme.sql` | Console Plateforme : suspension d'un client (`contextes.suspendu`, prise en compte par `mon_niveau_acces`), journal `journal_plateforme`, fonctions `plateforme_*` réservées au super-admin |
 | `20261020130000_risques_territoire.sql` | Risques du territoire : table `risques_territoire` (menace, distincte de l'objet à risque), liens objet ↔ risque (rôle source / enjeu) et risque ↔ fonctions critiques, `risque_id` sur les seuils, plans de référence, plans d'action, évaluations et mesures, repointage de `exercices.fiche_risque_id` et du triage PGUI, fusion de `matrice_risques`, déplacement des fiches STARTER, retrait des huit champs scénario d'`objets_a_risque` |
-| `20261020213000_f5_journal_empreinte.sql` | **Préparé, non appliqué (à approuver)** — F5 : références signalement / alerte sur `journal_decisions`, empreinte SHA-256 chaînée calculée à l'insertion, `verifier_journal_decisions()` |
-| `20261020213100_f3_planification.sql` | **Préparé, non appliqué (à approuver)** — F3 : extensions `pg_cron` et `pg_net`, table `jobs_etat`, `jobs_signaler()`, `jobs_muets()` |
-| `20261020213200_f1_communes_be.sql` | **Préparé, non appliqué (à approuver)** — F1 : table `communes_be` ; données dans `supabase/seed/communes_be.sql` (565 communes ; zones de secours et de police des communes wallonnes d'après Eventware), généré par `scripts/seed/communes_be.py` |
 | `20261020160000_correctifs_securite.sql` | Correctifs de sécurité : droits par colonne et trigger de garde sur `contextes`, inscriptions publiques de bénévoles forcées « en_attente », plus d'insertion directe dans `plans_urgence_menages`, `contextes_publics()` sans plateforme ni clients suspendus, journal des ingestions externes borné, droits inutiles retirés à `anon` et `authenticated` |
+| `20261020213000_f5_journal_empreinte.sql` | F5 : références signalement / alerte sur `journal_decisions`, empreinte SHA-256 chaînée calculée à l'insertion, `verifier_journal_decisions()` |
+| `20261020213100_f3_planification.sql` | F3 : extensions `pg_cron` et `pg_net`, table `jobs_etat`, `jobs_signaler()`, `jobs_muets()` |
+| `20261020213200_f1_communes_be.sql` | F1 : table `communes_be` ; données dans `supabase/seed/communes_be.sql` (565 communes ; zones de secours et de police des communes wallonnes d'après Eventware), généré par `scripts/seed/communes_be.py` |
 
 Attention : les fichiers de l'entraide sont l'état final (correctifs appliqués en base sous les noms `entraide_missions_affectation_close`, `entraide_missions_historique_after`, `entraide_equipes_chef_controle`, `entraide_fermeture_horodatee_serveur`, `entraide_code_erreur_pab_ferme`, `entraide_missions_zone_rouge_derogation`, `entraide_missions_reouverture`, y figurent déjà). Le fichier du pont est l'état final (deux correctifs appliqués après coup en base, sous les noms
 `pont_commune_evenements_correctif_rehausse` et `pont_commune_evenements_revoke_triggers`, y figurent déjà).
@@ -39,5 +39,9 @@ dans l'historique sous la version `20261020211056` (nom `correctifs_securite`) e
 Effet vérifié en SQL après application, voir `docs/roadmap/CORRESPONDANCE.md`, section 6.
 
 Fondations F1, F3, F5 : répétées le 20 octobre 2026 dans des transactions annulées (seed réduit à 13 communes
-représentatives). Ordre d'application : F5, F3, F1, puis `supabase/seed/communes_be.sql`. Tests rejouables après
-application : `supabase/tests/fondations_f1_f3_f5.sql` (transaction annulée, résultats affichés par l'exception finale).
+représentatives), approuvées par Ren, puis appliquées telles quelles le même jour par l'outil de migration, dans
+l'ordre F5, F3, F1 : versions `20261020214032` (`f5_journal_empreinte`), `20261020214055` (`f3_planification`) et
+`20261020214114` (`f1_communes_be`) dans l'historique. Le seed `supabase/seed/communes_be.sql` est une donnée, pas
+une migration : chargé ensuite en cinq lots par l'outil SQL (mêmes valeurs, même upsert, donc rejouable), contenu
+de la table comparé au fichier par empreinte md5 : identique. Tests : `supabase/tests/fondations_f1_f3_f5.sql`
+(transaction annulée, résultats affichés par l'exception finale), rejoués sur la base réelle après application.

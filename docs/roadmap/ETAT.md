@@ -1,5 +1,5 @@
 # État de la feuille de route
-Dernière session : 2026-10-20 — chantier : fondations F1, F5, F3 (sprint 1, session 2) — résultat : trois migrations préparées et répétées dans des transactions annulées (tests conformes), **non appliquées**, à approuver ci-dessous ; seed des 565 communes généré depuis l'export ODWB fourni par Ren ; correspondance province ↔ zones MeteoAlarm reportée à C1.
+Dernière session : 2026-10-20 — chantier : fondations F1, F5, F3 (sprint 1, session 2) — résultat : trois migrations préparées, répétées dans des transactions annulées, puis approuvées (« Applique ») et appliquées (versions `20261020214032`, `20261020214055`, `20261020214114`) ; seed des 565 communes chargé, contenu identique au fichier ; 21 des 22 tests de `supabase/tests/fondations_f1_f3_f5.sql` rejoués sur la base réelle, tous conformes ; correspondance province ↔ zones MeteoAlarm reportée à C1.
 
 Session précédente (même jour) : correctifs de sécurité, migration `20261020160000_correctifs_securite.sql` appliquée (version `20261020211056`) et vérifiée ; constat « critique » de la Session 0 requalifié « moyenne ».
 
@@ -8,7 +8,7 @@ Sessions : 3 réalisées / 16 planifiées (vague 1) — Session 0, correctifs de
 ## Terminé
 - Session 0 (2026-10-20, branche feat/s00-feuille-de-route, mergé : non)
 - Correctifs de sécurité (2026-10-20, branche feat/securite-correctifs empilée sur feat/s00-feuille-de-route, mergé : non ; migration appliquée et vérifiée)
-- Fondations F1, F5, F3 (2026-10-20, branche feat/f01-f03-f05-fondations empilée sur feat/securite-correctifs, mergé : non ; migrations non appliquées)
+- Fondations F1, F5, F3 (2026-10-20, branche feat/f01-f03-f05-fondations empilée sur feat/securite-correctifs, mergé : non ; migrations et seed appliqués et vérifiés)
 - Avant la feuille de route, utiles aux chantiers :
   - Renommage « Crisiware 2 » (2026-10-20, PR #2, mergé : oui)
   - Fiches REX 2026 orages éclair (A) et cyberattaque (B), import avec seuils et plan d'action, impression de fiche (2026-10-20, PR #3, mergé : oui)
@@ -16,7 +16,7 @@ Sessions : 3 réalisées / 16 planifiées (vague 1) — Session 0, correctifs de
 
 ## En cours
 - Vague 1 : du 2 novembre 2026 au 21 février 2027, réévaluation la semaine du 22 février ([SPRINTS.md](SPRINTS.md)) ; dates indicatives depuis le 20 octobre, l'ordre des chantiers reste celui du plan.
-- Sprint 1 « Fondations » : sessions faites ; il reste à appliquer les trois migrations F5, F3, F1 et le seed après approbation, puis à rejouer `supabase/tests/fondations_f1_f3_f5.sql` sur la base réelle.
+- Sprint 1 « Fondations » : terminé. F5, F3, F1 et le seed appliqués le 2026-10-20 ; tests rejoués sur la base réelle (21 sur 22 : F5-3, la suppression d'une décision, n'est pas exécutable par l'outil SQL, qui retient les DELETE ; il porte sur le refus déjà en place, que F5 ne modifie pas).
 - Résultat de la session F1, F5, F3 :
   - **F5** : références signalement et alerte, empreinte SHA-256 chaînée calculée par le serveur (une valeur envoyée par le client est remplacée), `verifier_journal_decisions()` qui détecte une falsification (prouvé en répétition). Restent : référence « message » (question 8), journal hors incident (C7), `livre_de_bord` modifiable (T1).
   - **F3** : `pg_cron`, `pg_net`, `jobs_etat`, `jobs_signaler()` (clé de service seulement), `jobs_muets()`. Aucune tâche planifiée ni secret dans le Vault avant C1.
@@ -47,12 +47,14 @@ Congés de Ren : **à confirmer avant le 14 décembre** (semaines de congé, et 
 ## Migrations à approuver
 Approbation asynchrone : écrire « approuvée le AAAA-MM-JJ » à côté de la ligne ; application à la session suivante, puis vérification de l'effet réel en SQL.
 - [x] **Correctifs de sécurité** — approuvée le 2026-10-20 (« Applique »), appliquée le 2026-10-20 (version `20261020211056`), effet vérifié. `supabase/migrations/20261020160000_correctifs_securite.sql` (branche feat/securite-correctifs). Non destructif, aucune app à modifier. `contextes` : un membre ne modifie plus que `config`, coordonnées et province, notes de la plateforme réservées à la console, trigger de garde ; bénévoles inscrits par le public toujours « en_attente » ; plus d'insertion directe de plans de ménage, RPC bornée ; liste publique sans plateforme ni clients suspendus ; journal des ingestions externes borné ; 19 fonctions retirées d'`anon` ; TRUNCATE, REFERENCES, TRIGGER retirés d'`anon` et `authenticated`. Répétée le 2026-10-20 : détail et preuves dans [CORRESPONDANCE.md](CORRESPONDANCE.md), section 6.
-- [ ] **F5 — journal** — `supabase/migrations/20261020213000_f5_journal_empreinte.sql` : colonnes `signalement_id`, `alerte_publique_id`, `empreinte_precedente`, `empreinte` sur `journal_decisions` ; trigger d'insertion complété ; `journal_decisions_empreinte()`, `verifier_journal_decisions()`. Non destructif, aucune app à modifier.
-- [ ] **F3 — planification** — `supabase/migrations/20261020213100_f3_planification.sql` : extensions `pg_cron` et `pg_net`, table `jobs_etat`, `jobs_signaler()`, `jobs_muets()`. Aucune tâche planifiée.
-- [ ] **F1 — communes** — `supabase/migrations/20261020213200_f1_communes_be.sql` puis le seed `supabase/seed/communes_be.sql` (565 lignes, source ODWB, licence à confirmer ; zones de secours et de police des communes wallonnes d'après Eventware).
-Répétées le 2026-10-20 (seed réduit à 13 communes) ; tests rejouables après application : `supabase/tests/fondations_f1_f3_f5.sql`. Ordre d'application : F5, F3, F1, seed.
+- [x] **F5 — journal** — approuvée le 2026-10-20 (« Applique »), appliquée le 2026-10-20 (version `20261020214032`), effet vérifié. `supabase/migrations/20261020213000_f5_journal_empreinte.sql` : colonnes `signalement_id`, `alerte_publique_id`, `empreinte_precedente`, `empreinte` sur `journal_decisions` ; trigger d'insertion complété ; `journal_decisions_empreinte()`, `verifier_journal_decisions()`. Non destructif, aucune app à modifier.
+- [x] **F3 — planification** — approuvée le 2026-10-20 (« Applique »), appliquée le 2026-10-20 (version `20261020214055`), effet vérifié. `supabase/migrations/20261020213100_f3_planification.sql` : extensions `pg_cron` et `pg_net`, table `jobs_etat`, `jobs_signaler()`, `jobs_muets()`. Aucune tâche planifiée.
+- [x] **F1 — communes** — approuvée le 2026-10-20 (« Applique »), appliquée le 2026-10-20 (version `20261020214114`), seed chargé et vérifié. `supabase/migrations/20261020213200_f1_communes_be.sql` puis le seed `supabase/seed/communes_be.sql` (565 lignes, source ODWB, licence à confirmer ; zones de secours et de police des communes wallonnes d'après Eventware).
+Répétées le 2026-10-20 (seed réduit à 13 communes), appliquées dans l'ordre F5, F3, F1, seed. Vérifications sur la base réelle : 565 communes (19 à Bruxelles, 285 en Flandre, 261 en Wallonie), empreinte md5 du contenu identique à celle du fichier de seed, 261 communes avec zones, 14 zones de secours, 71 zones de police ; aucune tâche `pg_cron` ni ligne dans `jobs_etat` ; aucun nouvel avertissement du conseiller de sécurité sur les objets créés.
 
 ## Décisions de Ren
+- 2026-10-20 : migrations F5 (`f5_journal_empreinte`), F3 (`f3_planification`), F1 (`f1_communes_be`) et seed des communes approuvés (« Applique ») ; appliqués par l'outil de migration (versions `20261020214032`, `20261020214055`, `20261020214114`), seed chargé en SQL, effet vérifié.
+- 2026-10-20 : zones de secours et de police des communes wallonnes reprises de la table `communes` d'Eventware (« la liste des communes y est déjà poussée ») : copie datée dans le dépôt, pas de base partagée.
 - 2026-10-20 : migration `correctifs_securite` approuvée (« Applique ») ; appliquée par l'outil de migration (version `20261020211056`, dans l'historique `schema_migrations`), effet vérifié en SQL.
 - 2026-10-20 : « On avance et on ne se soucie pas des délais » : les sessions s'enchaînent dans l'ordre de [SPRINTS.md](SPRINTS.md) sans attendre les dates ; les correctifs de sécurité sont préparés tout de suite.
 - 2026-10-20 : le plan de sprint de référence est [SPRINTS.md](SPRINTS.md) (vague 1 : 8 sprints de deux semaines du 2 novembre au 21 février, jalons D1–D5 ; vague 2 : mars à novembre 2027, jalons D6–D10, tampon en août pour le festival ; au plus deux coupes en vague 1).
@@ -79,7 +81,7 @@ Répétées le 2026-10-20 (seed réduit à 13 communes) ; tests rejouables aprè
 
 ## Dette / à revoir
 - 3 Edge Functions déployées absentes du dépôt ; 2 fonctions neutralisées encore déployées.
-- 119 migrations en prod pour 14 fichiers versionnés (dont F5, F3, F1 non appliqués) ; `risques_territoire` hors historique.
+- 122 migrations en prod pour 14 fichiers versionnés ; `risques_territoire` hors historique ; versions des 4 dernières différentes des noms de fichiers (voir `supabase/migrations/README.md`).
 - `database.types.ts` périmés (52 tables) en 5 copies.
 - `role_capacites` vide : la grille des capacités de l'Admin n'a aucun effet (repli sur le niveau d'accès).
 - `livre_de_bord` modifiable et supprimable (à rendre ajout seul pour C3 et T1) ; changement de phase en deux écritures client.
