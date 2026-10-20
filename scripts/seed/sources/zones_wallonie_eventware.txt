@@ -1,0 +1,266 @@
+# Zones de secours et de police des 261 communes wallonnes.
+# Source : Eventware 2.0 (projet Supabase kunvnnfejhnuhflycyfz), table public.communes, extraite le 2026-10-20.
+# Vérification dans Eventware : 2026-09-16 ; zones de police : découpage officiel (arrêté royal), export du 18/06/2026.
+# Empreinte MD5 des lignes de données (triées par nom, séparées par un saut de ligne) : f22a5c2afcb8584ce85af4356010a92b
+nom|province|zone_police|zone_secours|numero_zone_police
+Aiseau-Presles|Hainaut|Aiseau-Presles/Châtelet/Farciennes|Hainaut-Est|5331
+Amay|Liège|Meuse-Hesbaye|HEMECO|5294
+Amblève|Liège|Eifel|Zone DG|5291
+Andenne|Namur|Arches|NAGE|5305
+Anderlues|Hainaut|Binche-Anderlues-Lermes|Hainaut-Est|5912
+Anhée|Namur|Haute-Meuse|DINAPHI|5312
+Ans|Liège|Ans/Saint-Nicolas|Liège Zone II - IILE-SRI|5284
+Anthisnes|Liège|Condroz|HEMECO|5296
+Antoing|Hainaut|Tournaisis|Wallonie Picarde|5316
+Arlon|Luxembourg|Arlon/Attert/Habay/Martelange|Luxembourg|5297
+Assesse|Namur|Arches|NAGE|5305
+Ath|Hainaut|Ath|Wallonie Picarde|5322
+Attert|Luxembourg|Arlon/Attert/Habay/Martelange|Luxembourg|5297
+Aubange|Luxembourg|Sud-Luxembourg|Luxembourg|5298
+Aubel|Liège|Pays de Herve|Vesdre-Hoëgne & Plateau|5288
+Awans|Liège|Awans/Grâce-Hollogne|Liège Zone II - IILE-SRI|5285
+Aywaille|Liège|Secova|5 Warche Amblève Lienne (ZS5 W.A.L.)|5283
+Baelen|Liège|Pays de Herve|Vesdre-Hoëgne & Plateau|5288
+Bassenge|Liège|Basse Meuse|Liège Zone II - IILE-SRI|5281
+Bastogne|Luxembourg|Centre Ardenne|Luxembourg|5301
+Beaumont|Hainaut|Botte du Hainaut|Hainaut-Est|5334
+Beauraing|Namur|Houille-Semois|DINAPHI|5310
+Beauvechain|Brabant wallon|Ardennes Brabançonnes|Brabant wallon|5272
+Beloeil|Hainaut|Beloeil/Leuze-en-Hainaut|Wallonie Picarde|5319
+Berloz|Liège|Hesbaye|Hesbaye|5286
+Bernissart|Hainaut|Bernissart/Péruwelz|Wallonie Picarde|5321
+Bertrix|Luxembourg|Semois et Lesse|Luxembourg|5302
+Beyne-Heusay|Liège|Beyne-Fléron-Soumagne|Liège Zone II - IILE-SRI|5280
+Bièvre|Namur|Houille-Semois|DINAPHI|5310
+Binche|Hainaut|Binche-Anderlues-Lermes|Hainaut-Centre|5912
+Blegny|Liège|Basse Meuse|Vesdre-Hoëgne & Plateau|5281
+Bouillon|Luxembourg|Semois et Lesse|Luxembourg|5302
+Boussu|Hainaut|Boraine|Hainaut-Centre|5327
+Braine-l'Alleud|Brabant wallon|Braine-L'alleud|Brabant wallon|5273
+Braine-le-Château|Brabant wallon|Ouest Brabant Wallon|Brabant wallon|5268
+Braine-le-Comte|Hainaut|Haute Senne|Hainaut-Centre|5328
+Braives|Liège|Hesbaye Ouest|Hesbaye|5293
+Brugelette|Hainaut|Sylle et Dendre|Hainaut-Centre|5326
+Brunehaut|Hainaut|Tournaisis|Wallonie Picarde|5316
+Bullange|Liège|Eifel|Zone DG|5291
+Burdinne|Liège|Hesbaye Ouest|Hesbaye|5293
+Burg-Reuland|Liège|Eifel|Zone DG|5291
+Butgenbach|Liège|Eifel|Zone DG|5291
+Celles|Hainaut|Val de L'escaut|Wallonie Picarde|5320
+Cerfontaine|Namur|Hermeton et Heure|DINAPHI|5315
+Chapelle-lez-Herlaimont|Hainaut|Mariemont|Hainaut-Centre|5335
+Charleroi|Hainaut|Charleroi|Hainaut-Est|5330
+Chastre|Brabant wallon|Orne-Thyle|Brabant wallon|5270
+Châtelet|Hainaut|Aiseau-Presles/Châtelet/Farciennes|Hainaut-Est|5331
+Chaudfontaine|Liège|Secova|Liège Zone II - IILE-SRI|5283
+Chaumont-Gistoux|Brabant wallon|Ardennes Brabançonnes|Brabant wallon|5272
+Chièvres|Hainaut|Sylle et Dendre|Hainaut-Centre|5326
+Chimay|Hainaut|Botte du Hainaut|Hainaut-Est|5334
+Chiny|Luxembourg|Gaume|Luxembourg|5299
+Ciney|Namur|Condroz-Famenne|DINAPHI|5314
+Clavier|Liège|Condroz|HEMECO|5296
+Colfontaine|Hainaut|Boraine|Hainaut-Centre|5327
+Comblain-au-Pont|Liège|Condroz|HEMECO|5296
+Comines-Warneton|Hainaut|Comines-Warneton|Wallonie Picarde|5318
+Courcelles|Hainaut|Trieux|Hainaut-Est|5336
+Court-Saint-Etienne|Brabant wallon|Orne-Thyle|Brabant wallon|5270
+Couvin|Namur|3 Vallees|DINAPHI|5311
+Crisnée|Liège|Hesbaye|Liège Zone II - IILE-SRI|5286
+Dalhem|Liège|Basse Meuse|Vesdre-Hoëgne & Plateau|5281
+Daverdisse|Luxembourg|Semois et Lesse|Luxembourg|5302
+Dinant|Namur|Haute-Meuse|DINAPHI|5312
+Dison|Liège|Vesdre|Vesdre-Hoëgne & Plateau|5289
+Doische|Namur|Hermeton et Heure|DINAPHI|5315
+Donceel|Liège|Hesbaye|Hesbaye|5286
+Dour|Hainaut|Hauts-Pays|Hainaut-Centre|5329
+Durbuy|Luxembourg|Famenne-Ardenne|Luxembourg|5300
+Ecaussinnes|Hainaut|Haute Senne|Hainaut-Centre|5328
+Eghezée|Namur|Orneau-Mehaigne|NAGE|5304
+Ellezelles|Hainaut|Collines|Wallonie Picarde|5323
+Enghien|Hainaut|Sylle et Dendre|Hainaut-Centre|5326
+Engis|Liège|Meuse-Hesbaye|Liège Zone II - IILE-SRI|5294
+Erezée|Luxembourg|Famenne-Ardenne|Luxembourg|5300
+Erquelinnes|Hainaut|Binche-Anderlues-Lermes|Hainaut-Est|5912
+Esneux|Liège|Secova|Liège Zone II - IILE-SRI|5283
+Estaimpuis|Hainaut|Val de L'escaut|Wallonie Picarde|5320
+Estinnes|Hainaut|Binche-Anderlues-Lermes|Hainaut-Centre|5912
+Etalle|Luxembourg|Gaume|Luxembourg|5299
+Eupen|Liège|Weser-Göhl|Zone DG|5292
+Faimes|Liège|Hesbaye|Hesbaye|5286
+Farciennes|Hainaut|Aiseau-Presles/Châtelet/Farciennes|Hainaut-Est|5331
+Fauvillers|Luxembourg|Centre Ardenne|Luxembourg|5301
+Fernelmont|Namur|Arches|NAGE|5305
+Ferrières|Liège|Condroz|HEMECO|5296
+Fexhe-le-Haut-Clocher|Liège|Hesbaye|Liège Zone II - IILE-SRI|5286
+Flémalle|Liège|Flémalle|Liège Zone II - IILE-SRI|5282
+Fléron|Liège|Beyne-Fléron-Soumagne|Liège Zone II - IILE-SRI|5280
+Fleurus|Hainaut|Brunau|Hainaut-Est|5337
+Flobecq|Hainaut|Collines|Wallonie Picarde|5323
+Floreffe|Namur|Entre Sambre et Meuse|Val De Sambre|5306
+Florennes|Namur|Flowal|DINAPHI|5309
+Florenville|Luxembourg|Gaume|Luxembourg|5299
+Fontaine-l'Evêque|Hainaut|Trieux|Hainaut-Est|5336
+Fosses-la-Ville|Namur|Entre Sambre et Meuse|Val De Sambre|5306
+Frameries|Hainaut|Boraine|Hainaut-Centre|5327
+Frasnes-lez-Anvaing|Hainaut|Collines|Wallonie Picarde|5323
+Froidchapelle|Hainaut|Botte du Hainaut|Hainaut-Est|5334
+Gedinne|Namur|Houille-Semois|DINAPHI|5310
+Geer|Liège|Hesbaye|Hesbaye|5286
+Gembloux|Namur|Orneau-Mehaigne|NAGE|5304
+Genappe|Brabant wallon|Nivelle-Genappe|Brabant wallon|5267
+Gerpinnes|Hainaut|Germinalt|Hainaut-Est|5338
+Gesves|Namur|Arches|NAGE|5305
+Gouvy|Luxembourg|Famenne-Ardenne|Luxembourg|5300
+Grâce-Hollogne|Liège|Awans/Grâce-Hollogne|Liège Zone II - IILE-SRI|5285
+Grez-Doiceau|Brabant wallon|Ardennes Brabançonnes|Brabant wallon|5272
+Habay|Luxembourg|Arlon/Attert/Habay/Martelange|Luxembourg|5297
+Ham-sur-Heure-Nalinnes|Hainaut|Germinalt|Hainaut-Est|5338
+Hamoir|Liège|Condroz|HEMECO|5296
+Hamois|Namur|Condroz-Famenne|DINAPHI|5314
+Hannut|Liège|Hesbaye Ouest|Hesbaye|5293
+Hastière|Namur|Haute-Meuse|DINAPHI|5312
+Havelange|Namur|Condroz-Famenne|DINAPHI|5314
+Hélécine|Brabant wallon|Brabant Wallon Est|Brabant wallon|5276
+Hensies|Hainaut|Hauts-Pays|Hainaut-Centre|5329
+Herbeumont|Luxembourg|Semois et Lesse|Luxembourg|5302
+Héron|Liège|Hesbaye Ouest|HEMECO|5293
+Herstal|Liège|Herstal|Liège Zone II - IILE-SRI|5279
+Herve|Liège|Pays de Herve|Vesdre-Hoëgne & Plateau|5288
+Honnelles|Hainaut|Hauts-Pays|Hainaut-Centre|5329
+Hotton|Luxembourg|Famenne-Ardenne|Luxembourg|5300
+Houffalize|Luxembourg|Famenne-Ardenne|Luxembourg|5300
+Houyet|Namur|Lesse et Lhomme|DINAPHI|5313
+Huy|Liège|Huy|HEMECO|5295
+Incourt|Brabant wallon|Ardennes Brabançonnes|Brabant wallon|5272
+Ittre|Brabant wallon|Ouest Brabant Wallon|Brabant wallon|5268
+Jalhay|Liège|Fagnes|Vesdre-Hoëgne & Plateau|5287
+Jemeppe-sur-Sambre|Namur|Jemeppe-sur-Sambre|Val De Sambre|5308
+Jodoigne|Brabant wallon|Brabant Wallon Est|Brabant wallon|5276
+Juprelle|Liège|Basse Meuse|Liège Zone II - IILE-SRI|5281
+Jurbise|Hainaut|Sylle et Dendre|Hainaut-Centre|5326
+La Bruyère|Namur|Orneau-Mehaigne|NAGE|5304
+La Calamine|Liège|Weser-Göhl|Zone DG|5292
+La Hulpe|Brabant wallon|Mazerine|Brabant wallon|5269
+La Louvière|Hainaut|Louvière|Hainaut-Centre|5325
+La Roche-en-Ardenne|Luxembourg|Famenne-Ardenne|Luxembourg|5300
+Lasne|Brabant wallon|Mazerine|Brabant wallon|5269
+Le Roeulx|Hainaut|Haute Senne|Hainaut-Centre|5328
+Léglise|Luxembourg|Centre Ardenne|Luxembourg|5301
+Lens|Hainaut|Sylle et Dendre|Hainaut-Centre|5326
+Les Bons Villers|Hainaut|Brunau|Hainaut-Est|5337
+Lessines|Hainaut|Collines|Wallonie Picarde|5323
+Leuze-en-Hainaut|Hainaut|Beloeil/Leuze-en-Hainaut|Wallonie Picarde|5319
+Libin|Luxembourg|Semois et Lesse|Luxembourg|5302
+Libramont-Chevigny|Luxembourg|Centre Ardenne|Luxembourg|5301
+Liège|Liège|Liège|Liège Zone II - IILE-SRI|5277
+Lierneux|Liège|Stavelot-Malmedy|5 Warche Amblève Lienne (ZS5 W.A.L.)|5290
+Limbourg|Liège|Pays de Herve|Vesdre-Hoëgne & Plateau|5288
+Lincent|Liège|Hesbaye Ouest|Hesbaye|5293
+Lobbes|Hainaut|Binche-Anderlues-Lermes|Hainaut-Est|5912
+Lontzen|Liège|Weser-Göhl|Zone DG|5292
+Malmedy|Liège|Stavelot-Malmedy|5 Warche Amblève Lienne (ZS5 W.A.L.)|5290
+Manage|Hainaut|Mariemont|Hainaut-Centre|5335
+Manhay|Luxembourg|Famenne-Ardenne|Luxembourg|5300
+Marche-en-Famenne|Luxembourg|Famenne-Ardenne|Luxembourg|5300
+Marchin|Liège|Condroz|HEMECO|5296
+Martelange|Luxembourg|Arlon/Attert/Habay/Martelange|Luxembourg|5297
+Meix-devant-Virton|Luxembourg|Gaume|Luxembourg|5299
+Merbes-le-Château|Hainaut|Binche-Anderlues-Lermes|Hainaut-Est|5912
+Messancy|Luxembourg|Sud-Luxembourg|Luxembourg|5298
+Mettet|Namur|Entre Sambre et Meuse|Val De Sambre|5306
+Modave|Liège|Condroz|HEMECO|5296
+Momignies|Hainaut|Botte du Hainaut|Hainaut-Est|5334
+Mons|Hainaut|Mons-Quévy|Hainaut-Centre|5324
+Mont-de-l'Enclus|Hainaut|Val de L'escaut|Wallonie Picarde|5320
+Mont-Saint-Guibert|Brabant wallon|Orne-Thyle|Brabant wallon|5270
+Montigny-le-Tilleul|Hainaut|Germinalt|Hainaut-Est|5338
+Morlanwelz|Hainaut|Mariemont|Hainaut-Centre|5335
+Mouscron|Hainaut|Mouscron|Wallonie Picarde|5317
+Musson|Luxembourg|Sud-Luxembourg|Luxembourg|5298
+Namur|Namur|Namur Capitale|NAGE|5303
+Nandrin|Liège|Condroz|HEMECO|5296
+Nassogne|Luxembourg|Famenne-Ardenne|Luxembourg|5300
+Neufchâteau|Luxembourg|Centre Ardenne|Luxembourg|5301
+Neupré|Liège|Seraing-Neupré|Liège Zone II - IILE-SRI|5278
+Nivelles|Brabant wallon|Nivelle-Genappe|Brabant wallon|5267
+Ohey|Namur|Arches|NAGE|5305
+Olne|Liège|Pays de Herve|Vesdre-Hoëgne & Plateau|5288
+Onhaye|Namur|Haute-Meuse|DINAPHI|5312
+Oreye|Liège|Hesbaye|Hesbaye|5286
+Orp-Jauche|Brabant wallon|Brabant Wallon Est|Brabant wallon|5276
+Ottignies-Louvain-la-Neuve|Brabant wallon|Ottignies-Louvain-la-Neuve|Brabant wallon|5275
+Ouffet|Liège|Condroz|HEMECO|5296
+Oupeye|Liège|Basse Meuse|Liège Zone II - IILE-SRI|5281
+Paliseul|Luxembourg|Semois et Lesse|Luxembourg|5302
+Pecq|Hainaut|Val de L'escaut|Wallonie Picarde|5320
+Pepinster|Liège|Vesdre|Vesdre-Hoëgne & Plateau|5289
+Péruwelz|Hainaut|Bernissart/Péruwelz|Wallonie Picarde|5321
+Perwez|Brabant wallon|Brabant Wallon Est|Brabant wallon|5276
+Philippeville|Namur|Hermeton et Heure|DINAPHI|5315
+Plombières|Liège|Pays de Herve|Vesdre-Hoëgne & Plateau|5288
+Pont-à-Celles|Hainaut|Brunau|Hainaut-Est|5337
+Profondeville|Namur|Entre Sambre et Meuse|NAGE|5306
+Quaregnon|Hainaut|Boraine|Hainaut-Centre|5327
+Quévy|Hainaut|Mons-Quévy|Hainaut-Centre|5324
+Quiévrain|Hainaut|Hauts-Pays|Hainaut-Centre|5329
+Raeren|Liège|Weser-Göhl|Zone DG|5292
+Ramillies|Brabant wallon|Brabant Wallon Est|Brabant wallon|5276
+Rebecq|Brabant wallon|Ouest Brabant Wallon|Brabant wallon|5268
+Remicourt|Liège|Hesbaye|Hesbaye|5286
+Rendeux|Luxembourg|Famenne-Ardenne|Luxembourg|5300
+Rixensart|Brabant wallon|Mazerine|Brabant wallon|5269
+Rochefort|Namur|Lesse et Lhomme|DINAPHI|5313
+Rouvroy|Luxembourg|Gaume|Luxembourg|5299
+Rumes|Hainaut|Tournaisis|Wallonie Picarde|5316
+Saint-Georges-sur-Meuse|Liège|Meuse-Hesbaye|Liège Zone II - IILE-SRI|5294
+Saint-Ghislain|Hainaut|Boraine|Hainaut-Centre|5327
+Saint-Hubert|Luxembourg|Semois et Lesse|Luxembourg|5302
+Saint-Léger|Luxembourg|Sud-Luxembourg|Luxembourg|5298
+Saint-Nicolas|Liège|Ans/Saint-Nicolas|Liège Zone II - IILE-SRI|5284
+Saint-Vith|Liège|Eifel|Zone DG|5291
+Sainte-Ode|Luxembourg|Centre Ardenne|Luxembourg|5301
+Sambreville|Namur|Samsom|Val De Sambre|5307
+Seneffe|Hainaut|Mariemont|Hainaut-Centre|5335
+Seraing|Liège|Seraing-Neupré|Liège Zone II - IILE-SRI|5278
+Silly|Hainaut|Sylle et Dendre|Hainaut-Centre|5326
+Sivry-Rance|Hainaut|Botte du Hainaut|Hainaut-Est|5334
+Soignies|Hainaut|Haute Senne|Hainaut-Centre|5328
+Sombreffe|Namur|Samsom|Val De Sambre|5307
+Somme-Leuze|Namur|Condroz-Famenne|DINAPHI|5314
+Soumagne|Liège|Beyne-Fléron-Soumagne|Vesdre-Hoëgne & Plateau|5280
+Spa|Liège|Fagnes|Vesdre-Hoëgne & Plateau|5287
+Sprimont|Liège|Secova|Vesdre-Hoëgne & Plateau|5283
+Stavelot|Liège|Stavelot-Malmedy|5 Warche Amblève Lienne (ZS5 W.A.L.)|5290
+Stoumont|Liège|Stavelot-Malmedy|5 Warche Amblève Lienne (ZS5 W.A.L.)|5290
+Tellin|Luxembourg|Semois et Lesse|Luxembourg|5302
+Tenneville|Luxembourg|Famenne-Ardenne|Luxembourg|5300
+Theux|Liège|Fagnes|Vesdre-Hoëgne & Plateau|5287
+Thimister-Clermont|Liège|Pays de Herve|Vesdre-Hoëgne & Plateau|5288
+Thuin|Hainaut|Germinalt|Hainaut-Est|5338
+Tinlot|Liège|Condroz|HEMECO|5296
+Tintigny|Luxembourg|Gaume|Luxembourg|5299
+Tournai|Hainaut|Tournaisis|Wallonie Picarde|5316
+Trois-Ponts|Liège|Stavelot-Malmedy|5 Warche Amblève Lienne (ZS5 W.A.L.)|5290
+Trooz|Liège|Secova|Vesdre-Hoëgne & Plateau|5283
+Tubize|Brabant wallon|Ouest Brabant Wallon|Brabant wallon|5268
+Vaux-sur-Sûre|Luxembourg|Centre Ardenne|Luxembourg|5301
+Verlaine|Liège|Meuse-Hesbaye|Hesbaye|5294
+Verviers|Liège|Vesdre|Vesdre-Hoëgne & Plateau|5289
+Vielsalm|Luxembourg|Famenne-Ardenne|Luxembourg|5300
+Villers-la-Ville|Brabant wallon|Orne-Thyle|Brabant wallon|5270
+Villers-le-Bouillet|Liège|Meuse-Hesbaye|HEMECO|5294
+Viroinval|Namur|3 Vallees|DINAPHI|5311
+Virton|Luxembourg|Gaume|Luxembourg|5299
+Visé|Liège|Basse Meuse|Liège Zone II - IILE-SRI|5281
+Vresse-sur-Semois|Namur|Houille-Semois|DINAPHI|5310
+Waimes|Liège|Stavelot-Malmedy|5 Warche Amblève Lienne (ZS5 W.A.L.)|5290
+Walcourt|Namur|Flowal|DINAPHI|5309
+Walhain|Brabant wallon|Orne-Thyle|Brabant wallon|5270
+Wanze|Liège|Meuse-Hesbaye|HEMECO|5294
+Waremme|Liège|Hesbaye|Hesbaye|5286
+Wasseiges|Liège|Hesbaye Ouest|Hesbaye|5293
+Waterloo|Brabant wallon|Waterloo|Brabant wallon|5274
+Wavre|Brabant wallon|Wavre|Brabant wallon|5271
+Welkenraedt|Liège|Pays de Herve|Vesdre-Hoëgne & Plateau|5288
+Wellin|Luxembourg|Semois et Lesse|Luxembourg|5302
+Yvoir|Namur|Haute-Meuse|DINAPHI|5312

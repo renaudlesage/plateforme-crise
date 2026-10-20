@@ -7,14 +7,21 @@ postal et localité, avec le code INS (= NIS) de la commune, ses noms FR / NL /
 DE, sa province, son arrondissement, sa région et un point par commune. Le
 script n'utilise que la bibliothèque standard et ne fait aucun appel réseau.
 
+Zones de secours et de police (Wallonie) : scripts/seed/sources/
+zones_wallonie_eventware.txt, extraites de la table communes d'Eventware (une
+copie datée, pas de base partagée). Chaque ligne est rattachée à une seule
+commune wallonne par son nom ; l'orthographe vérifiée d'Eventware remplace
+celle de l'export quand seules l'apostrophe ou la casse diffèrent.
+
 Usage :
-  python3 scripts/seed/communes_be.py <communes-et-localites.gpx> [--attendu 565]
-          [--sortie supabase/seed/communes_be.sql] [--verifier]
+  python3 scripts/seed/communes_be.py <communes-et-localites.gpx> [--zones <fichier>]
+          [--attendu 565] [--sortie supabase/seed/communes_be.sql] [--verifier]
 
 Le script s'arrête sur toute incohérence plutôt que de produire un référentiel
 douteux : nombre de communes différent de l'attendu, valeurs divergentes pour
 une même commune, province qui ne correspond pas au code NIS, arrondissement
-ambigu, commune germanophone dont le nom ne correspond pas.
+ambigu, commune germanophone dont le nom ne correspond pas, zone rattachée à
+une commune inconnue ou en double, commune wallonne sans zone.
 """
 
 import argparse
@@ -128,7 +135,8 @@ def communes_depuis(lignes):
             erreur(f'commune {code} : province {province} incompatible avec le code NIS ({attendue})')
         code_arrondissement = code[:2] + '000'
         arrondissements[code_arrondissement].add(ligne.get('arrondissement'))
-        noms = {k: ligne.get(f'commune_{k}', '') for k in ('fr', 'nl', 'de')}
+        # Apostrophe droite partout (l'export mélange ’ et ').
+        noms = {k: ligne.get(f'commune_{k}', '').replace('’', "'") for k in ('fr', 'nl', 'de')}
         langues = ['de'] if code in COMMUNES_GERMANOPHONES else list(LANGUES_PAR_REGION[region])
         if code in COMMUNES_GERMANOPHONES and not any(
                 COMMUNES_GERMANOPHONES[code] == normaliser(n) for n in noms.values()):
@@ -151,6 +159,49 @@ def communes_depuis(lignes):
     return communes
 
 
+def lire_zones(chemin):
+    lignes = [l for l in chemin.read_text(encoding='utf-8').splitlines() if l and not l.startswith('#')]
+    entete = lignes[0].split('|')
+    if entete != ['nom', 'province', 'zone_police', 'zone_secours', 'numero_zone_police']:
+        erreur(f'en-tête inattendu dans {chemin.name} : {entete}')
+    return [dict(zip(entete, l.split('|'))) for l in lignes[1:]]
+
+
+def appliquer_zones(communes, zones):
+    wallonnes = {}
+    for c in communes:
+        if c['region'] == 'Région wallonne':
+            if normaliser(c['fr']) in wallonnes:
+                erreur(f'deux communes wallonnes portent le nom {c["fr"]}')
+            wallonnes[normaliser(c['fr'])] = c
+    noms_par_numero = collections.defaultdict(set)
+    for z in zones:
+        c = wallonnes.get(normaliser(z['nom']))
+        if c is None:
+            erreur(f'zones : commune inconnue {z["nom"]!r}')
+        if 'zone_secours' in c:
+            erreur(f'zones : commune {z["nom"]} présente deux fois')
+        if normaliser(c['province']) != normaliser(z['province']):
+            erreur(f'zones : {z["nom"]} est en {c["province"]}, pas en {z["province"]}')
+        if not re.fullmatch(r'[0-9]{4}', z['numero_zone_police']) or not z['zone_police'] or not z['zone_secours']:
+            erreur(f'zones : ligne incomplète pour {z["nom"]}')
+        noms_par_numero[z['numero_zone_police']].add(z['zone_police'])
+        if c['fr'] != z['nom']:
+            # Orthographe vérifiée d'Eventware (apostrophe, casse) ; NL et DE suivent s'ils copiaient le FR.
+            for langue in ('nl', 'de'):
+                if c[langue] == c['fr']:
+                    c[langue] = z['nom']
+            c['fr'] = z['nom']
+        c.update(zone_secours=z['zone_secours'], zone_police=z['zone_police'],
+                 zone_police_numero=z['numero_zone_police'])
+    sans_zone = sorted(c['code'] for c in wallonnes.values() if 'zone_secours' not in c)
+    if sans_zone:
+        erreur(f'zones : communes wallonnes sans zone : {sans_zone}')
+    ambigus = {n: z for n, z in noms_par_numero.items() if len(z) > 1}
+    if ambigus:
+        erreur(f'zones : numéro de zone de police à plusieurs noms : {ambigus}')
+
+
 def sql_texte(valeur):
     return 'null' if not valeur else "'" + valeur.replace("'", "''") + "'"
 
@@ -158,6 +209,7 @@ def sql_texte(valeur):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('fichier', type=Path)
+    parser.add_argument('--zones', type=Path, help='zones de secours et de police (format de zones_wallonie_eventware.txt)')
     parser.add_argument('--attendu', type=int, default=565, help='nombre de communes attendu')
     parser.add_argument('--sortie', type=Path, default=Path('supabase/seed/communes_be.sql'))
     parser.add_argument('--verifier', action='store_true', help='contrôler sans écrire le fichier SQL')
@@ -168,28 +220,39 @@ def main():
         erreur(f'{len(communes)} communes trouvées, {args.attendu} attendues')
     par_region = collections.Counter(c['region'] for c in communes)
     print(f'{len(communes)} communes :', ', '.join(f'{r} {n}' for r, n in sorted(par_region.items())))
+    if args.zones:
+        appliquer_zones(communes, lire_zones(args.zones))
+        avec_zone = [c for c in communes if c.get('zone_secours')]
+        print(f'zones : {len(avec_zone)} communes, {len({c["zone_secours"] for c in avec_zone})} zones de secours, '
+              f'{len({c["zone_police_numero"] for c in avec_zone})} zones de police')
     if args.verifier:
         return
 
     source = f'Open Data Wallonie-Bruxelles, export « communes et localités » ({args.fichier.name})'
+    if args.zones:
+        source += f' ; zones : Eventware ({args.zones.name})'
     valeurs = ',\n'.join(
         '  (' + ', '.join([
             sql_texte(c['code']), sql_texte(c['fr']), sql_texte(c['nl']), sql_texte(c['de']),
             sql_texte(c['arrondissement']), sql_texte(c['province']), sql_texte(c['region']),
             "'{" + ','.join(c['langues']) + "}'",
             f"public.st_setsrid(public.st_makepoint({c['lon']}, {c['lat']}), 4326)::public.geography",
+            sql_texte(c.get('zone_secours')), sql_texte(c.get('zone_police')), sql_texte(c.get('zone_police_numero')),
             sql_texte(source),
         ]) + ')'
         for c in communes
     )
     sql = f"""-- Référentiel des communes belges (F1), généré par scripts/seed/communes_be.py.
 -- Source : Open Data Wallonie-Bruxelles, jeu « communes et localités » (export GPX) ; codes INS
--- conformes à la nomenclature REFNIS de Statbel au 1er janvier 2025 (565 communes).
+-- conformes à la nomenclature REFNIS de Statbel au 1er janvier 2025 (565 communes). Zones de
+-- secours et de police des communes wallonnes : copie de la table communes d'Eventware
+-- (scripts/seed/sources/zones_wallonie_eventware.txt), vide ailleurs.
 -- Ne pas modifier à la main : relancer le script sur un nouvel export.
 -- Ajout ou mise à jour seulement : un code disparu (fusion) reste en place jusqu'à décision.
 
 insert into public.communes_be
-  (code_nis, nom_fr, nom_nl, nom_de, code_arrondissement, province, region, langues, centroide, source)
+  (code_nis, nom_fr, nom_nl, nom_de, code_arrondissement, province, region, langues, centroide,
+   zone_secours, zone_police, zone_police_numero, source)
 values
 {valeurs}
 on conflict (code_nis) do update set
@@ -201,6 +264,9 @@ on conflict (code_nis) do update set
   region = excluded.region,
   langues = excluded.langues,
   centroide = excluded.centroide,
+  zone_secours = excluded.zone_secours,
+  zone_police = excluded.zone_police,
+  zone_police_numero = excluded.zone_police_numero,
   source = excluded.source,
   maj_le = now();
 """

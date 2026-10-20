@@ -202,6 +202,14 @@ insert into t_rep (etape, resultat) select
   pg_temp.essai('authenticated', membre, $q$update communes_be set nom_fr = 'x' where code_nis = '62063'$q$)
 from t_ids;
 insert into t_rep (etape, resultat) values
+  ('F1-7 zones de Liège (62063) : secours / police (numéro)',
+   pg_temp.valeur('anon', null, $q$select zone_secours || ' / ' || zone_police || ' (' || zone_police_numero || ')'
+                                  from communes_be where code_nis = '62063'$q$));
+insert into t_rep (etape, resultat) values
+  ('F1-8 communes avec zones / zones de secours / zones de police (attendu : 261 / 14 / 71)',
+   (select count(*) || ' / ' || count(distinct zone_secours) || ' / ' || count(distinct zone_police_numero)
+    from communes_be where zone_secours is not null));
+insert into t_rep (etape, resultat) values
   ('F1-6 distance Liège – Namur entre points de commune (km)',
    (select round((public.st_distance(l.centroide, n.centroide) / 1000)::numeric, 1)::text
     from communes_be l, communes_be n where l.code_nis = '62063' and n.code_nis = '92094'));

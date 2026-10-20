@@ -2,12 +2,14 @@
 --
 -- communes_be : une ligne par commune (code NIS à 5 chiffres), noms FR / NL / DE,
 -- arrondissement, province (même vocabulaire que contextes.province, Bruxelles
--- compris), région, langue(s) administrative(s), point de la commune et emprise
--- (vide jusqu'au chargement des géométries, au chantier C2).
+-- compris), région, langue(s) administrative(s), point de la commune, emprise
+-- (vide jusqu'au chargement des géométries, au chantier C2), zone de secours et
+-- zone de police (communes wallonnes).
 -- Les lignes viennent de supabase/seed/communes_be.sql, généré par
 -- scripts/seed/communes_be.py depuis l'export « communes et localités » d'Open
 -- Data Wallonie-Bruxelles (codes INS de la nomenclature REFNIS de Statbel au
--- 1er janvier 2025) ; jamais saisies dans le code des apps.
+-- 1er janvier 2025) et, pour les zones, d'une copie datée de la table communes
+-- d'Eventware (pas de base partagée) ; jamais saisies dans le code des apps.
 -- Lecture ouverte à tous (référentiel public), aucune écriture par l'API.
 
 create table if not exists public.communes_be (
@@ -23,6 +25,9 @@ create table if not exists public.communes_be (
   langues text[] not null default '{}' check (langues <@ array['fr', 'nl', 'de']),
   centroide geography(Point, 4326),
   emprise geometry(Polygon, 4326),
+  zone_secours text,
+  zone_police text,
+  zone_police_numero text check (zone_police_numero ~ '^[0-9]{4}$'),
   valide_depuis date,
   source text not null,
   maj_le timestamptz not null default now(),
@@ -33,8 +38,11 @@ comment on table public.communes_be is 'Référentiel des communes belges (F1). 
 comment on column public.communes_be.centroide is 'Point de la commune fourni par l''export source (centroïde probable)';
 comment on column public.communes_be.province is 'Même vocabulaire que contextes.province ; « Bruxelles-Capitale » pour les 19 communes bruxelloises';
 comment on column public.communes_be.langues is 'Langue(s) administrative(s) : fr, nl, de (les facilités linguistiques ne sont pas représentées)';
+comment on column public.communes_be.zone_secours is 'Zone de secours (communes wallonnes, d''après Eventware, vérifié le 16/09/2026) ; vide ailleurs pour l''instant';
+comment on column public.communes_be.zone_police_numero is 'Numéro officiel de la zone de police (découpage par arrêté royal)';
 
 create index if not exists communes_be_province_idx on public.communes_be (province);
+create index if not exists communes_be_zone_secours_idx on public.communes_be (zone_secours) where zone_secours is not null;
 
 alter table public.communes_be enable row level security;
 revoke all on public.communes_be from public, anon, authenticated;
