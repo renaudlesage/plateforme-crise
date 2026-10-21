@@ -20,8 +20,8 @@ reproduites ici : la base de production fait foi. Chaque fichier ci-dessous a é
 | `20261020213000_f5_journal_empreinte.sql` | F5 : références signalement / alerte sur `journal_decisions`, empreinte SHA-256 chaînée calculée à l'insertion, `verifier_journal_decisions()` |
 | `20261020213100_f3_planification.sql` | F3 : extensions `pg_cron` et `pg_net`, table `jobs_etat`, `jobs_signaler()`, `jobs_muets()` |
 | `20261020213200_f1_communes_be.sql` | F1 : table `communes_be` ; données dans `supabase/seed/communes_be.sql` (565 communes ; zones de secours et de police des communes wallonnes d'après Eventware), généré par `scripts/seed/communes_be.py` |
-| `20261021090000_c1_alertes_externes_regles_reveil.sql` | **Préparé, non appliqué (à approuver)** — C1 : `alertes_externes` (avertissements météo en ajout seul : flux, saisie manuelle, fixture), vue `alertes_externes_en_cours`, `regles_reveil`, `regles_reveil_correspondantes()` |
-| `20261021120000_c1_moteur_reveil.sql` | **Préparé, non appliqué (à approuver, après le précédent)** — C1 : moteur de réveil (seuil le plus élevé par fiche, événement en veille, journal, file de notifications), `parametres_reveil`, `reveils`, `notifications` (F2), `alertes_externes_traitements`, `acquitter_reveil()`, tâche `reveil_escalade` chaque minute |
+| `20261021090000_c1_alertes_externes_regles_reveil.sql` | C1 : `alertes_externes` (avertissements météo en ajout seul : flux, saisie manuelle, fixture), vue `alertes_externes_en_cours`, `regles_reveil`, `regles_reveil_correspondantes()` |
+| `20261021120000_c1_moteur_reveil.sql` | C1 : moteur de réveil (seuil le plus élevé par fiche, événement en veille, journal, file de notifications), `parametres_reveil`, `reveils`, `notifications` (F2), `alertes_externes_traitements`, `acquitter_reveil()`, tâche `reveil_escalade` chaque minute |
 
 Attention : les fichiers de l'entraide sont l'état final (correctifs appliqués en base sous les noms `entraide_missions_affectation_close`, `entraide_missions_historique_after`, `entraide_equipes_chef_controle`, `entraide_fermeture_horodatee_serveur`, `entraide_code_erreur_pab_ferme`, `entraide_missions_zone_rouge_derogation`, `entraide_missions_reouverture`, y figurent déjà). Le fichier du pont est l'état final (deux correctifs appliqués après coup en base, sous les noms
 `pont_commune_evenements_correctif_rehausse` et `pont_commune_evenements_revoke_triggers`, y figurent déjà).
@@ -49,11 +49,13 @@ de la table comparé au fichier par empreinte md5 : identique. Tests : `supabase
 (transaction annulée, résultats affichés par l'exception finale), rejoués sur la base réelle après application.
 
 C1, avertissements et règles de réveil : répété le 21 octobre 2026 dans une transaction annulée (migration et
-tests ensemble, 31 contrôles conformes). Tests rejouables après application :
-`supabase/tests/c1_alertes_regles_reveil.sql`. Le message CAP reçu est découpé en lignes par
+tests ensemble, 31 contrôles conformes), approuvé par Ren, puis appliqué tel quel le même jour par l'outil de
+migration : version `20261021090450` (`c1_alertes_externes_regles_reveil`). Tests rejoués sur la base réelle :
+`supabase/tests/c1_alertes_regles_reveil.sql`, 31 contrôles conformes. Le message CAP reçu est découpé en lignes par
 `supabase/functions/_shared/cap.ts` (tests Vitest : `npm test`).
 
 C1, moteur de réveil : répété le 21 octobre 2026 avec la migration précédente dans une transaction annulée
-(22 vérifications conformes). Tests rejouables après application des deux migrations :
-`supabase/tests/c1_moteur_reveil.sql`. La migration planifie une tâche pg_cron (`reveil_escalade`, chaque
+(22 vérifications conformes), approuvé par Ren, puis appliqué tel quel le même jour : version `20261021090610`
+(`c1_moteur_reveil`). Tests rejoués sur la base réelle : `supabase/tests/c1_moteur_reveil.sql`, 22 vérifications
+conformes. La migration planifie une tâche pg_cron (`reveil_escalade`, chaque
 minute) : l'annuler, c'est `select cron.unschedule('reveil_escalade')`.
