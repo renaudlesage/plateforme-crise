@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture fabriquée pour les tests de Crisiware (chantier C1) : ce n'est pas un message réel.
+     Annulation, sans bloc info, de maj_rouge_orages_liege.xml. -->
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>fixture.crisiware.20260530.annulation-orages-liege</identifier>
+  <sender>fixtures@crisiware.invalid</sender>
+  <sent>2026-05-30T23:30:00+02:00</sent>
+  <status>Actual</status>
+  <msgType>Cancel</msgType>
+  <scope>Public</scope>
+  <references>fixtures@crisiware.invalid,fixture.crisiware.20260530.rouge-orages-liege,2026-05-30T19:05:00+02:00</references>
+</alert>

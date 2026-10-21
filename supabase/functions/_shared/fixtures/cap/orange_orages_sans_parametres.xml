@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture fabriquée pour les tests de Crisiware (chantier C1) : ce n'est pas un message réel.
+     Source sans paramètres MeteoAlarm : niveau tiré de la sévérité CAP, type tiré du libellé. -->
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>fixture.crisiware.20260530.sans-parametres</identifier>
+  <sender>fixtures@crisiware.invalid</sender>
+  <sent>2026-05-30T17:40:00+02:00</sent>
+  <status>Actual</status>
+  <msgType>Alert</msgType>
+  <scope>Public</scope>
+  <info>
+    <language>fr</language>
+    <category>Met</category>
+    <event>Avertissement orages</event>
+    <urgency>Future</urgency>
+    <severity>Severe</severity>
+    <certainty>Likely</certainty>
+    <effective>2026-05-30T18:00:00+02:00</effective>
+    <expires>2026-05-31T00:00:00+02:00</expires>
+    <area>
+      <areaDesc>Province de Liège</areaDesc>
+    </area>
+  </info>
+</alert>

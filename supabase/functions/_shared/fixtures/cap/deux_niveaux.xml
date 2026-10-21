@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture fabriquée pour les tests de Crisiware (chantier C1) : ce n'est pas un message réel.
+     Un message, deux niveaux sur deux zones : deux segments distincts. -->
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>fixture.crisiware.20260530.deux-niveaux</identifier>
+  <sender>fixtures@crisiware.invalid</sender>
+  <sent>2026-05-30T16:00:00+02:00</sent>
+  <status>Actual</status>
+  <msgType>Alert</msgType>
+  <scope>Public</scope>
+  <info>
+    <language>fr-BE</language>
+    <category>Met</category>
+    <event>Avertissement orages</event>
+    <urgency>Future</urgency>
+    <severity>Moderate</severity>
+    <certainty>Likely</certainty>
+    <onset>2026-05-30T18:00:00+02:00</onset>
+    <expires>2026-05-31T00:00:00+02:00</expires>
+    <parameter><valueName>awareness_level</valueName><value>2; yellow; Moderate</value></parameter>
+    <parameter><valueName>awareness_type</valueName><value>3; thunderstorm</value></parameter>
+    <area><areaDesc>Namur</areaDesc></area>
+  </info>
+  <info>
+    <language>fr-BE</language>
+    <category>Met</category>
+    <event>Avertissement orages</event>
+    <urgency>Future</urgency>
+    <severity>Severe</severity>
+    <certainty>Likely</certainty>
+    <onset>2026-05-30T18:00:00+02:00</onset>
+    <expires>2026-05-31T00:00:00+02:00</expires>
+    <parameter><valueName>awareness_level</valueName><value>3; orange; Severe</value></parameter>
+    <parameter><valueName>awareness_type</valueName><value>3; thunderstorm</value></parameter>
+    <area><areaDesc>Liège</areaDesc></area>
+  </info>
+</alert>

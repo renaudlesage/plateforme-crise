@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture fabriquée pour les tests de Crisiware (chantier C1) : ce n'est pas un message réel.
+     Structure CAP 1.2 (OASIS), paramètres MeteoAlarm awareness_level et awareness_type. -->
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>fixture.crisiware.20260530.jaune-vent-namur</identifier>
+  <sender>fixtures@crisiware.invalid</sender>
+  <sent>2026-05-30T09:00:00+02:00</sent>
+  <status>Actual</status>
+  <msgType>Alert</msgType>
+  <scope>Public</scope>
+  <info>
+    <language>nl-BE</language>
+    <category>Met</category>
+    <event>Waarschuwing wind</event>
+    <urgency>Future</urgency>
+    <severity>Moderate</severity>
+    <certainty>Likely</certainty>
+    <onset>2026-05-30T12:00:00+02:00</onset>
+    <expires>2026-05-30T20:00:00+02:00</expires>
+    <senderName>Fixture</senderName>
+    <headline>Gele waarschuwing voor wind in de provincie Namen</headline>
+    <description>Rukwinden tot 70 km/u mogelijk.</description>
+    <parameter><valueName>awareness_level</valueName><value>2; yellow; Moderate</value></parameter>
+    <parameter><valueName>awareness_type</valueName><value>1; wind</value></parameter>
+    <area>
+      <areaDesc>Namen</areaDesc>
+      <geocode><valueName>NUTS2</valueName><value>BE35</value></geocode>
+    </area>
+  </info>
+  <info>
+    <language>fr-BE</language>
+    <category>Met</category>
+    <event>Avertissement vent</event>
+    <urgency>Future</urgency>
+    <severity>Moderate</severity>
+    <certainty>Likely</certainty>
+    <onset>2026-05-30T12:00:00+02:00</onset>
+    <expires>2026-05-30T20:00:00+02:00</expires>
+    <senderName>Fixture</senderName>
+    <headline>Avertissement jaune pour le vent en province de Namur</headline>
+    <description>Rafales jusqu'à 70 km/h possibles.</description>
+    <instruction>Rangez ou fixez les objets susceptibles d'être emportés par le vent.</instruction>
+    <parameter><valueName>awareness_level</valueName><value>2; yellow; Moderate</value></parameter>
+    <parameter><valueName>awareness_type</valueName><value>1; wind</value></parameter>
+    <area>
+      <areaDesc>Namur</areaDesc>
+      <geocode><valueName>NUTS2</valueName><value>BE35</value></geocode>
+    </area>
+  </info>
+</alert>
