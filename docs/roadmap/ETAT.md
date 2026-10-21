@@ -61,7 +61,11 @@ Congés de Ren : **à confirmer avant le 14 décembre** (semaines de congé, et 
 3. Activer dans le tableau de bord Supabase, réglages d'authentification, la **protection contre les mots de passe divulgués** (signalée par le conseiller de sécurité ; disponibilité selon l'offre Supabase).
 4. **Ouvrir l'accès réseau à `feeds.meteoalarm.org`** dans les réglages de l'environnement de travail (question 13 : encore refusé le 21/10 à 11:16), ou fournir quelques vrais messages CAP en fichier : condition pour finir la session 1 de C1.
 5. Pour la démo D1 : donner le rôle « Fonctionnaire planification urgence » (PLANU) au compte du CPU de la Commune Test et renseigner au moins un suppléant (avec e-mail) dans l'annuaire.
-6. **Essayer les écrans de C1 avec un vrai compte** (branche `feat/c01-reveil-suite`) : CC → onglet « Avertissements », encoder un avertissement orange orages ; vérifier le bandeau, « Vu, je prends », puis Admin → Anticipation → « Réveil automatique ». Puis dire si l'on fusionne. Le nom « Avertissements » et la saisie manuelle dans le CC plutôt que dans l'Admin sont des choix à confirmer (voir « Décisions de Ren », 21/10, « Lance »).
+6. **Essayer les écrans de C1 avec un vrai compte**, sur les aperçus Vercel de la branche `feat/c01-reveil-suite` (ils utilisent la base de production : aucune règle de réveil n'y existe encore) :
+   1. Admin → Anticipation → « Réveil automatique » : ajouter la règle « Orages, à partir d'orange → Orages S1 — Pré-activation » ; vérifier l'aperçu des comptes et des suppléants.
+   2. CC → onglet « Avertissements » → « Encoder un avertissement reçu par un autre canal » : Orages, orange, en cochant **Démonstration** (super-admin) pour que l'événement ouvert soit un exercice. Sans cette case, un vrai événement en pré-alerte s'ouvre dans la Commune Test (à clôturer ensuite), et l'avertissement reste enregistré dans tous les cas (ajout seul).
+   3. Vérifier le bilan affiché, le bandeau rouge sur les autres pages, puis « Vu, je prends » (entrée au journal de l'événement).
+   Puis dire si l'on fusionne. Le nom « Avertissements » et la saisie manuelle dans le CC plutôt que dans l'Admin sont des choix à confirmer (voir « Décisions de Ren », 21/10, « Lance »).
 
 ## Migrations à approuver
 Approbation asynchrone : écrire « approuvée le AAAA-MM-JJ » à côté de la ligne ; application à la session suivante, puis vérification de l'effet réel en SQL.
