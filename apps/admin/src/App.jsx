@@ -25,6 +25,7 @@ import ModelesMessagesPopulation from './pages/ModelesMessagesPopulation'
 import CanauxDiffusion from './pages/CanauxDiffusion'
 import FonctionsCritiques from './pages/FonctionsCritiques'
 import SeuilsAction from './pages/SeuilsAction'
+import ReveilAutomatique from './pages/ReveilAutomatique'
 import SeuilsMeteoDeclencheurs from './pages/SeuilsMeteoDeclencheurs'
 import MeteoCommune from './pages/MeteoCommune'
 import InfrastructuresCritiques from './pages/InfrastructuresCritiques'
@@ -112,6 +113,7 @@ export default function App() {
             <Route path="canaux-diffusion" element={<CanauxDiffusion />} />
             <Route path="fonctions-critiques" element={<FonctionsCritiques />} />
             <Route path="seuils-action" element={<SeuilsAction />} />
+            <Route path="reveil-automatique" element={<ReveilAutomatique />} />
             <Route path="seuils-meteo" element={<SeuilsMeteoDeclencheurs />} />
             <Route path="meteo-commune" element={<MeteoCommune />} />
             <Route path="infrastructures-critiques" element={<InfrastructuresCritiques />} />

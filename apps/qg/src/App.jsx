@@ -14,6 +14,7 @@ import Exercices from './pages/Exercices'
 import ExerciceDetail from './pages/ExerciceDetail'
 import EvenementsTerritoire from './pages/EvenementsTerritoire'
 import Situation from './pages/Situation'
+import Avertissements from './pages/Avertissements'
 import { useAuth } from './context/AuthContext'
 
 // Un accès en lecture seule (bourgmestre, autorité) arrive directement sur la vue autorité ; les autres, sur la liste des incidents.
@@ -60,6 +61,7 @@ export default function App() {
             <Route path="signalements-citoyens" element={<SignalementsCitoyens />} />
             <Route path="carte" element={<Carte />} />
             <Route path="situation" element={<Situation />} />
+            <Route path="avertissements" element={<Avertissements />} />
             <Route path="evenements" element={<ReserveAuxActeurs><EvenementsTerritoire /></ReserveAuxActeurs>} />
             <Route path="exercices" element={<ReserveAuxActeurs><Exercices /></ReserveAuxActeurs>} />
             <Route path="exercices/:id" element={<ReserveAuxActeurs><ExerciceDetail /></ReserveAuxActeurs>} />

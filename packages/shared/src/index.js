@@ -68,4 +68,5 @@ export {
   correspondRecherche,
 } from './situation.js'
 export * from './entraide.js'
+export * from './reveil.js'
 export { matriceQr, svgQr } from './qr.js'

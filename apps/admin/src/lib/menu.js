@@ -57,12 +57,13 @@ export const SECTIONS = [
   },
   {
     titre: 'Anticipation',
-    resume: "Seuils, météo, fonctions et infrastructures critiques, continuité, résilience.",
+    resume: "Seuils, réveil automatique, météo, fonctions et infrastructures critiques, continuité, résilience.",
     liens: [
       { to: '/fonctions-critiques', libelle: 'Fonctions critiques' },
       { to: '/infrastructures-critiques', libelle: 'Infrastructures critiques' },
       { to: '/population-non-residente', libelle: 'Population non résidente' },
       { to: '/seuils-action', libelle: "Seuils d'action" },
+      { to: '/reveil-automatique', libelle: 'Réveil automatique' },
       { to: '/meteo-commune', libelle: 'Météo de la commune' },
       { to: '/seuils-meteo', libelle: 'Seuils météo (déclencheurs)' },
       { to: '/sources-situation', libelle: 'Sources de situation (veille)' },

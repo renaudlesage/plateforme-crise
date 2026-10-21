@@ -1,7 +1,9 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import BasculeTheme from './BasculeTheme'
+import BandeauReveil from './BandeauReveil'
 import { useCompteursCC } from '../hooks/useCompteursCC'
+import { useReveilsEnAttente } from '../hooks/useReveilsEnAttente'
 
 const LIBELLE_NIVEAU = { attention: "Besoin d'aide", urgent: 'URGENT', mayday: 'MAYDAY' }
 
@@ -20,6 +22,7 @@ function Pastille({ n, rouge = false }) {
 export default function MisEnPageQG() {
   const { utilisateur, contexteActuel, contexteId, deconnexion, selectionnerContexte } = useAuth()
   const compteurs = useCompteursCC(contexteId)
+  const reveils = useReveilsEnAttente(contexteId)
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const actif = (to) =>
@@ -58,6 +61,9 @@ export default function MisEnPageQG() {
           <Link to="/autorite" className={`plaque-nav${actif('/autorite') ? ' actif' : ''}`}>
             Vue autorité
           </Link>
+          <Link to="/avertissements" className={`plaque-nav${actif('/avertissements') ? ' actif' : ''}`}>
+            Avertissements<Pastille n={reveils.reveils.length} rouge />
+          </Link>
           <Link to="/signalements-citoyens" className={`plaque-nav${actif('/signalements-citoyens') ? ' actif' : ''}`}>
             Signalements citoyens<Pastille n={compteurs.signalements} />
           </Link>
@@ -92,8 +98,12 @@ export default function MisEnPageQG() {
         </Link>
       )}
 
+      {/* Réveil automatique : un seuil armé par un avertissement officiel attend son « Vu, je prends ». */}
+      {pathname !== '/avertissements' && <BandeauReveil reveils={reveils.reveils} onAcquitter={reveils.acquitter} />}
+
       <main>
-        <Outlet />
+        {/* L'onglet Avertissements acquitte par ce même état : la pastille et le bandeau suivent sans attendre le prochain relevé. */}
+        <Outlet context={{ reveils }} />
       </main>
     </div>
   )
