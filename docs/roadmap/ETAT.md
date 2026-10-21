@@ -1,0 +1,123 @@
+# État de la feuille de route
+Dernière session : 2026-10-21 — chantier : C1 Réveil automatique (sprint 2) — résultat : session 1 faite en partie (`irm-vigilance` versionnée ; Vitest et lecture des messages CAP, 51 tests verts ; migration des avertissements et des règles, 31 contrôles conformes) ; puis, après les décisions de Ren, moteur de réveil de la session 2 préparé (deuxième migration, 22 vérifications conformes en répétition). Les deux migrations ont été approuvées et appliquées le même jour (versions `20261021090450` et `20261021090610`), tests rejoués sur la base réelle (31 et 22 conformes), tâche `reveil_escalade` active ; toute la pile de branches fusionnée dans `main` (PR #5).
+
+Session précédente (2026-10-20) : fondations F1, F5, F3 appliquées (versions `20261020214032`, `20261020214055`, `20261020214114`), seed des 565 communes chargé et vérifié, 21 des 22 tests conformes sur la base réelle ; correctifs de sécurité appliqués le même jour (version `20261020211056`).
+
+Sessions : 4 réalisées / 16 planifiées (vague 1) — Session 0, correctifs de sécurité et F1 F5 F3 le 20 octobre ; le 21 octobre, C1 : session 1 en partie, puis le moteur de la session 2 ; tout cela avant le début prévu du 2 novembre. Depuis le 20 octobre, on avance sans attendre les dates du plan (décision de Ren).
+
+## Terminé
+- Session 0 (2026-10-20, branche feat/s00-feuille-de-route, mergé : oui, PR #5 du 2026-10-21)
+- Correctifs de sécurité (2026-10-20, branche feat/securite-correctifs, mergé : oui, PR #5 ; migration appliquée et vérifiée)
+- Fondations F1, F5, F3 (2026-10-20, branche feat/f01-f03-f05-fondations, mergé : oui, PR #5 ; migrations et seed appliqués et vérifiés)
+- C1, partie serveur (2026-10-21, branche feat/c01-reveil-automatique, mergé : oui, PR #5 ; migrations appliquées et vérifiées) : le chantier continue, voir « En cours ».
+- Avant la feuille de route, utiles aux chantiers :
+  - Renommage « Crisiware 2 » (2026-10-20, PR #2, mergé : oui)
+  - Fiches REX 2026 orages éclair (A) et cyberattaque (B), import avec seuils et plan d'action, impression de fiche (2026-10-20, PR #3, mergé : oui)
+  - Risques du territoire distincts des objets à risque (2026-10-20, PR #4, mergé : oui)
+
+## En cours
+- Vague 1 : du 2 novembre 2026 au 21 février 2027, réévaluation la semaine du 22 février ([SPRINTS.md](SPRINTS.md)) ; dates indicatives depuis le 20 octobre, l'ordre des chantiers reste celui du plan.
+- Sprint 1 « Fondations » : terminé. F5, F3, F1 et le seed appliqués le 2026-10-20 ; tests rejoués sur la base réelle (21 sur 22 : F5-3, la suppression d'une décision, n'est pas exécutable par l'outil SQL, qui retient les DELETE ; il porte sur le refus déjà en place, que F5 ne modifie pas).
+- Résultat de la session F1, F5, F3 :
+  - **F5** : références signalement et alerte, empreinte SHA-256 chaînée calculée par le serveur (une valeur envoyée par le client est remplacée), `verifier_journal_decisions()` qui détecte une falsification (prouvé en répétition). Restent : référence « message » (question 8), journal hors incident (C7), `livre_de_bord` modifiable (T1).
+  - **F3** : `pg_cron`, `pg_net`, `jobs_etat`, `jobs_signaler()` (clé de service seulement), `jobs_muets()`. Aucune tâche planifiée ni secret dans le Vault avant C1.
+  - **F1** : `communes_be` et seed des 565 communes (noms FR/NL/DE, arrondissement, province, région, langues, point de la commune). Source : export ODWB « communes et localités » envoyé par Ren, car `statbel.fgov.be` est refusé par le réseau de l'environnement ; licence du jeu à confirmer. Zones de secours et de police des 261 communes wallonnes reprises de la table `communes` d'Eventware (copie datée dans `scripts/seed/sources/`, pas de base partagée) : rapprochement un à un (257 noms identiques, 4 à l'apostrophe ou à la casse près, orthographe d'Eventware retenue), 14 zones de secours, 71 zones de police. La correspondance province ↔ zones MeteoAlarm passe à C1 : `feeds.meteoalarm.org` est aussi refusé et les codes de zone ne sont pas vérifiables d'ici.
+- Sprint 2 « Réveil automatique » (C1, **D1**), partie serveur fusionnée dans `main` (PR #5) ; la suite partira d'une nouvelle branche depuis `main`. Session 1 faite en partie le 2026-10-21 :
+  - `irm-vigilance` versionnée telle que déployée (v1), sans correction ; limite relevée : un avertissement publié sur la zone MeteoAlarm « Brabant » n'apparaît pas pour une commune du Brabant wallon, du Brabant flamand ou de Bruxelles.
+  - Vitest 3.2 installé à la racine (seul framework de test, comme le prévoit le briefing), `npm test` ; aucune autre dépendance.
+  - `supabase/functions/_shared/cap.ts` : lecture des messages CAP 1.1 et 1.2, indépendante de la source (IRM ou MeteoAlarm) → type, niveau, provinces, un segment par niveau ou zone, français préféré, mises à jour et annulations. Fixtures **fabriquées** d'après la norme (pas de vrais messages : réseau fermé, question 13).
+  - Migration appliquée le 2026-10-21 (version `20261021090450`) : `alertes_externes` (flux ; saisie manuelle par la commune si le flux manque ; fixture de démonstration par le super-admin), vue `alertes_externes_en_cours`, `regles_reveil`, `regles_reveil_correspondantes()`. Vérifié : un orange orages sur Liège arme S0 et S1 de la fiche A de la Commune Test, un jaune arme S0, Namur seul ou un message de test n'arment rien.
+  - Choix validés par Ren le 2026-10-21 : types au vocabulaire de `meteo_etat_criteres` (orage, pluie, vent, chaleur, froid) plus neige_verglas, brouillard, autre ; codes MeteoAlarm « rain-flood » → pluie, inondation, côtes, feux de forêt, avalanches → autre ; fenêtre horaire d'une règle comparée à l'heure de réception ; une fixture arme les règles de la seule commune visée, quelle que soit leur source.
+  - Session 2, moteur appliqué le 2026-10-21 (migration `20261021120000_c1_moteur_reveil.sql`, version `20261021090610` ; la tâche `reveil_escalade` tourne chaque minute depuis 11:07, sans erreur), selon les décisions de Ren : seul le seuil le plus élevé de chaque fiche est armé ; pas de nouveau réveil sans hausse de niveau tant que l'événement est ouvert ; rattachement à l'événement ouvert qui suit la fiche, sinon événement en veille (pré-alerte, phase veille : il apparaît dans la vue autorité, la synthèse et le pilotage existants, sans proposition vers Eventware ni ouverture des signalements) ; une fixture ouvre un événement d'exercice ; seuil déclenché « en attente », entrée au journal, file de notifications push et e-mail pour les rôles PLANU et AUTORITE_COMMUNALE (paramétrables par commune) ; « Vu, je prends » journalisé, premier acquittement retenu ; escalade chaque minute vers les suppléants de l'annuaire après 15 min (paramétrable) ; une panne du moteur n'empêche jamais d'enregistrer l'avertissement.
+  - Données de la Commune Test : un compte porte le rôle AUTORITE_COMMUNALE, aucun le rôle PLANU, aucun suppléant n'est renseigné dans l'annuaire : à compléter pour la démo D1.
+  - Reste de la session 1 (Edge Function d'ingestion, tâche toutes les 10 min, `jobs_etat`, écran Veille) : questions 6, 7, 13 (l'écran Veille, lui, peut maintenant être fait : les tables existent). Reste de la session 2 : envoi des notifications (F2 : e-mail, question 3 ; push : clés VAPID, service worker, abonnements, question 4), écrans (règles de réveil, paramètres, saisie manuelle, acquittement), règles par défaut à l'import (question 15), bandeau et notification de flux muet (avec l'ingestion).
+
+## Capacité
+Capacité prévue par le plan ; capacité déclarée par Ren au début de chaque sprint (« Sprint n : 1 ou 2 sessions »). Depuis le 20 octobre, les dates sont indicatives : une session suit la précédente dès qu'elle est livrée.
+
+| Sprint | Dates | Chantier | Prévue | Déclarée par Ren |
+|---|---|---|---|---|
+| 1 | 2 → 15 nov 2026 | Session 0 + F1 F3 F5 | 2 (Session 0 déjà faite) | |
+| 2 | 16 → 29 nov | C1 Réveil automatique — **D1** | 2 | |
+| 3 | 30 nov → 13 déc | C4 Pack papier — **D2** | 2 | |
+| 4 | 14 → 27 déc | C3 Rapport d'événement — **D3** | 1–2 (R, Noël) | |
+| 5 | 28 déc → 10 jan 2027 | C2a Formulaire public | 1–2 (R, Nouvel An) | |
+| 6 | 11 → 24 jan | C2b Carte et tri — **D4** | 2 | |
+| 7 | 25 jan → 7 fév | C2c + C2d | 2 | |
+| 8 | 8 → 21 fév | Consolidation — **D5** | 2 (R possible, congé de détente) | |
+
+Congés de Ren : **à confirmer avant le 14 décembre** (semaines de congé, et congés scolaires de la Fédération Wallonie-Bruxelles si elles comptent), pour que la capacité déclarée corresponde au calendrier.
+
+## À faire par Ren
+1. Fournir un **exemplaire réel de SITREP provincial** (Liège de préférence) avant le chantier C3 (sprint 4) : au plus tard le 14 décembre, plus tôt si l'on continue d'avancer sans attendre les dates. À défaut : format provisoire en-tête / situation / mesures prises / besoins / prochain point.
+2. **Confirmer les semaines de congé** dans la section Capacité ci-dessus (avant le 14 décembre).
+3. Activer dans le tableau de bord Supabase, réglages d'authentification, la **protection contre les mots de passe divulgués** (signalée par le conseiller de sécurité ; disponibilité selon l'offre Supabase).
+4. **Ouvrir l'accès réseau aux flux météo** dans les réglages de l'environnement de travail (question 13), ou fournir quelques vrais messages en fichier : condition pour finir la session 1 de C1.
+5. Pour la démo D1 : donner le rôle « Fonctionnaire planification urgence » (PLANU) au compte du CPU de la Commune Test et renseigner au moins un suppléant (avec e-mail) dans l'annuaire.
+
+## Migrations à approuver
+Approbation asynchrone : écrire « approuvée le AAAA-MM-JJ » à côté de la ligne ; application à la session suivante, puis vérification de l'effet réel en SQL.
+- [x] **Correctifs de sécurité** — approuvée le 2026-10-20 (« Applique »), appliquée le 2026-10-20 (version `20261020211056`), effet vérifié. `supabase/migrations/20261020160000_correctifs_securite.sql` (branche feat/securite-correctifs). Non destructif, aucune app à modifier. `contextes` : un membre ne modifie plus que `config`, coordonnées et province, notes de la plateforme réservées à la console, trigger de garde ; bénévoles inscrits par le public toujours « en_attente » ; plus d'insertion directe de plans de ménage, RPC bornée ; liste publique sans plateforme ni clients suspendus ; journal des ingestions externes borné ; 19 fonctions retirées d'`anon` ; TRUNCATE, REFERENCES, TRIGGER retirés d'`anon` et `authenticated`. Répétée le 2026-10-20 : détail et preuves dans [CORRESPONDANCE.md](CORRESPONDANCE.md), section 6.
+- [x] **F5 — journal** — approuvée le 2026-10-20 (« Applique »), appliquée le 2026-10-20 (version `20261020214032`), effet vérifié. `supabase/migrations/20261020213000_f5_journal_empreinte.sql` : colonnes `signalement_id`, `alerte_publique_id`, `empreinte_precedente`, `empreinte` sur `journal_decisions` ; trigger d'insertion complété ; `journal_decisions_empreinte()`, `verifier_journal_decisions()`. Non destructif, aucune app à modifier.
+- [x] **F3 — planification** — approuvée le 2026-10-20 (« Applique »), appliquée le 2026-10-20 (version `20261020214055`), effet vérifié. `supabase/migrations/20261020213100_f3_planification.sql` : extensions `pg_cron` et `pg_net`, table `jobs_etat`, `jobs_signaler()`, `jobs_muets()`. Aucune tâche planifiée.
+- [x] **F1 — communes** — approuvée le 2026-10-20 (« Applique »), appliquée le 2026-10-20 (version `20261020214114`), seed chargé et vérifié. `supabase/migrations/20261020213200_f1_communes_be.sql` puis le seed `supabase/seed/communes_be.sql` (565 lignes, source ODWB, licence à confirmer ; zones de secours et de police des communes wallonnes d'après Eventware).
+- [x] **C1 — avertissements et règles de réveil** — approuvée le 2026-10-21 (« Applique les migrations et fusionne »), appliquée le 2026-10-21 (version `20261021090450`), effet vérifié, tests rejoués sur la base réelle (31 conformes). `supabase/migrations/20261021090000_c1_alertes_externes_regles_reveil.sql`. Non destructif, aucune app à modifier, aucune tâche planifiée. Table `alertes_externes` en ajout seul (flux écrits par la clé de service ; saisie manuelle par un membre « écriture » pour sa commune ; fixture par le super-admin ; heure de réception, identifiant et auteur fixés par le serveur ; dédoublonnage par source, identifiant, segment ; fil des mises à jour et annulations) ; vue `alertes_externes_en_cours` ; table `regles_reveil` (mêmes droits que `seuils_action` : lecture, création, modification par un membre « écriture », suppression par l'admin de la commune) ; fonction `regles_reveil_correspondantes()`. Répétée le 2026-10-21 dans une transaction annulée : 31 contrôles conformes ; C1-31 (suppression d'une règle) non exécutable par l'outil SQL. Tests rejouables : `supabase/tests/c1_alertes_regles_reveil.sql`.
+- [x] **C1 — moteur de réveil** — approuvée le 2026-10-21 (« Applique les migrations et fusionne »), appliquée le 2026-10-21 après la précédente (version `20261021090610`), effet vérifié, tests rejoués sur la base réelle (22 conformes), aucune donnée de test restée, tâche `reveil_escalade` exécutée sans erreur. `supabase/migrations/20261021120000_c1_moteur_reveil.sql`. Non destructif ; aucune app à modifier (colonne ajoutée à `declenchements_seuils_action`, sans effet sur le QG). Tables `parametres_reveil` (CRUD par commune), `reveils`, `notifications` (file et journal F2, rien n'est encore envoyé), `alertes_externes_traitements` ; moteur lancé à chaque nouvel avertissement ; RPC `acquitter_reveil()` ; tâche `reveil_escalade` chaque minute (pg_cron, déclarée dans `jobs_etat`) : **première tâche planifiée en production**. Répétée le 2026-10-21 avec la précédente dans une transaction annulée : 22 vérifications conformes. Tests rejouables : `supabase/tests/c1_moteur_reveil.sql`.
+
+F5, F3, F1 : répétées le 2026-10-20 (seed réduit à 13 communes), appliquées dans l'ordre F5, F3, F1, seed. Vérifications sur la base réelle : 565 communes (19 à Bruxelles, 285 en Flandre, 261 en Wallonie), empreinte md5 du contenu identique à celle du fichier de seed, 261 communes avec zones, 14 zones de secours, 71 zones de police ; aucune tâche `pg_cron` ni ligne dans `jobs_etat` ; aucun nouvel avertissement du conseiller de sécurité sur les objets créés.
+
+## Décisions de Ren
+- 2026-10-21 : « Applique les migrations et fusionne » : migrations C1 appliquées par l'outil de migration (versions `20261021090450`, `20261021090610`), effet vérifié ; toute la pile de branches (Session 0, correctifs de sécurité, F1 F3 F5, C1) fusionnée dans `main` par la PR #5, par exception à la règle « pas de merge » du briefing. Les chantiers suivants partent de `main`.
+- 2026-10-21 : « Ok pour toutes les propositions » :
+  - le plan « 15 modules en quatre paliers » est considéré comme remplacé par [SPRINTS.md](SPRINTS.md), la recherche est close (question 1) ;
+  - réveil : les comptes qui portent les rôles PLANU (fonctionnaire planification urgence) et AUTORITE_COMMUNALE (bourgmestre), par push et e-mail, puis les suppléants de l'annuaire par e-mail après 15 minutes sans acquittement (question 16) ;
+  - un avertissement n'arme que le seuil le plus élevé de chaque fiche (question 17) ;
+  - une fixture de démonstration ouvre un événement d'exercice, une saisie manuelle un événement réel (question 18) ;
+  - choix de la session C1 validés (vocabulaire des types, codes MeteoAlarm, fenêtre horaire sur l'heure de réception, fixture limitée à la commune visée).
+  - L'approbation des migrations C1 n'en fait pas partie : elle reste à donner explicitement.
+- 2026-10-21 : « Lance » : C1 commencé par ce qui ne dépend pas des réponses en attente (versionner `irm-vigilance`, préparer sans l'appliquer la migration des avertissements et des règles, installer Vitest).
+- 2026-10-20 : migrations F5 (`f5_journal_empreinte`), F3 (`f3_planification`), F1 (`f1_communes_be`) et seed des communes approuvés (« Applique ») ; appliqués par l'outil de migration (versions `20261020214032`, `20261020214055`, `20261020214114`), seed chargé en SQL, effet vérifié.
+- 2026-10-20 : zones de secours et de police des communes wallonnes reprises de la table `communes` d'Eventware (« la liste des communes y est déjà poussée ») : copie datée dans le dépôt, pas de base partagée.
+- 2026-10-20 : migration `correctifs_securite` approuvée (« Applique ») ; appliquée par l'outil de migration (version `20261020211056`, dans l'historique `schema_migrations`), effet vérifié en SQL.
+- 2026-10-20 : « On avance et on ne se soucie pas des délais » : les sessions s'enchaînent dans l'ordre de [SPRINTS.md](SPRINTS.md) sans attendre les dates ; les correctifs de sécurité sont préparés tout de suite.
+- 2026-10-20 : le plan de sprint de référence est [SPRINTS.md](SPRINTS.md) (vague 1 : 8 sprints de deux semaines du 2 novembre au 21 février, jalons D1–D5 ; vague 2 : mars à novembre 2027, jalons D6–D10, tampon en août pour le festival ; au plus deux coupes en vague 1).
+- 2026-10-20 : migration `risques_territoire` approuvée ; exécutée par Ren dans le SQL Editor (hors historique `schema_migrations`).
+- 2026-10-20 : STARTER-04 (ruissellement urbain) et STARTER-07 (cyberattaque communale) retirés du pack et supprimés de la Commune Test.
+- 2026-10-20 : pas de régénération des `database.types.ts` (périmés, importés nulle part) dans le cadre des chantiers récents.
+- 2026-10-19 : nom affiché « Crisiware 2 » ; noms des projets Vercel et adresses `*.vercel.app` inchangés.
+
+## Questions ouvertes
+1. ~~Plan « 15 modules en quatre paliers »~~ — tranchée le 2026-10-21 : remplacé par [SPRINTS.md](SPRINTS.md), recherche close.
+2. **Secrets en clair** (`canaux_diffusion.config.secret_value`, `sources_externes_alertes.secret`) : non couverts par la migration de sécurité. Les sortir de l'API suppose de modifier `diffuser-alerte` (qui lit le secret avec le jeton de l'utilisateur) et `ingestion-alerte-externe`, absentes du dépôt : à trancher avec la question 10.
+3. **E-mail de F2 (sprint 2)** : aucun canal e-mail n'existe (`diffuser-alerte` ne gère que des webhooks). « E-mail via le webhook existant » suppose un relais externe (automate type n8n ou Make) ou un fournisseur d'envoi (SMTP, Resend…), donc une dépendance et un secret à choisir avant la deuxième session de C1 (notifications).
+4. **Push sur le téléphone (D1)** : sur iPhone, le web push ne fonctionne que si l'app est installée sur l'écran d'accueil (iOS 16.4 ou plus) ; sur Android, depuis le navigateur. Quel téléphone pour la démo ?
+5. **Purge des exercices (C5)** : la base applique « exercice terminé = preuve non supprimable » ; le briefing demande une purge totale. Lequel prime ?
+6. **Licences (décisions réservées)** : MeteoAlarm (confirmation écrite pour un usage commercial), IRM, géoportail wallon (série LIDAXES complète non republiable en ligne), tuiles de carte (le pré-téléchargement est interdit sur `tile.openstreetmap.org`) — voir [references.md](references.md). MeteoAlarm et IRM : à régler avant l'ingestion de C1, seule partie de la session 1 encore à faire.
+7. **Source météo de C1** : open data IRM (CAP mis à jour toutes les heures), MeteoAlarm (redistribution à 10 min maximum), ou les deux ? La lecture des messages CAP et la table `alertes_externes` conviennent aux deux.
+8. **Source unique du « message D5 validé »** (C8, T2) : catalogue national, modèles de messages ou messages réflexes de l'incident ?
+9. **« N défini » (C6)** : à quoi correspond ce paramètre de fiche ?
+10. **Edge Functions** : `irm-vigilance` versionnée le 21 octobre (nécessaire à C1). Versionner aussi `diffuser-alerte` et `ingestion-alerte-externe` ? Supprimer `bootstrap-super-admin` et `reset-password-ferrieres-test` (neutralisées) ?
+11. **Marque** : « FERRU » doit-il apparaître dans l'interface à côté de « Crisiware 2 » ?
+12. Reprises du briefing REX : point de départ du délai de 21 jours ouvrables du Fonds des calamités ; IMIO, CyberFundamentals et NIS2 pour la commune cible.
+13. **Accès réseau de l'environnement de travail** : `statbel.fgov.be`, `feeds.meteoalarm.org` et `opendata.brussels.be` sont refusés (403). Pour C1, autoriser au moins `feeds.meteoalarm.org` (et `opendata.meteo.be` si l'IRM est retenu) dans les réglages réseau de l'environnement, ou fournir des exemples de flux en fichier : sans cela, ni l'adresse exacte du flux, ni les codes de zone, ni la structure réelle des messages ne peuvent être vérifiés, et les fixtures restent fabriquées. Les Edge Functions de Supabase, elles, ne sont pas concernées.
+14. **Source du référentiel des communes** : le seed F1 vient de l'export ODWB « communes et localités » plutôt que de la liste REFNIS de Statbel prévue par le briefing (même nomenclature, 565 communes, fusions 2025). La table `communes` d'Eventware ne pouvait pas servir seule : 261 communes wallonnes, sans code NIS ; elle fournit les zones de secours et de police. Confirmer ce choix et la licence du jeu ODWB. Les zones de Bruxelles et de Flandre restent vides tant qu'aucune source n'est choisie.
+15. **Canicule sans seuil** : le briefing demande des règles de réveil par défaut pour les fiches orages et canicule. La fiche orages de la Commune Test a ses seuils (S0 ← jaune, S1 ← orange ou rouge) ; la fiche canicule (STARTER-11) n'en a aucun, donc aucune règle ne peut s'y rattacher. Ajouter des seuils S0/S1 à la fiche canicule (modification d'une fiche existante, qui demande ton accord), ou ne livrer la règle canicule que lorsqu'une commune a créé ses propres seuils ?
+16. ~~Qui réveiller~~ — tranchée le 2026-10-21 : comptes portant les rôles PLANU et AUTORITE_COMMUNALE (push et e-mail), puis suppléants de l'annuaire par e-mail après 15 minutes ; liste des rôles et délai modifiables par commune (`parametres_reveil`).
+17. ~~Un orange arme S0 et S1~~ — tranchée le 2026-10-21 : seul le seuil le plus élevé de chaque fiche est armé.
+18. ~~Fixture de démonstration~~ — tranchée le 2026-10-21 : fixture → événement d'exercice ; saisie manuelle → événement réel.
+
+## Dette / à revoir
+- 2 Edge Functions actives absentes du dépôt (`diffuser-alerte`, `ingestion-alerte-externe`) ; 2 fonctions neutralisées encore déployées.
+- `irm-vigilance` : un avertissement de la zone MeteoAlarm « Brabant » n'est pas rattaché aux trois provinces concernées (l'ingestion de C1 la remplacera).
+- 124 migrations en prod pour 16 fichiers versionnés ; `risques_territoire` hors historique ; versions des 6 dernières appliquées différentes des noms de fichiers (voir `supabase/migrations/README.md`).
+- `database.types.ts` périmés (52 tables) en 5 copies.
+- `role_capacites` vide : la grille des capacités de l'Admin n'a aucun effet (repli sur le niveau d'accès).
+- `livre_de_bord` modifiable et supprimable (à rendre ajout seul pour C3 et T1) ; changement de phase en deux écritures client.
+- Libellé des étapes de plan d'action non modifiable dans l'Admin.
+- Secrets de webhooks en clair (`canaux_diffusion`, `sources_externes_alertes`).
+- Tests automatisés limités au code commun des Edge Functions (Vitest, 51 tests) ; aucun test des apps ; tests SQL à rejouer à la main dans le SQL Editor.
+- Interrogation périodique partout, Realtime inutilisé.
+- File d'écritures Terrain non liée à l'utilisateur ni vidée à la déconnexion.
+- README racine : `.env.example` absent, référence à « pcops-generique-test ».
+- Tables résiduelles `_test_gen`, `_test_gen2`, `_test_gen3` (suppression destructive, à décider).
+- `spatial_ref_sys` et `st_estimatedextent` (PostGIS, propriétaire `supabase_admin`) : droits d'`anon` non révocables par une migration.

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture fabriquée pour les tests de Crisiware (chantier C1) : ce n'est pas un message réel.
+     Zone unique « Brabant » telle que MeteoAlarm la publierait : vaut pour trois provinces. -->
+<cap:alert xmlns:cap="urn:oasis:names:tc:emergency:cap:1.2">
+  <cap:identifier>fixture.crisiware.20270112.jaune-neige-brabant</cap:identifier>
+  <cap:sender>fixtures@crisiware.invalid</cap:sender>
+  <cap:sent>2027-01-12T15:00:00+01:00</cap:sent>
+  <cap:status>Actual</cap:status>
+  <cap:msgType>Alert</cap:msgType>
+  <cap:scope>Public</cap:scope>
+  <cap:info>
+    <cap:language>en-GB</cap:language>
+    <cap:category>Met</cap:category>
+    <cap:event>Snow-ice warning</cap:event>
+    <cap:urgency>Future</cap:urgency>
+    <cap:severity>Moderate</cap:severity>
+    <cap:certainty>Likely</cap:certainty>
+    <cap:onset>2027-01-12T22:00:00+01:00</cap:onset>
+    <cap:expires>2027-01-13T10:00:00+01:00</cap:expires>
+    <cap:headline>Yellow snow-ice warning for Brabant</cap:headline>
+    <cap:parameter><cap:valueName>awareness_level</cap:valueName><cap:value>2; yellow; Moderate</cap:value></cap:parameter>
+    <cap:parameter><cap:valueName>awareness_type</cap:valueName><cap:value>2; snow-ice</cap:value></cap:parameter>
+    <cap:area>
+      <cap:areaDesc>Brabant</cap:areaDesc>
+    </cap:area>
+  </cap:info>
+</cap:alert>

@@ -16,6 +16,10 @@
     "build:qg": "npm run build --workspace=apps/qg",
     "build:terrain": "npm run build --workspace=apps/terrain",
     "build:citoyen": "npm run build --workspace=apps/citoyen",
-    "build:plateforme": "npm run build --workspace=apps/plateforme"
+    "build:plateforme": "npm run build --workspace=apps/plateforme",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.7"
   }
 }
