@@ -20,6 +20,7 @@ reproduites ici : la base de production fait foi. Chaque fichier ci-dessous a é
 | `20261020213000_f5_journal_empreinte.sql` | F5 : références signalement / alerte sur `journal_decisions`, empreinte SHA-256 chaînée calculée à l'insertion, `verifier_journal_decisions()` |
 | `20261020213100_f3_planification.sql` | F3 : extensions `pg_cron` et `pg_net`, table `jobs_etat`, `jobs_signaler()`, `jobs_muets()` |
 | `20261020213200_f1_communes_be.sql` | F1 : table `communes_be` ; données dans `supabase/seed/communes_be.sql` (565 communes ; zones de secours et de police des communes wallonnes d'après Eventware), généré par `scripts/seed/communes_be.py` |
+| `20261021090000_c1_alertes_externes_regles_reveil.sql` | **Préparé, non appliqué (à approuver)** — C1 : `alertes_externes` (avertissements météo en ajout seul : flux, saisie manuelle, fixture), vue `alertes_externes_en_cours`, `regles_reveil`, `regles_reveil_correspondantes()` |
 
 Attention : les fichiers de l'entraide sont l'état final (correctifs appliqués en base sous les noms `entraide_missions_affectation_close`, `entraide_missions_historique_after`, `entraide_equipes_chef_controle`, `entraide_fermeture_horodatee_serveur`, `entraide_code_erreur_pab_ferme`, `entraide_missions_zone_rouge_derogation`, `entraide_missions_reouverture`, y figurent déjà). Le fichier du pont est l'état final (deux correctifs appliqués après coup en base, sous les noms
 `pont_commune_evenements_correctif_rehausse` et `pont_commune_evenements_revoke_triggers`, y figurent déjà).
@@ -45,3 +46,8 @@ l'ordre F5, F3, F1 : versions `20261020214032` (`f5_journal_empreinte`), `202610
 une migration : chargé ensuite en cinq lots par l'outil SQL (mêmes valeurs, même upsert, donc rejouable), contenu
 de la table comparé au fichier par empreinte md5 : identique. Tests : `supabase/tests/fondations_f1_f3_f5.sql`
 (transaction annulée, résultats affichés par l'exception finale), rejoués sur la base réelle après application.
+
+C1, avertissements et règles de réveil : répété le 21 octobre 2026 dans une transaction annulée (migration et
+tests ensemble, 31 contrôles conformes). Tests rejouables après application :
+`supabase/tests/c1_alertes_regles_reveil.sql`. Le message CAP reçu est découpé en lignes par
+`supabase/functions/_shared/cap.ts` (tests Vitest : `npm test`).
