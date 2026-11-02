@@ -8,7 +8,8 @@ Projet `apjswshvzbejpvlxfnek`. La base et les fonctions déployées font foi ; c
 | `inviter-membre` | v3, JWT exigé | oui | Invitation d'un membre sur un contexte (clé de service, droits de l'appelant vérifiés) |
 | `irm-vigilance` | v1, sans JWT | oui (copie du déploiement v1, récupérée le 21 octobre 2026) | Relais de l'avertissement IRM d'une province via le flux ATOM MeteoAlarm, cache 5 min, rien n'est stocké ; appelée par `VeilleMeteo.jsx` (QG et Terrain) |
 | `diffuser-alerte` | v2, JWT exigé | non (question ouverte 10) | Diffusion multicanal par webhooks |
-| `ingestion-alerte-externe` | v1, sans JWT | non (question ouverte 10) | Pont Eventware → Crisiware : écrit dans `alertes_publiques` (sans rapport avec les avertissements météo de C1) |
+| `ingestion-alerte-externe` | v2 (2 novembre 2026), sans JWT | oui (briefing 03, A1 et D) | Pont Eventware → Crisiware. Alerte réelle → `alertes_publiques` inactive « à valider » (A1) ; alerte marquée exercice → `recevoir_alerte_exercice()` (D). |
+| `ingestion-dossier-evenement` | v1 (2 novembre 2026), sans JWT | oui (briefing 03, B) | Réception du dossier de sécurité d'un événement (contrat du briefing 01) ; tout le travail en base par `recevoir_dossier_evenement()` |
 | `bootstrap-super-admin` | v8 | non | Neutralisée, suppression à décider (question ouverte 10) |
 | `reset-password-ferrieres-test` | v2 | non | Neutralisée, suppression à décider (question ouverte 10) |
 

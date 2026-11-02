@@ -14,6 +14,10 @@ reproduites ici : la base de production fait foi. Chaque fichier ci-dessous a é
 | `20261019090000_entraide_fondations.sql` | Entraide (bénévoles et moyens privés) : capacité `entraide`, coordinateur par incident, enrichissement de `benevoles_entraide`, `ressources`, `moyens_engages`, `requisitions`, fonctions de commandement |
 | `20261019090100_entraide_tables.sql` | Points d'accueil, présences, équipes, missions (historique en ajout seul), paramètres communaux, incidents bénévoles, points de collecte, besoins, consignes publiques |
 | `20261019090200_entraide_rpc_publiques.sql` | Accès sans compte par QR (enregistrement, suivi, sortie), déclaration d'un moyen privé, page publique de l'entraide |
+| `20261102090000_b03a_alertes_garde_fous.sql` | Briefing 03, A : alertes reçues d'un organisateur « à valider » (`valider_alerte_recue`), notification `alerte_recue`, filet « hors incident » pendant un exercice « dans l'outil » — appliquée le 2026-11-02 |
+| `20261102100000_b03c_exercice_trames_pieges.sql` | Briefing 03, C : `exercice_trames` (+ 3 trames de départ), `pieges_commune()`, `generer_exercice_commune()` — appliquée le 2026-11-02 |
+| `20261102110000_b03b_dossiers_evenements.sql` | Briefing 03, B : `sources_externes_alertes.objets`, événements proposés par un organisateur, `evenements_territoire_dossiers`, `recevoir_dossier_evenement()`, `decider_evenement_propose()` — appliquée le 2026-11-02 |
+| `20261102120000_b03d_exercice_conjoint.sql` | Briefing 03, D : exercice conjoint, invariants E1 à E4 en base, `emission_charge()`, `recevoir_alerte_exercice()`, `clore_exercice` désactive les liens d'exercice — appliquée le 2026-11-02, après b03b |
 | `20261019120000_console_plateforme.sql` | Console Plateforme : suspension d'un client (`contextes.suspendu`, prise en compte par `mon_niveau_acces`), journal `journal_plateforme`, fonctions `plateforme_*` réservées au super-admin |
 | `20261020130000_risques_territoire.sql` | Risques du territoire : table `risques_territoire` (menace, distincte de l'objet à risque), liens objet ↔ risque (rôle source / enjeu) et risque ↔ fonctions critiques, `risque_id` sur les seuils, plans de référence, plans d'action, évaluations et mesures, repointage de `exercices.fiche_risque_id` et du triage PGUI, fusion de `matrice_risques`, déplacement des fiches STARTER, retrait des huit champs scénario d'`objets_a_risque` |
 | `20261020160000_correctifs_securite.sql` | Correctifs de sécurité : droits par colonne et trigger de garde sur `contextes`, inscriptions publiques de bénévoles forcées « en_attente », plus d'insertion directe dans `plans_urgence_menages`, `contextes_publics()` sans plateforme ni clients suspendus, journal des ingestions externes borné, droits inutiles retirés à `anon` et `authenticated` |
@@ -59,3 +63,10 @@ C1, moteur de réveil : répété le 21 octobre 2026 avec la migration précéde
 (`c1_moteur_reveil`). Tests rejoués sur la base réelle : `supabase/tests/c1_moteur_reveil.sql`, 22 vérifications
 conformes. La migration planifie une tâche pg_cron (`reveil_escalade`, chaque
 minute) : l'annuler, c'est `select cron.unschedule('reveil_escalade')`.
+
+Briefing 03 (2 novembre 2026) : quatre migrations répétées dans des transactions annulées avec leurs tests
+(`supabase/tests/b03*.sql`), puis appliquées le même jour dans l'ordre b03a, b03c, b03b, b03d. Les remplacements de
+contrainte (`notifications_motif_check`, `livre_de_bord_source_type_check`) ont été appliqués à part, avant le reste du
+fichier : versions `20261102102059` à `20261102102449` (noms `b03a_0_notifications_motif`, `b03a_alertes_garde_fous`,
+`b03c_exercice_trames_pieges`, `b03c_exercice_trames_depart`, `b03b_dossiers_evenements`, `b03d_0_livre_de_bord_source_type`,
+`b03d_exercice_conjoint`). Le contenu appliqué est celui des fichiers (commentaires de tête exceptés).

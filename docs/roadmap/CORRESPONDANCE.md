@@ -203,3 +203,16 @@ Trois exécutions de la migration dans des transactions annulées par une except
 | T1 | horodatage client, ajout seul sur `livre_de_bord` |
 | T2 | `envois_manuels`, longueurs par contexte |
 | T3 | `fonctionnalites_contexte`, coûts |
+
+## Briefing 03 (2026-11-02) : objets ajoutés (migrations non appliquées)
+
+| Objet | Rôle | Écran |
+|---|---|---|
+| `alertes_publiques.statut_reception`, `valider_alerte_recue()` | A1 : alerte reçue d'un organisateur publiée seulement après validation | Admin › Alertes publiques |
+| `alertes_publiques.hors_incident`, `alerte_reelle_confirmee` | A2 : filet « hors incident », confirmation pendant un exercice « dans l'outil » | Admin › Alertes publiques |
+| `exercice_trames`, `pieges_commune()`, `generer_exercice_commune()` | C : trames réutilisables, défauts de préparation exploités comme pièges | Admin › Trames d'exercice ; QG › Exercices › Depuis une trame |
+| `evenements_territoire_dossiers`, `recevoir_dossier_evenement()`, `decider_evenement_propose()`, `sources_externes_alertes.objets` | B : dossier de sécurité reçu d'Eventware, événements proposés | QG › Événements ; Admin › Sources externes |
+| `exercices.conjoint` / `code_conjoint`, `est_exercice` et `exercice_id` sur `evenements_territoire` et `sources_externes_alertes`, `emission_charge()`, `recevoir_alerte_exercice()` | D : exercice conjoint, invariants E1 à E4 | QG › Exercice › Préparer › Exercice conjoint |
+
+Les « injects » des fiches REX restent du texte dans `decisions_a_preparer` ; les trames de départ en reprennent le contenu
+dans `exercice_trames.stimuli`. Les cartes REX « Hautes Fagnes » et « confinement Moselle » restent introuvables (question 19).

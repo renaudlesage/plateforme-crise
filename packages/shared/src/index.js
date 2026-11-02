@@ -69,3 +69,4 @@ export {
 } from './situation.js'
 export * from './entraide.js'
 export { matriceQr, svgQr } from './qr.js'
+export { PIEGES_COMMUNE, libellePiege, GRAVITES_PIEGE, libelleHeureScenario } from './trames.js'

@@ -84,6 +84,8 @@ export default function SourcesExternesAlertes() {
                     <p className="text-sm font-medium text-encre">
                       {s.libelle}
                       {!s.actif && <span className="ml-2 text-xs text-sourdine">(inactive)</span>}
+                      {(s.objets ?? []).includes('dossier') && <span className="jeton ml-2">dossiers</span>}
+                      {s.est_exercice && <span className="jeton ml-2 text-info">exercice</span>}
                     </p>
                     <p className="text-xs text-sourdine mt-0.5 font-mono">{s.secret}</p>
                   </div>
@@ -149,6 +151,7 @@ function FormulaireSource({ valeursInitiales = {}, onValider, onAnnuler }) {
   const [libelle, setLibelle] = useState(valeursInitiales.libelle ?? '')
   const [secret, setSecret] = useState(valeursInitiales.secret ?? genererSecret())
   const [actif, setActif] = useState(valeursInitiales.actif ?? true)
+  const [objets, setObjets] = useState(valeursInitiales.objets ?? ['alerte'])
   const [erreur, setErreur] = useState(null)
   const [enCours, setEnCours] = useState(false)
 
@@ -159,6 +162,7 @@ function FormulaireSource({ valeursInitiales = {}, onValider, onAnnuler }) {
       libelle: libelle.trim(),
       secret: secret.trim(),
       actif,
+      objets,
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -188,6 +192,23 @@ function FormulaireSource({ valeursInitiales = {}, onValider, onAnnuler }) {
           </BoutonDiscret>
         </div>
       </div>
+
+      <fieldset>
+        <legend className="block text-xs font-medium text-sourdine mb-1">Ce que cette source peut envoyer</legend>
+        {[
+          { valeur: 'alerte', libelle: 'Alertes (à valider avant publication)' },
+          { valeur: 'dossier', libelle: "Dossiers de sécurité d'événements" },
+        ].map((o) => (
+          <label key={o.valeur} className="flex items-center gap-2 text-sm text-sourdine">
+            <input
+              type="checkbox"
+              checked={objets.includes(o.valeur)}
+              onChange={(e) => setObjets((l) => (e.target.checked ? [...l, o.valeur] : l.filter((x) => x !== o.valeur)))}
+            />
+            {o.libelle}
+          </label>
+        ))}
+      </fieldset>
 
       <label className="flex items-center gap-2 text-sm text-sourdine">
         <input type="checkbox" checked={actif} onChange={(e) => setActif(e.target.checked)} />

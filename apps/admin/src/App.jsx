@@ -20,6 +20,7 @@ import PlansReference from './pages/PlansReference'
 import InstancesCoordination from './pages/InstancesCoordination'
 import ChecklistTemplates from './pages/ChecklistTemplates'
 import Exercices from './pages/Exercices'
+import TramesExercice from './pages/TramesExercice'
 import AlertesPubliques from './pages/AlertesPubliques'
 import ModelesMessagesPopulation from './pages/ModelesMessagesPopulation'
 import CanauxDiffusion from './pages/CanauxDiffusion'
@@ -107,6 +108,7 @@ export default function App() {
             <Route path="instances-coordination" element={<InstancesCoordination />} />
             <Route path="checklists" element={<ChecklistTemplates />} />
             <Route path="exercices" element={<Exercices />} />
+            <Route path="trames-exercice" element={<TramesExercice />} />
             <Route path="alertes-publiques" element={<AlertesPubliques />} />
             <Route path="modeles-messages" element={<ModelesMessagesPopulation />} />
             <Route path="canaux-diffusion" element={<CanauxDiffusion />} />

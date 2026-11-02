@@ -62,11 +62,14 @@ export default function EvenementsTerritoire() {
   const [edition, setEdition] = useState(null)
   const [redaction, setRedaction] = useState(null)
 
+  const [dossiers, setDossiers] = useState([])
+
   const charger = useCallback(async () => {
     if (!contexteId) return
-    const [l, e] = await Promise.all([
+    const [l, e, d] = await Promise.all([
       supabase.from('evenements_territoire').select('*').eq('contexte_id', contexteId).order('actif', { ascending: false }).order('nom'),
       supabase.from('emissions_evenements').select('*, incidents(nom)').eq('contexte_id', contexteId).order('propose_le', { ascending: false }).limit(200),
+      supabase.from('evenements_territoire_dossiers').select('*').eq('contexte_id', contexteId).order('derniere_reception_le', { ascending: false }),
     ])
     const premiere = l.error || e.error
     if (premiere) {
@@ -76,6 +79,8 @@ export default function EvenementsTerritoire() {
     setErreur(null)
     setLiens(l.data ?? [])
     setEmissions(e.data ?? [])
+    // Table absente tant que la migration b03b n'est pas appliquée : la page reste utilisable.
+    setDossiers(d.error ? [] : d.data ?? [])
   }, [contexteId])
 
   useEffect(() => {
@@ -89,6 +94,10 @@ export default function EvenementsTerritoire() {
   if (!liens || !emissions) return <p className="text-sm text-sourdine">Chargement…</p>
 
   const parId = Object.fromEntries(liens.map((x) => [x.id, x]))
+  const proposes = liens.filter((x) => x.statut_proposition === 'a_examiner')
+  // Les événements d'un exercice conjoint se gèrent depuis l'exercice ; leurs messages restent à valider ici.
+  const suivis = liens.filter((x) => x.statut_proposition !== 'a_examiner' && !x.est_exercice)
+  const dossiersDe = (id) => dossiers.filter((d) => d.evenement_territoire_id === id)
   const aTraiter = emissions.filter((x) => x.statut === 'a_valider' || x.statut === 'echec').sort((a, b) => new Date(a.propose_le) - new Date(b.propose_le))
   const historique = emissions.filter((x) => x.statut === 'envoye' || x.statut === 'annule')
 
@@ -122,9 +131,13 @@ export default function EvenementsTerritoire() {
         )}
       </section>
 
+      {proposes.length > 0 && (
+        <EvenementsProposes evenements={proposes} dossiersDe={dossiersDe} onChange={charger} onAnnonce={setAnnonce} />
+      )}
+
       <section aria-labelledby="ev-suivis" className="mb-6">
         <div className="flex items-center justify-between gap-3 mb-2">
-          <h2 id="ev-suivis" className="text-sm font-medium text-encre">Événements suivis ({liens.length})</h2>
+          <h2 id="ev-suivis" className="text-sm font-medium text-encre">Événements suivis ({suivis.length})</h2>
           {!ajout && (
             <BoutonDiscret type="button" onClick={() => { setAjout(true); setEdition(null) }}>
               Suivre un événement
@@ -147,19 +160,20 @@ export default function EvenementsTerritoire() {
           />
         )}
 
-        {liens.length === 0 && !ajout ? (
+        {suivis.length === 0 && !ajout ? (
           <p className="text-sm text-sourdine border border-dashed border-trait rounded p-4 text-center">
             Aucun événement suivi. Ajoutez ceux que la commune doit pouvoir prévenir (kermesse, festival, marché, course…).
           </p>
         ) : (
           <ul className="space-y-3">
-            {liens.map((l) => (
+            {suivis.map((l) => (
               <li key={l.id} className="bg-surface border border-trait rounded p-3" style={l.actif ? undefined : { opacity: 0.7 }} data-evenement={l.id}>
                 {edition === l.id ? (
                   <FormulaireLien contexteId={contexteId} lien={l} onFini={async () => { setEdition(null); await charger() }} onAnnuler={() => setEdition(null)} onChange={charger} />
                 ) : (
                   <FicheLien
                     lien={l}
+                    dossiers={dossiersDe(l.id)}
                     onModifier={() => { setEdition(l.id); setRedaction(null); setAjout(false) }}
                     onRediger={() => { setRedaction(redaction === l.id ? null : l.id); setEdition(null) }}
                     redigeant={redaction === l.id}
@@ -412,7 +426,81 @@ function CarteEmission({ emission: x, lien, onChange, onAnnonce }) {
   )
 }
 
-function FicheLien({ lien: l, onModifier, onRediger, redigeant, onChange, onAnnonce }) {
+const LIBELLE_STATUT_DOSSIER = {
+  depose: 'déposé',
+  en_instruction: 'en instruction',
+  autorise: 'autorisé',
+  refuse: 'refusé',
+  retire: 'retiré',
+}
+
+/** Dossier de sécurité reçu de l'organisateur (Eventware) : statut, niveau DMP, lien de consultation. */
+function Dossiers({ dossiers }) {
+  if (!dossiers?.length) return null
+  return (
+    <ul className="mt-1 space-y-0.5">
+      {dossiers.map((d) => (
+        <li key={d.id} className="text-xs text-sourdine">
+          Dossier de sécurité : <strong className={d.statut === 'autorise' ? 'text-ok' : d.statut === 'refuse' ? 'text-chaud' : 'text-encre'}>{LIBELLE_STATUT_DOSSIER[d.statut] ?? d.statut}</strong>
+          {d.niveau_dmp && ` · niveau DMP ${d.niveau_dmp}`}
+          {d.frequentation_max != null && ` · ${d.frequentation_max.toLocaleString('fr-BE')} personnes au plus`}
+          {` · version ${d.version}, reçue le ${dateHeure(d.derniere_reception_le)}`}
+          {d.lien_consultation && (
+            <>
+              {' · '}
+              <a className="lien" href={d.lien_consultation} target="_blank" rel="noopener noreferrer">Consulter le dossier</a>
+            </>
+          )}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/** Événements inconnus de la commune, proposés par un organisateur avec son dossier : à accepter ou rejeter. */
+function EvenementsProposes({ evenements, dossiersDe, onChange, onAnnonce }) {
+  const [enCours, setEnCours] = useState(null)
+
+  async function decider(e, accepter) {
+    if (!accepter && !confirm(`Rejeter « ${e.nom} » ? L'événement ne sera pas suivi.`)) return
+    setEnCours(e.id)
+    const { error } = await supabase.rpc('decider_evenement_propose', { p_evenement: e.id, p_accepter: accepter })
+    setEnCours(null)
+    if (error) onAnnonce({ ok: false, texte: texteErreur(error) })
+    else {
+      onAnnonce({ ok: true, texte: accepter ? `« ${e.nom} » est désormais suivi. Renseignez son adresse de réception et son secret pour pouvoir le prévenir.` : `« ${e.nom} » est rejeté.` })
+      await onChange()
+    }
+  }
+
+  return (
+    <section aria-labelledby="ev-proposes" className="mb-6">
+      <h2 id="ev-proposes" className="text-sm font-medium text-encre mb-1">Proposés par un organisateur ({evenements.length})</h2>
+      <p className="text-xs text-sourdine mb-2">
+        Un organisateur a déposé un dossier de sécurité pour un événement que la commune ne suit pas encore. Rien n'est suivi sans votre accord.
+      </p>
+      <ul className="space-y-2">
+        {evenements.map((e) => (
+          <li key={e.id} className="bg-surface border border-veille rounded p-3">
+            <p className="text-sm font-medium text-encre">{e.nom}</p>
+            <p className="text-xs text-sourdine">
+              {e.organisateur ? `${e.organisateur} · ` : ''}
+              {e.date_debut ? `du ${dateSeule(e.date_debut)}` : 'dates non précisées'}
+              {e.date_fin ? ` au ${dateSeule(e.date_fin)}` : ''}
+            </p>
+            <Dossiers dossiers={dossiersDe(e.id)} />
+            <div className="flex gap-2 mt-2">
+              <BoutonPrincipal type="button" onClick={() => decider(e, true)} disabled={enCours === e.id}>Accepter et suivre</BoutonPrincipal>
+              <BoutonDiscret type="button" onClick={() => decider(e, false)} disabled={enCours === e.id}>Rejeter</BoutonDiscret>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function FicheLien({ lien: l, dossiers, onModifier, onRediger, redigeant, onChange, onAnnonce }) {
   const [enCours, setEnCours] = useState(false)
   const hote = hoteRecepteur(l.url_recepteur)
 
@@ -444,10 +532,13 @@ function FicheLien({ lien: l, onModifier, onRediger, redigeant, onChange, onAnno
         réception : {hote ?? <em>aucune adresse</em>} · secret : {l.secret_defini ? 'défini' : <em>non défini</em>}
       </p>
       {l.notes && <p className="text-xs text-sourdine mt-0.5" style={{ whiteSpace: 'pre-line' }}>{l.notes}</p>}
+      <Dossiers dossiers={dossiers} />
       <div className="flex flex-wrap gap-2 mt-2">
         <BoutonDiscret type="button" onClick={onModifier}>Modifier</BoutonDiscret>
         <BoutonDiscret type="button" onClick={onRediger} disabled={!l.actif} aria-expanded={redigeant}>Écrire un message</BoutonDiscret>
-        <BoutonDiscret type="button" onClick={basculer} disabled={enCours}>{l.actif ? 'Ne plus suivre' : 'Suivre de nouveau'}</BoutonDiscret>
+        {l.statut_proposition !== 'rejete' && (
+          <BoutonDiscret type="button" onClick={basculer} disabled={enCours}>{l.actif ? 'Ne plus suivre' : 'Suivre de nouveau'}</BoutonDiscret>
+        )}
       </div>
     </div>
   )
