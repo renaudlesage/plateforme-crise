@@ -113,7 +113,7 @@ export default function TramesExercice() {
                     {!t.actif && <span className="jeton ml-2 text-sourdine">inactive</span>}
                   </p>
                   <p className="text-xs text-sourdine">
-                    {t.stimuli.length} stimulus · {t.objectifs.length} objectif(s)
+                    {t.stimuli.length} {t.stimuli.length > 1 ? 'stimuli' : 'stimulus'} · {t.objectifs.length} objectif(s)
                     {t.risque && ` · risque ${t.risque}`}
                     {t.pieges_couverts.length > 0 && ` · pièges : ${t.pieges_couverts.map(libellePiege).join(', ')}`}
                   </p>
