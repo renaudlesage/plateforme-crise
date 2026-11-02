@@ -95,7 +95,8 @@ export default function EvenementsTerritoire() {
 
   const parId = Object.fromEntries(liens.map((x) => [x.id, x]))
   const proposes = liens.filter((x) => x.statut_proposition === 'a_examiner')
-  const suivis = liens.filter((x) => x.statut_proposition !== 'a_examiner')
+  // Les événements d'un exercice conjoint se gèrent depuis l'exercice ; leurs messages restent à valider ici.
+  const suivis = liens.filter((x) => x.statut_proposition !== 'a_examiner' && !x.est_exercice)
   const dossiersDe = (id) => dossiers.filter((d) => d.evenement_territoire_id === id)
   const aTraiter = emissions.filter((x) => x.statut === 'a_valider' || x.statut === 'echec').sort((a, b) => new Date(a.propose_le) - new Date(b.propose_le))
   const historique = emissions.filter((x) => x.statut === 'envoye' || x.statut === 'annule')

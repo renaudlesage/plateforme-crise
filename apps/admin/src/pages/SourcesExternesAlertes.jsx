@@ -85,6 +85,7 @@ export default function SourcesExternesAlertes() {
                       {s.libelle}
                       {!s.actif && <span className="ml-2 text-xs text-sourdine">(inactive)</span>}
                       {(s.objets ?? []).includes('dossier') && <span className="jeton ml-2">dossiers</span>}
+                      {s.est_exercice && <span className="jeton ml-2 text-info">exercice</span>}
                     </p>
                     <p className="text-xs text-sourdine mt-0.5 font-mono">{s.secret}</p>
                   </div>

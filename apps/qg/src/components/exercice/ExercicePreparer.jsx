@@ -12,6 +12,7 @@ import {
   TYPES_EXERCICE,
   libelleTScenario,
 } from '../../lib/exercices'
+import ExerciceConjoint from './ExerciceConjoint'
 
 /**
  * Préparer un exercice : réglages, objectifs, stimuli (ce que l'animateur injecte), actions attendues,
@@ -102,6 +103,8 @@ export default function ExercicePreparer({ ex, onChange, onDemarre }) {
       </Section>
 
       {ex.mode_jeu === 'dans_outil' && <PanneauIncident ex={ex} onChange={onChange} editable={editable} />}
+
+      <ExerciceConjoint ex={ex} editable={editable} onChange={onChange} />
 
       {editable && (
         <Section titre="Démarrer" aide="Le chronomètre part au démarrage ; le mode, la durée et le facteur de temps sont alors fixés.">

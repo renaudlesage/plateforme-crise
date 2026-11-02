@@ -20,6 +20,13 @@
 // déployée, qui envoyait actif = true, est déjà neutralisée par la
 // migration b03a.
 //
+// Briefing 03, D (exercice conjoint) : une charge portant « exercice.code »
+// n'est acceptée que par une source d'exercice du même exercice, et part
+// vers recevoir_alerte_exercice() (livre de bord de l'incident d'exercice
+// et chronologie de l'exercice), jamais vers alertes_publiques. Une source
+// d'exercice refuse une charge non marquée (E3, E4 ; la base les impose
+// aussi).
+//
 // Chaque appel est journalisé (accepté ou rejeté) dans
 // journal_ingestions_externes, pour pouvoir diagnostiquer un pairage
 // mal configuré sans dépendre des logs de la fonction.
@@ -86,7 +93,7 @@ Deno.serve(async (req) => {
 
   const { data: source, error: erreurSource } = await supabase
     .from('sources_externes_alertes')
-    .select('id, contexte_id, actif, deleted_at')
+    .select('id, contexte_id, actif, deleted_at, objets, est_exercice')
     .eq('secret', secret)
     .is('deleted_at', null)
     .maybeSingle()
@@ -98,6 +105,45 @@ Deno.serve(async (req) => {
       charge_recue: charge,
     })
     return json({ erreur: 'Authentification refusée' }, 401)
+  }
+
+  if (!(source.objets ?? ['alerte']).includes('alerte')) {
+    await supabase.from('journal_ingestions_externes').insert({
+      source_externe_id: source.id,
+      contexte_id: source.contexte_id,
+      statut: 'rejete',
+      motif_rejet: 'Source non autorisée pour les alertes',
+      charge_recue: charge,
+    })
+    return json({ erreur: 'Source non autorisée pour les alertes' }, 403)
+  }
+
+  // E4 : une source réelle refuse une charge d'exercice, une source d'exercice une charge réelle.
+  const marqueeExercice = Boolean(charge?.exercice?.code)
+  if (marqueeExercice !== Boolean(source.est_exercice)) {
+    await supabase.from('journal_ingestions_externes').insert({
+      source_externe_id: source.id,
+      contexte_id: source.contexte_id,
+      statut: 'rejete',
+      motif_rejet: marqueeExercice
+        ? 'Charge marquée exercice reçue par une source réelle'
+        : 'Charge non marquée exercice reçue par une source d\'exercice',
+      charge_recue: charge,
+    })
+    return json({ erreur: 'Charge refusée : exercice et réel ne se mélangent pas' }, 409)
+  }
+
+  if (marqueeExercice) {
+    const { data: recu, error } = await supabase.rpc('recevoir_alerte_exercice', { p_source: source.id, p_charge: charge })
+    await supabase.from('journal_ingestions_externes').insert({
+      source_externe_id: source.id,
+      contexte_id: source.contexte_id,
+      statut: error ? 'rejete' : 'ok',
+      motif_rejet: error ? error.message.slice(0, 500) : null,
+      charge_recue: charge,
+    })
+    if (error) return json({ erreur: 'Alerte d\'exercice refusée', detail: error.message }, 400)
+    return json({ ...recu, exercice: true })
   }
 
   const alerte = charge?.alerte
