@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { texteErreur } from '@plateforme-crise/shared'
+import { GRAVITES_PIEGE, PIEGES_COMMUNE, libelleHeureScenario, texteErreur } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
@@ -21,6 +21,7 @@ export default function Exercices() {
   const [chargement, setChargement] = useState(true)
   const [erreur, setErreur] = useState(null)
   const [enAjout, setEnAjout] = useState(false)
+  const [depuisTrame, setDepuisTrame] = useState(false)
 
   const charger = useCallback(async () => {
     if (!contexteId) return
@@ -54,7 +55,12 @@ export default function Exercices() {
     <div>
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-lg font-semibold text-encre">Exercices</h1>
-        {!enAjout && <BoutonPrincipal onClick={() => setEnAjout(true)}>Préparer un exercice</BoutonPrincipal>}
+        {!enAjout && !depuisTrame && (
+          <div className="flex gap-2">
+            <BoutonDiscret onClick={() => setDepuisTrame(true)}>Depuis une trame</BoutonDiscret>
+            <BoutonPrincipal onClick={() => setEnAjout(true)}>Préparer un exercice</BoutonPrincipal>
+          </div>
+        )}
       </div>
       <p className="text-sm text-sourdine mb-1">
         Préparer, animer et clore un exercice sur mesure, avec la plateforme comme livre de bord.
@@ -65,6 +71,14 @@ export default function Exercices() {
       </p>
 
       {erreur && <p role="alert" className="text-sm text-chaud mb-2">{erreur}</p>}
+
+      {depuisTrame && (
+        <FormulaireDepuisTrame
+          contexteId={contexteId}
+          onAnnuler={() => setDepuisTrame(false)}
+          onCree={(id) => navigate(`/exercices/${id}`)}
+        />
+      )}
 
       {enAjout && (
         <FormulaireNouvelExercice
@@ -200,6 +214,143 @@ function FormulaireNouvelExercice({ contexteId, onAnnuler, onCree }) {
       <div className="flex gap-2">
         <BoutonPrincipal type="submit" disabled={enCours || !titre.trim()}>
           {enCours ? 'Création…' : 'Créer et préparer'}
+        </BoutonPrincipal>
+        <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
+      </div>
+    </form>
+  )
+}
+
+/**
+ * Génère un exercice en préparation depuis une trame (generer_exercice_commune) : objectifs et stimuli de la
+ * trame, plus les pièges de la commune (défauts de préparation détectés en base), chacun avec un stimulus,
+ * un objectif et une action attendue. L'exercice se prépare et se joue ensuite comme les autres.
+ */
+function FormulaireDepuisTrame({ contexteId, onAnnuler, onCree }) {
+  const [trames, setTrames] = useState([])
+  const [pieges, setPieges] = useState([])
+  const [trameId, setTrameId] = useState('')
+  const [titre, setTitre] = useState('')
+  const [mode, setMode] = useState('sur_table')
+  const [duree, setDuree] = useState('120')
+  const [maxPieges, setMaxPieges] = useState('3')
+  const [erreur, setErreur] = useState(null)
+  const [enCours, setEnCours] = useState(false)
+
+  useEffect(() => {
+    if (!contexteId) return
+    supabase
+      .from('exercice_trames')
+      .select('id, code, titre, contexte_id, stimuli, pieges_couverts')
+      .eq('actif', true)
+      .or(`contexte_id.is.null,contexte_id.eq.${contexteId}`)
+      .order('ordre')
+      .then(({ data, error }) => {
+        if (error) setErreur(texteErreur(error))
+        else setTrames(data ?? [])
+      })
+    supabase.rpc('pieges_commune', { p_contexte: contexteId }).then(({ data }) => setPieges(data ?? []))
+  }, [contexteId])
+
+  const trame = trames.find((t) => t.id === trameId)
+  const maxHeure = trame ? Math.max(...trame.stimuli.map((s) => s.heure_scenario_min)) : 0
+  // Même choix que la base : un piège par type, ceux que la trame couvre d'abord, puis les plus graves.
+  const ordreGravite = { haute: 0, moyenne: 1, basse: 2 }
+  const retenus = Object.values(Object.fromEntries(pieges.map((p) => [p.code, p])))
+    .sort((a, b) => {
+      const c = Number(trame?.pieges_couverts.includes(b.code)) - Number(trame?.pieges_couverts.includes(a.code))
+      return c || ordreGravite[a.gravite] - ordreGravite[b.gravite] || a.titre.localeCompare(b.titre)
+    })
+    .slice(0, Number(maxPieges) || 0)
+
+  async function soumettre(e) {
+    e.preventDefault()
+    setEnCours(true)
+    setErreur(null)
+    const { data, error } = await supabase.rpc('generer_exercice_commune', {
+      p_contexte: contexteId,
+      p_trame: trameId,
+      p_titre: titre.trim() || null,
+      p_mode_jeu: mode,
+      p_duree_min: duree === '' ? null : Number(duree),
+      p_max_pieges: Number(maxPieges) || 0,
+    })
+    setEnCours(false)
+    if (error) setErreur(texteErreur(error))
+    else onCree(data)
+  }
+
+  return (
+    <form onSubmit={soumettre} className="border border-trait rounded p-4 mb-4 bg-fond space-y-3">
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Trame</label>
+        <select required value={trameId} onChange={(e) => setTrameId(e.target.value)} className="w-full">
+          <option value="">Choisir une trame…</option>
+          {trames.map((t) => (
+            <option key={t.id} value={t.id}>{t.titre}{t.contexte_id ? ' (commune)' : ''}</option>
+          ))}
+        </select>
+        {trame && (
+          <p className="text-xs text-sourdine mt-1">
+            {trame.stimuli.length} stimuli sur {libelleHeureScenario(maxHeure)} de scénario.
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-sourdine mb-1">Titre (facultatif)</label>
+        <input value={titre} onChange={(e) => setTitre(e.target.value)} placeholder={trame?.titre ?? ''} className="w-full" />
+      </div>
+
+      <fieldset>
+        <legend className="block text-xs font-medium text-sourdine mb-1">Comment il se joue</legend>
+        <div className="space-y-1.5">
+          {MODES_JEU.map((m) => (
+            <label key={m.valeur} className="flex items-start gap-2 text-sm text-encre">
+              <input type="radio" name="mode_jeu_trame" className="mt-1" checked={mode === m.valeur} onChange={() => setMode(m.valeur)} />
+              <span>
+                {m.libelle}
+                <span className="block text-xs text-sourdine">{m.aide}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Durée réelle (minutes)</label>
+          <input type="number" min="1" value={duree} onChange={(e) => setDuree(e.target.value)} className="w-full" />
+          <p className="text-xs text-sourdine mt-0.5">Le temps du scénario y est ramené par le facteur de temps.</p>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-sourdine mb-1">Pièges à intégrer (au plus)</label>
+          <input type="number" min="0" max="7" value={maxPieges} onChange={(e) => setMaxPieges(e.target.value)} className="w-full" />
+        </div>
+      </div>
+
+      <div>
+        <p className="text-xs font-medium text-sourdine mb-1">Pièges retenus</p>
+        {retenus.length === 0 ? (
+          <p className="text-sm text-sourdine">Aucun défaut de préparation détecté dans la commune.</p>
+        ) : (
+          <ul className="text-sm space-y-0.5">
+            {retenus.map((p) => (
+              <li key={p.code}>
+                <span className={`jeton mr-2 ${GRAVITES_PIEGE[p.gravite]?.classe ?? ''}`}>{p.gravite}</span>
+                {p.titre}
+                <span className="text-xs text-sourdine"> — {PIEGES_COMMUNE.find((x) => x.code === p.code)?.libelle}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {erreur && <p role="alert" className="text-sm text-chaud">{erreur}</p>}
+
+      <div className="flex gap-2">
+        <BoutonPrincipal type="submit" disabled={enCours || !trameId}>
+          {enCours ? 'Génération…' : 'Générer et préparer'}
         </BoutonPrincipal>
         <BoutonDiscret type="button" onClick={onAnnuler}>Annuler</BoutonDiscret>
       </div>

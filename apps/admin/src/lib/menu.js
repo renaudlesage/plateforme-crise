@@ -49,6 +49,7 @@ export const SECTIONS = [
       { to: '/instances-coordination', libelle: 'Instances' },
       { to: '/checklists', libelle: 'Checklists' },
       { to: '/exercices', libelle: 'Exercices' },
+      { to: '/trames-exercice', libelle: "Trames d'exercice" },
       { to: '/conformite-legale', libelle: 'Conformité légale (AR 2019)' },
       { to: '/formation-stress-aigu', libelle: 'Facteur humain — stress aigu' },
       { to: '/formations-cbrn', libelle: 'Formations CBRN' },
