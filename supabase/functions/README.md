@@ -10,7 +10,7 @@ Projet `apjswshvzbejpvlxfnek`. La base et les fonctions déployées font foi ; c
 | `diffuser-alerte` | v2, JWT exigé | non (question ouverte 10) | Diffusion multicanal par webhooks |
 | `ingestion-alerte-externe` | v2 (2 novembre 2026), sans JWT | oui (briefing 03, A1 et D) | Pont Eventware → Crisiware. Alerte réelle → `alertes_publiques` inactive « à valider » (A1) ; alerte marquée exercice → `recevoir_alerte_exercice()` (D). |
 | `ingestion-dossier-evenement` | v1 (2 novembre 2026), sans JWT | oui (briefing 03, B) | Réception du dossier de sécurité d'un événement (contrat du briefing 01) ; tout le travail en base par `recevoir_dossier_evenement()` |
-| `ingest-meteoalarm` | **non déployée** (à approuver) | oui (C1, 13 novembre 2026) | Ingestion du flux MeteoAlarm Belgique dans `alertes_externes` toutes les 10 minutes (pg_cron et pg_net) ; sans JWT, un passage au plus toutes les 4 minutes (`meteoalarm_reserver`) ; enregistrement et moteur de réveil par `meteoalarm_ingerer()` |
+| `ingest-meteoalarm` | v2 (13 novembre 2026), sans JWT | oui (C1, 13 novembre 2026) | Ingestion du flux MeteoAlarm Belgique dans `alertes_externes` toutes les 10 minutes (pg_cron et pg_net) ; sans JWT, un passage au plus toutes les 4 minutes (`meteoalarm_reserver`) ; enregistrement et moteur de réveil par `meteoalarm_ingerer()` |
 | `bootstrap-super-admin` | v8 | non | Neutralisée, suppression à décider (question ouverte 10) |
 | `reset-password-ferrieres-test` | v2 | non | Neutralisée, suppression à décider (question ouverte 10) |
 

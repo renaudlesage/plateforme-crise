@@ -35,10 +35,9 @@ async function lire(url: string): Promise<string> {
   const controleur = new AbortController()
   const minuterie = setTimeout(() => controleur.abort(), DELAI_MS)
   try {
-    const r = await fetch(url, {
-      signal: controleur.signal,
-      headers: { Accept: 'application/atom+xml, application/xml, text/xml', 'User-Agent': 'plateforme-crise-ingestion/1.0' },
-    })
+    // Sans en-têtes propres : avec Accept et User-Agent explicites, MeteoAlarm a répondu 406 (13/11/2026), alors
+    // qu'irm-vigilance, qui lit le même flux sans en-tête, est servie.
+    const r = await fetch(url, { signal: controleur.signal })
     if (!r.ok) throw new Error(`HTTP ${r.status} sur ${new URL(url).pathname}`)
     const texte = await r.text()
     if (texte.length > TAILLE_MAX) throw new Error('Réponse trop volumineuse')
