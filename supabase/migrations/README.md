@@ -81,3 +81,8 @@ des transactions annulées avec ses tests (`supabase/tests/c06a_coordination_cel
 2026. À l'application, tout le fichier sauf `membres_cellule` était déjà en base, sans trace dans l'historique (exécuté hors de
 l'outil de migration) ; vérifié identique au fichier. Seule `membres_cellule` a été appliquée : version `20261113182448`
 (`c06a_coordination_cellule_complement`). Tests rejoués sur la base réelle : conformes. Aucune tâche planifiée.
+
+C1, ingestion MeteoAlarm et règles par défaut (13 novembre 2026) : `20261113120000_c1_ingestion_meteoalarm.sql`, répétée dans
+une transaction annulée avec ses tests (`supabase/tests/c1_ingestion_meteoalarm.sql`), approuvée par Ren et appliquée telle quelle le
+13 novembre 2026, après le déploiement de l'Edge Function `ingest-meteoalarm` (sans JWT) ; premier passage réel vérifié. Elle planifie la tâche pg_cron `ingest_meteoalarm`
+(toutes les 10 minutes) ; l'annuler : `select cron.unschedule('ingest_meteoalarm')`.

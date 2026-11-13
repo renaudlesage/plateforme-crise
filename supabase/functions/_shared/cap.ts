@@ -128,7 +128,7 @@ const TAILLE_MAX_CAP = 1_000_000
 export function normaliser(s: string): string {
   return s
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
@@ -213,7 +213,9 @@ const ALIAS_PROVINCES: [string, string[]][] = [
     'Bruxelles-Capitale',
     ['region de bruxelles capitale', 'bruxelles capitale', 'bruxelles', 'brussels hoofdstedelijk gewest', 'brussel hoofdstad', 'brussel', 'brussels capital region', 'brussels', 'brussel hauptstadt'],
   ],
-  ['Flandre-Occidentale', ['flandre occidentale', 'west vlaanderen', 'west flanders', 'westflandern']],
+  // La zone côtière de MeteoAlarm (EMMA_ID BE801 : « Kust », « La Côte », « Coastal zone », « Küste » dans le flux du
+  // 13/11/2026) est entièrement en Flandre-Occidentale.
+  ['Flandre-Occidentale', ['flandre occidentale', 'west vlaanderen', 'west flanders', 'westflandern', 'la cote', 'zone cotiere', 'kust', 'kustzone', 'coastal zone', 'kuste']],
   ['Flandre-Orientale', ['flandre orientale', 'oost vlaanderen', 'east flanders', 'ostflandern']],
   ['Hainaut', ['hainaut', 'henegouwen', 'hainault', 'hennegau']],
   ['Liège', ['liege', 'luik', 'luttich']],

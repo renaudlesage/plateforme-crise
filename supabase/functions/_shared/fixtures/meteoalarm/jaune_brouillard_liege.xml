@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>2.49.0.0.56.0.BE.20261113131223.1619164</identifier>
+  <sender>kmi-irm</sender>
+  <sent>2026-11-13T14:15:00+01:00</sent>
+  <status>Actual</status>
+  <msgType>Alert</msgType>
+  <scope>Public</scope>
+  <code>MCP:v2.0</code>
+  <info>
+    <language>nl-BE</language>
+    <category>Met</category>
+    <event>Gele waarschuwing voor mist</event>
+    <responseType>None</responseType>
+    <urgency>Future</urgency>
+    <severity>Moderate</severity>
+    <certainty>Likely</certainty>
+    <onset>2026-11-14T00:00:00+01:00</onset>
+    <expires>2026-11-14T12:00:00+01:00</expires>
+    <senderName>Koninklijk Meteorologisch Instituut van België</senderName>
+    <headline>Gele waarschuwing voor mist in België - Luik</headline>
+    <description>Er wordt verspreide mist met een zicht van maximaal 500 m verwacht, lokaal kan het zicht lager dan 200 m zijn. Hou voldoende afstand met de wagen en pas uw snelheid aan. Wees waakzaam.</description>
+    <instruction>Be vigilant</instruction>
+    <web>https://www.meteo.be/nl/weer/waarschuwingen/overzichtskaart-belgie</web>
+    <parameter>
+      <valueName>awareness_level</valueName>
+      <value>2; yellow; Moderate</value>
+    </parameter>
+    <parameter>
+      <valueName>awareness_type</valueName>
+      <value>4; Fog</value>
+    </parameter>
+    <parameter>
+      <valueName>impacts</valueName>
+      <value>4; Fog may threat public safety and/or damage infrastructure</value>
+    </parameter>
+    <area>
+      <areaDesc>Luik</areaDesc>
+      <geocode>
+        <valueName>NUTS2</valueName>
+        <value>BE33</value>
+      </geocode>
+    </area>
+  </info>
+  <info>
+    <language>fr-BE</language>
+    <category>Met</category>
+    <event>Avertissement jaune brouillard</event>
+    <responseType>None</responseType>
+    <urgency>Future</urgency>
+    <severity>Moderate</severity>
+    <certainty>Likely</certainty>
+    <onset>2026-11-14T00:00:00+01:00</onset>
+    <expires>2026-11-14T12:00:00+01:00</expires>
+    <senderName>Institut Royal Météorologique de Belgique</senderName>
+    <headline>Avertissement jaune brouillard en Belgique - Liège</headline>
+    <description>Nous prévoyons du brouillard répandu avec une visibilité de moins de 500 m. Veuillez adapter vos distances et votre vitesse. Localement, la visibilité peut être inférieure à 200 m. Soyez vigilants.</description>
+    <instruction>Be vigilant</instruction>
+    <web>https://www.meteo.be/fr/meteo/avertissements/carte-de-belgique</web>
+    <parameter>
+      <valueName>awareness_level</valueName>
+      <value>2; yellow; Moderate</value>
+    </parameter>
+    <parameter>
+      <valueName>awareness_type</valueName>
+      <value>4; Fog</value>
+    </parameter>
+    <parameter>
+      <valueName>impacts</valueName>
+      <value>4; Fog may threat public safety and/or damage infrastructure</value>
+    </parameter>
+    <area>
+      <areaDesc>Liège</areaDesc>
+      <geocode>
+        <valueName>NUTS2</valueName>
+        <value>BE33</value>
+      </geocode>
+    </area>
+  </info>
+  <info>
+    <language>en-GB</language>
+    <category>Met</category>
+    <event>Yellow warning for fog</event>
+    <responseType>None</responseType>
+    <urgency>Future</urgency>
+    <severity>Moderate</severity>
+    <certainty>Likely</certainty>
+    <onset>2026-11-14T00:00:00+01:00</onset>
+    <expires>2026-11-14T12:00:00+01:00</expires>
+    <senderName>Royal Meteorological Institute of Belgium</senderName>
+    <headline>Yellow warning for fog in Belgium - Liège</headline>
+    <description>Widespread fog with a visibility of maximum 500 m is expected and visibility may locally be less than 200 m. Keep sufficient distance with the car and adjust your speed. Be careful.</description>
+    <instruction>Be vigilant</instruction>
+    <web>https://www.meteo.be/en/weather/warnings/overview-belgium</web>
+    <parameter>
+      <valueName>awareness_level</valueName>
+      <value>2; yellow; Moderate</value>
+    </parameter>
+    <parameter>
+      <valueName>awareness_type</valueName>
+      <value>4; Fog</value>
+    </parameter>
+    <parameter>
+      <valueName>impacts</valueName>
+      <value>4; Fog may threat public safety and/or damage infrastructure</value>
+    </parameter>
+    <area>
+      <areaDesc>Liège</areaDesc>
+      <geocode>
+        <valueName>NUTS2</valueName>
+        <value>BE33</value>
+      </geocode>
+    </area>
+  </info>
+  <info>
+    <language>de-DE</language>
+    <category>Met</category>
+    <event>Gelbe Warnung fur Nebel</event>
+    <responseType>None</responseType>
+    <urgency>Future</urgency>
+    <severity>Moderate</severity>
+    <certainty>Likely</certainty>
+    <onset>2026-11-14T00:00:00+01:00</onset>
+    <expires>2026-11-14T12:00:00+01:00</expires>
+    <senderName>Königliche Meteorologische Institut van Belgien</senderName>
+    <headline>Gelbe Warnung fur Nebel in Belgien - Lüttich</headline>
+    <description>Es wird weitverbreitet Nebel mit Sichtweiten unter 500 m erwartet, aber sehr lokal kann die Sichtweite weniger als 200 m betragen. Halten Sie Abstand und reduzieren Sie Ihre Fahrgeschwindigkeit. Seien Sie vorsichtig.</description>
+    <instruction>Be vigilant</instruction>
+    <web>https://www.meteo.be/de/wetter/warnungen/belgien</web>
+    <parameter>
+      <valueName>awareness_level</valueName>
+      <value>2; yellow; Moderate</value>
+    </parameter>
+    <parameter>
+      <valueName>awareness_type</valueName>
+      <value>4; Fog</value>
+    </parameter>
+    <parameter>
+      <valueName>impacts</valueName>
+      <value>4; Fog may threat public safety and/or damage infrastructure</value>
+    </parameter>
+    <area>
+      <areaDesc>Lüttich</areaDesc>
+      <geocode>
+        <valueName>NUTS2</valueName>
+        <value>BE33</value>
+      </geocode>
+    </area>
+  </info>
+</alert>

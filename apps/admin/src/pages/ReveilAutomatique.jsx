@@ -79,6 +79,8 @@ export default function ReveilAutomatique() {
       {regles.erreur && <p className="text-sm text-chaud mb-2">{regles.erreur}</p>}
       {message && <p role="alert" className="text-sm text-chaud mb-2">{message}</p>}
 
+      <ReglesDesFiches contexteId={contexteId} onApplique={regles.rafraichir} />
+
       {!chargementSeuils && seuils.length === 0 && (
         <p className="text-sm text-sourdine border border-dashed border-trait rounded p-4 mb-4">
           Aucun seuil d'action : une règle arme un seuil, créez-en d'abord dans Anticipation → Seuils d'action.
@@ -414,5 +416,65 @@ function Parametres({ contexteId }) {
         {enCours ? 'Enregistrement…' : 'Enregistrer les paramètres'}
       </BoutonPrincipal>
     </form>
+  )
+}
+
+/**
+ * Règles livrées avec les fiches (table regles_reveil_modeles, gérée par la plateforme) : proposées sur les seuils de la
+ * commune dont le libellé porte le rang (S0, S1…) ; la commune les reprend d'un clic, puis les modifie comme les autres.
+ */
+function ReglesDesFiches({ contexteId, onApplique }) {
+  const [propositions, setPropositions] = useState(null)
+  const [erreur, setErreur] = useState(null)
+  const [enCours, setEnCours] = useState(false)
+
+  const charger = useCallback(async () => {
+    const { data, error } = await supabase.rpc('regles_reveil_proposees', { p_contexte: contexteId })
+    // Fonction absente tant que la migration n'est pas appliquée : on n'affiche rien.
+    if (error) setPropositions([])
+    else setPropositions(data ?? [])
+  }, [contexteId])
+
+  useEffect(() => {
+    charger()
+  }, [charger])
+
+  const manquantes = (propositions ?? []).filter((p) => !p.deja_presente)
+  if (!propositions || propositions.length === 0) return null
+
+  return (
+    <div className="border border-trait rounded p-3 mb-4 bg-surface" style={{ maxWidth: '80ch' }}>
+      <p className="text-sm font-medium text-encre mb-1">Règles proposées par vos fiches</p>
+      <ul className="text-sm space-y-1 mb-2">
+        {propositions.map((p) => (
+          <li key={`${p.modele_id}-${p.seuil_action_id}`}>
+            {p.deja_presente ? '✓' : '○'} <strong>{p.seuil_libelle}</strong> ← avertissement {p.type_alerte === 'orage' ? 'orages' : p.type_alerte} {p.niveau_min} ou plus
+            {p.note && <span className="block text-xs text-sourdine">{p.note}</span>}
+          </li>
+        ))}
+      </ul>
+      {erreur && <p role="alert" className="text-sm text-chaud mb-2">{erreur}</p>}
+      {manquantes.length > 0 ? (
+        <BoutonPrincipal
+          disabled={enCours}
+          onClick={async () => {
+            if (!confirm(`Créer ${manquantes.length} règle(s) ? Elles seront actives et modifiables comme les autres.`)) return
+            setEnCours(true)
+            const { error } = await supabase.rpc('appliquer_regles_reveil_modeles', { p_contexte: contexteId })
+            setEnCours(false)
+            if (error) setErreur(texteErreur(error))
+            else {
+              setErreur(null)
+              await charger()
+              await onApplique()
+            }
+          }}
+        >
+          Créer les {manquantes.length} règle(s) manquante(s)
+        </BoutonPrincipal>
+      ) : (
+        <p className="text-xs text-sourdine">Toutes les règles proposées existent déjà.</p>
+      )}
+    </div>
   )
 }

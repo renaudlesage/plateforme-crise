@@ -10,13 +10,15 @@ Projet `apjswshvzbejpvlxfnek`. La base et les fonctions déployées font foi ; c
 | `diffuser-alerte` | v2, JWT exigé | non (question ouverte 10) | Diffusion multicanal par webhooks |
 | `ingestion-alerte-externe` | v2 (2 novembre 2026), sans JWT | oui (briefing 03, A1 et D) | Pont Eventware → Crisiware. Alerte réelle → `alertes_publiques` inactive « à valider » (A1) ; alerte marquée exercice → `recevoir_alerte_exercice()` (D). |
 | `ingestion-dossier-evenement` | v1 (2 novembre 2026), sans JWT | oui (briefing 03, B) | Réception du dossier de sécurité d'un événement (contrat du briefing 01) ; tout le travail en base par `recevoir_dossier_evenement()` |
+| `ingest-meteoalarm` | v2 (13 novembre 2026), sans JWT | oui (C1, 13 novembre 2026) | Ingestion du flux MeteoAlarm Belgique dans `alertes_externes` toutes les 10 minutes (pg_cron et pg_net) ; sans JWT, un passage au plus toutes les 4 minutes (`meteoalarm_reserver`) ; enregistrement et moteur de réveil par `meteoalarm_ingerer()` |
 | `bootstrap-super-admin` | v8 | non | Neutralisée, suppression à décider (question ouverte 10) |
 | `reset-password-ferrieres-test` | v2 | non | Neutralisée, suppression à décider (question ouverte 10) |
 
 `_shared/` contient le code commun aux futures fonctions, sans dépendance au runtime Deno pour être testé par
 Vitest (`npm test` à la racine) : lecteur XML minimal (`xml.ts`, refuse DOCTYPE et entités externes) et lecture
 des messages CAP 1.1 et 1.2 (`cap.ts`) au vocabulaire de Crisiware, préparés pour l'ingestion de C1 quelle que
-soit la source retenue (IRM ou MeteoAlarm, question ouverte 7). Les fixtures de `_shared/fixtures/cap/` sont
+soit la source retenue (IRM ou MeteoAlarm, question ouverte 7). Le flux Atom est lu par `meteoalarm.ts`. Les fixtures de `_shared/fixtures/meteoalarm/` sont des messages **réels**
+relevés le 13 novembre 2026 depuis la base (voir leur README) ; celles de `_shared/fixtures/cap/` sont
 fabriquées d'après la norme CAP 1.2 et les conventions MeteoAlarm (`awareness_level`, `awareness_type`) : ce ne
 sont pas des messages réels. Les géocodes qu'elles portent sont des codes NUTS 2, choisis parce qu'ils sont
 connus ; les codes de zone réels du flux belge restent à relever. À compléter par de vrais fichiers dès que
