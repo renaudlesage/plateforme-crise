@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:cap="urn:oasis:names:tc:emergency:cap:1.2">
+  <link rel="hub" href="https://pubsubhubbub.appspot.com/"/>
+  <link type="application/atom+xml" rel="self" href="https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-belgium"/>
+  <entry>
+    <cap:geocode>
+      <valueName>NUTS2</valueName>
+      <value>BE35</value>
+    </cap:geocode>
+    <link title="Namur" href="https://meteoalarm.org?geocode=EMMA_ID:BE006" hreflang="en"/>
+    <cap:areaDesc>Namur</cap:areaDesc>
+    <cap:event>Yellow warning for fog</cap:event>
+    <cap:sent>2026-11-13T13:15:00+00:00</cap:sent>
+    <cap:expires>2026-11-14T11:00:00+00:00</cap:expires>
+    <cap:onset>2026-11-13T23:00:00+00:00</cap:onset>
+    <cap:certainty>Likely</cap:certainty>
+    <cap:severity>Moderate</cap:severity>
+    <cap:urgency>Future</cap:urgency>
+    <cap:scope>Public</cap:scope>
+    <cap:message_type>Alert</cap:message_type>
+    <cap:status>Actual</cap:status>
+    <cap:identifier>2.49.0.0.56.0.BE.20261113131223.1619165</cap:identifier>
+    <link type="application/cap+xml" href="https://feeds.meteoalarm.org/api/v1/warnings/feeds-belgium/ebc37776-84f6-4b5c-811e-cb5b34f737f8"/>
+    <link title="Belgium" rel="related" href="https://meteoalarm.org?region=BE" hreflang="en"/>
+    <author>
+      <name>meteoalarm.org</name>
+      <uri>https://meteoalarm.org</uri>
+    </author>
+    <published>2026-11-13T13:15:00Z</published>
+    <id>https://feeds.meteoalarm.org/api/v1/warnings/feeds-belgium/ebc37776-84f6-4b5c-811e-cb5b34f737f8?index_info=2&amp;index_area=0&amp;index_geocode=0</id>
+    <title>Yellow Fog Warning issued for Belgium - Namur</title>
+    <updated>2026-11-13T13:15:00Z</updated>
+  </entry>
+  <entry>
+    <cap:geocode>
+      <valueName>NUTS2</valueName>
+      <value>BE34</value>
+    </cap:geocode>
+    <link title="Luxembourg" href="https://meteoalarm.org?geocode=EMMA_ID:BE001" hreflang="en"/>
+    <cap:areaDesc>Luxembourg</cap:areaDesc>
+    <cap:event>Yellow warning for fog</cap:event>
+    <cap:sent>2026-11-13T13:15:00+00:00</cap:sent>
+    <cap:expires>2026-11-14T11:00:00+00:00</cap:expires>
+    <cap:onset>2026-11-13T23:00:00+00:00</cap:onset>
+    <cap:certainty>Likely</cap:certainty>
+    <cap:severity>Moderate</cap:severity>
+    <cap:urgency>Future</cap:urgency>
+    <cap:scope>Public</cap:scope>
+    <cap:message_type>Alert</cap:message_type>
+    <cap:status>Actual</cap:status>
+    <cap:identifier>2.49.0.0.56.0.BE.20261113131223.1619166</cap:identifier>
+    <link type="application/cap+xml" href="https://feeds.meteoalarm.org/api/v1/warnings/feeds-belgium/0372880c-1a15-43cb-b0be-ea09264a7a30"/>
+    <link title="Belgium" rel="related" href="https://meteoalarm.org?region=BE" hreflang="en"/>
+    <author>
+      <name>meteoalarm.org</name>
+      <uri>https://meteoalarm.org</uri>
+    </author>
+    <published>2026-11-13T13:15:00Z</published>
+    <id>https://feeds.meteoalarm.org/api/v1/warnings/feeds-belgium/0372880c-1a15-43cb-b0be-ea09264a7a30?index_info=2&amp;index_area=0&amp;index_geocode=0</id>
+    <title>Yellow Fog Warning issued for Belgium - Luxembourg</title>
+    <updated>2026-11-13T13:15:00Z</updated>
+  </entry>
+  <entry>
+    <cap:geocode>
+      <valueName>NUTS2</valueName>
+      <value>BE33</value>
+    </cap:geocode>
+    <link title="Liège" href="https://meteoalarm.org?geocode=EMMA_ID:BE008" hreflang="en"/>
+    <cap:areaDesc>Liège</cap:areaDesc>
+    <cap:event>Green warning for ice snow</cap:event>
+    <cap:sent>2026-11-13T05:40:01+00:00</cap:sent>
+    <cap:message_type>Update</cap:message_type>
+    <cap:status>Actual</cap:status>
+    <cap:identifier>2.49.0.0.56.0.BE.20261113054001.1619148</cap:identifier>
+    <link type="application/cap+xml" href="https://feeds.meteoalarm.org/api/v1/warnings/feeds-belgium/8d59f7ae-3bba-41be-ade0-1a8fd47d5423"/>
+    <published>2026-11-13T05:40:01Z</published>
+    <title>Green Ice Snow Warning issued for Belgium - Liège</title>
+  </entry>
+  <entry>
+    <cap:areaDesc>Namur</cap:areaDesc>
+    <cap:identifier>2.49.0.0.56.0.BE.20261113131223.1619165</cap:identifier>
+    <link type="application/cap+xml" href="https://feeds.meteoalarm.org/api/v1/warnings/feeds-belgium/ebc37776-84f6-4b5c-811e-cb5b34f737f8"/>
+  </entry>
+</feed>
