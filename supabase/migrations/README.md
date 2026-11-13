@@ -72,9 +72,12 @@ fichier : versions `20261102102059` à `20261102102449` (noms `b03a_0_notificati
 `b03d_exercice_conjoint`). Le contenu appliqué est celui des fichiers (commentaires de tête exceptés).
 
 C5, immersion des exercices (13 novembre 2026) : `20261113100000_c05a_exercice_immersion.sql`, répétée dans une transaction
-annulée avec ses tests (`supabase/tests/c05a_exercice_immersion.sql`), **non appliquée** : en attente de l'accord de Ren.
+annulée avec ses tests (`supabase/tests/c05a_exercice_immersion.sql`), approuvée par Ren et appliquée telle quelle le
+13 novembre 2026 : version `20261113182237` (`c05a_exercice_immersion`). Tests rejoués sur la base réelle : conformes.
 Elle planifie la tâche pg_cron `exercices_diffusion` (chaque minute) ; l'annuler : `select cron.unschedule('exercices_diffusion')`.
 
 C6, coordination de la cellule (13 novembre 2026) : `20261113110000_c06a_coordination_cellule.sql` (après C5), répétée dans
-des transactions annulées avec ses tests (`supabase/tests/c06a_coordination_cellule.sql`), **non appliquée** : en attente de
-l'accord de Ren. Aucune tâche planifiée.
+des transactions annulées avec ses tests (`supabase/tests/c06a_coordination_cellule.sql`), approuvée par Ren le 13 novembre
+2026. À l'application, tout le fichier sauf `membres_cellule` était déjà en base, sans trace dans l'historique (exécuté hors de
+l'outil de migration) ; vérifié identique au fichier. Seule `membres_cellule` a été appliquée : version `20261113182448`
+(`c06a_coordination_cellule_complement`). Tests rejoués sur la base réelle : conformes. Aucune tâche planifiée.
