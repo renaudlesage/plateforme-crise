@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { texteErreur } from '@plateforme-crise/shared'
+import { LIBELLE_TYPE_STIMULUS, delaiTraitement, texteErreur } from '@plateforme-crise/shared'
 import { supabase } from '../../lib/supabase'
 import { useDonneesExercice } from '../../hooks/useDonneesExercice'
 import { BoutonDiscret, BoutonPrincipal } from '../Boutons'
@@ -19,7 +19,7 @@ import {
  * Animer l'exercice : chronomètre, prochain stimulus, grille d'observation, main courante, écarts, clôture.
  * Tout est écrit au fil de l'eau : rien n'est à ressaisir après coup.
  */
-export default function ExerciceJouer({ ex, onClos }) {
+export default function ExerciceJouer({ ex, onChange, onClos }) {
   const { d, erreur: erreurChargement, recharger } = useDonneesExercice(ex.id, true)
   const [maintenant, setMaintenant] = useState(Date.now())
   const [erreur, setErreur] = useState(null)
@@ -30,6 +30,13 @@ export default function ExerciceJouer({ ex, onClos }) {
     const t = setInterval(() => setMaintenant(Date.now()), 1000)
     return () => clearInterval(t)
   }, [])
+
+  // En diffusion automatique, les stimuli partent côté serveur : on relit pour voir ce qui est parti et ce qui est traité.
+  useEffect(() => {
+    if (!ex.diffusion_auto) return undefined
+    const t = setInterval(() => document.visibilityState === 'visible' && recharger(), 20000)
+    return () => clearInterval(t)
+  }, [ex.diffusion_auto, recharger])
 
   async function agir(fn) {
     setOccupe(true)
@@ -78,7 +85,24 @@ export default function ExerciceJouer({ ex, onClos }) {
         </span>
         {ex.duree_minutes && <span className="text-xs text-sourdine">durée prévue : {ex.duree_minutes} min</span>}
         <span className="text-xs text-sourdine">démarré à {heureLocale(ex.debut_reel)}</span>
+        {ex.diffusion_auto !== undefined && (
+          <label className="text-sm text-encre flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={ex.diffusion_auto}
+              disabled={occupe}
+              onChange={async (e) => {
+                const ok = await agir(() => supabase.from('exercices').update({ diffusion_auto: e.target.checked }).eq('id', ex.id))
+                if (ok) onChange?.()
+              }}
+            />
+            Diffusion automatique
+            <span className="text-xs text-sourdine">(chaque stimulus part seul à son heure de scénario, à la minute près)</span>
+          </label>
+        )}
       </div>
+
+      <SuiviMessages d={d} ex={ex} />
 
       {/* Prochain stimulus */}
       <section>
@@ -191,17 +215,20 @@ function CarteStimulus({ s, ex, echu, enSuspens, occupe, agir, principal = false
     <div className={`rounded border p-3 ${principal && echu ? 'border-chaud bg-fond' : 'border-trait bg-surface'}`}>
       <p className="text-xs text-sourdine mb-1">
         <span className="jeton mr-1">{libelleTScenario(s.heure_scenario_min)}</span>
+        {s.type_stimulus && s.type_stimulus !== 'message' && <span className="jeton mr-1">{LIBELLE_TYPE_STIMULUS[s.type_stimulus]}</span>}
         {LIBELLE_CANAL[s.canal] ?? s.canal}
         {s.emetteur && <> · de {s.emetteur}</>}
-        {s.discipline_cible && <> → {LIBELLE_DISCIPLINE[s.discipline_cible] ?? s.discipline_cible}</>}
+        {destinatairesDe(s).length > 0 && <> → {destinatairesDe(s).map(libelleRole).join(', ')}</>}
+        {s.decompte_minutes && <> · décompte {s.decompte_minutes} min</>}
         {echu ? (
-          <span className="ml-2 text-chaud font-medium">à lancer maintenant</span>
+          <span className="ml-2 text-chaud font-medium">{ex.diffusion_auto ? 'part automatiquement' : 'à lancer maintenant'}</span>
         ) : (
           <span className="ml-2">dans ~{Math.ceil(enSuspens)} min de scénario</span>
         )}
       </p>
       <p className={`text-encre ${principal ? 'text-base' : 'text-sm'}`}>{s.texte}</p>
       {s.note_animateur && <p className="text-xs text-sourdine mt-1">🔒 {s.note_animateur}</p>}
+      {s.livrable && <p className="text-xs text-sourdine mt-1">🔒 livrable attendu : {s.livrable}</p>}
       <div className="flex flex-wrap items-center gap-2 mt-2">
         <BoutonPrincipal disabled={occupe} onClick={() => agir(() => supabase.rpc('lancer_stimulus', { p_stimulus: s.id }))}>
           Lancer
@@ -387,5 +414,45 @@ function FormulaireEcart({ ex, d, agir }) {
         <BoutonDiscret type="button" onClick={() => setOuvert(false)}>Annuler</BoutonDiscret>
       </div>
     </form>
+  )
+}
+
+function destinatairesDe(s) {
+  if (s.type_stimulus === 'publication') return []
+  return s.destinataires ?? (s.discipline_cible ? [s.discipline_cible] : [])
+}
+
+function libelleRole(r) {
+  return r === 'tous' ? 'Tous' : LIBELLE_DISCIPLINE[r] ?? r
+}
+
+/** Messages lancés et leur prise en charge par les joueurs (« traité » dans la salle de jeu). */
+function SuiviMessages({ d, ex }) {
+  if (ex.diffusion_auto === undefined) return null
+  const lances = d.stimuli.filter((s) => s.statut === 'lance' && (s.type_stimulus ?? 'message') === 'message')
+  if (lances.length === 0) return null
+  const enAttente = lances.filter((s) => !d.traitements.some((t) => t.stimulus_id === s.id))
+  return (
+    <details className="border border-trait rounded p-3" open={enAttente.length > 0}>
+      <summary className="text-sm font-semibold text-encre cursor-pointer">
+        Messages reçus par les joueurs : {lances.length - enAttente.length}/{lances.length} traités
+      </summary>
+      <ul className="text-sm mt-2 space-y-1">
+        {lances.map((s) => {
+          const tr = d.traitements.filter((t) => t.stimulus_id === s.id)
+          const delai = delaiTraitement(s.lance_a, tr)
+          return (
+            <li key={s.id} className="flex justify-between gap-2">
+              <span>
+                {heureLocale(s.lance_a)} · {s.emetteur ? `${s.emetteur} : ` : ''}{s.texte.slice(0, 80)}
+              </span>
+              <span className={`flex-shrink-0 text-xs ${tr.length ? 'text-ok' : 'text-chaud'}`}>
+                {tr.length ? `traité en ${delai} min${tr.length > 1 ? ` (${tr.length} joueurs)` : ''}` : 'pas encore traité'}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+    </details>
   )
 }

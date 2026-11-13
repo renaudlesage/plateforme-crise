@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { texteErreur } from '@plateforme-crise/shared'
+import { LIBELLE_TYPE_STIMULUS, delaiTraitement, ecrireCsv, ecrireHoraire, exporterChronogramme, texteErreur } from '@plateforme-crise/shared'
 import { supabase } from '../../lib/supabase'
 import { useDonneesExercice } from '../../hooks/useDonneesExercice'
 import { BoutonDiscret } from '../Boutons'
 import Chronologie from './Chronologie'
 import { LIBELLE_GRAVITE, STATUTS_ACTION } from '../../lib/exercices'
+import { nomDeFichier, telecharger } from '../../lib/telechargement'
 
 /**
  * Bilan d'un exercice terminé : synthèse calculée à la clôture (simple décompte, sans IA),
@@ -52,6 +53,8 @@ export default function ExerciceBilan({ ex, peutAnimer, onChange }) {
       </section>
 
       <RapportFinal ex={ex} editable={peutAnimer} onChange={onChange} />
+
+      {peutAnimer && d && <Exports ex={ex} d={d} />}
 
       {peutAnimer && d && (
         <section>
@@ -260,6 +263,83 @@ function RapportFinal({ ex, editable, onChange }) {
       ) : (
         <p className="text-sm text-encre whitespace-pre-wrap">{ex.rapport_final}</p>
       )}
+    </section>
+  )
+}
+
+const STATUT_STIMULUS = { prevu: 'non joué', lance: 'lancé', saute: 'sauté' }
+const dateHeure = (iso) => (iso ? new Date(iso).toLocaleString('fr-BE') : '')
+
+/** Exports CSV (Excel) pour le RETEX : déroulé avec délais de prise en charge, observations, écarts, chronogramme. */
+function Exports({ ex, d }) {
+  const base = nomDeFichier(ex.titre)
+  const actionDe = (id) => d.actions.find((a) => a.id === id)?.action ?? ''
+
+  function deroule() {
+    const lignes = [['Horaire scénario', 'Type', 'Émetteur', 'Destinataires', 'Stimulus', 'Statut', 'Lancé à', 'Premier « traité » à', 'Délai (min)', 'Joueurs ayant traité']]
+    for (const s of d.stimuli) {
+      const tr = d.traitements.filter((t) => t.stimulus_id === s.id)
+      const premier = tr.length ? tr.map((t) => t.traite_le).sort()[0] : null
+      lignes.push([
+        ecrireHoraire(s.heure_scenario_min),
+        LIBELLE_TYPE_STIMULUS[s.type_stimulus ?? 'message'],
+        s.emetteur ?? '',
+        (s.destinataires ?? (s.discipline_cible ? [s.discipline_cible] : [])).join(', '),
+        s.texte,
+        STATUT_STIMULUS[s.statut] ?? s.statut,
+        dateHeure(s.lance_a),
+        dateHeure(premier),
+        delaiTraitement(s.lance_a, tr) ?? '',
+        tr.length || '',
+      ])
+    }
+    telecharger(`deroule-${base}.csv`, ecrireCsv(lignes))
+  }
+
+  function observations() {
+    const lignes = [['Horodatage', 'Action attendue', 'Verdict', 'Note', 'Rôle observateur']]
+    for (const o of d.observations) {
+      lignes.push([
+        dateHeure(o.horodatage),
+        o.action_id ? actionDe(o.action_id) : '(note libre)',
+        o.atteint === true ? 'atteint' : o.atteint === false ? 'non atteint' : '',
+        o.note ?? '',
+        o.role_observateur ?? '',
+      ])
+    }
+    telecharger(`observations-${base}.csv`, ecrireCsv(lignes))
+  }
+
+  function ecarts() {
+    const lignes = [['Écart', 'Gravité', 'Action corrective', 'Responsable', 'Échéance', 'Suivi']]
+    for (const e of d.ecarts) {
+      lignes.push([
+        e.ecart,
+        LIBELLE_GRAVITE[e.gravite] ?? e.gravite ?? '',
+        e.action_corrective ?? '',
+        e.responsable ?? '',
+        e.echeance ?? '',
+        STATUTS_ACTION.find((x) => x.valeur === e.statut_action)?.libelle ?? e.statut_action ?? '',
+      ])
+    }
+    telecharger(`ecarts-${base}.csv`, ecrireCsv(lignes))
+  }
+
+  return (
+    <section>
+      <h2 className="text-sm font-semibold text-encre mb-1">Exporter pour le RETEX</h2>
+      <p className="text-xs text-sourdine mb-2">
+        Fichiers CSV qu’Excel ouvre directement. Ils contiennent les notes d’animateur et les observations : à ne partager qu’avec les animateurs et
+        les personnes chargées du RETEX.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <BoutonDiscret onClick={deroule}>Déroulé et délais de prise en charge</BoutonDiscret>
+        <BoutonDiscret onClick={observations}>Observations ({d.observations.length})</BoutonDiscret>
+        <BoutonDiscret onClick={ecarts}>Écarts ({d.ecarts.length})</BoutonDiscret>
+        <BoutonDiscret onClick={() => telecharger(`chronogramme-${base}.csv`, exporterChronogramme(d.stimuli, d.actions))}>
+          Chronogramme (réutilisable)
+        </BoutonDiscret>
+      </div>
     </section>
   )
 }

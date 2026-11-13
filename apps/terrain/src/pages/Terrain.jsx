@@ -5,7 +5,7 @@ import { BoutonDiscret } from '../components/Boutons'
 import VeilleMeteo from '../components/VeilleMeteo'
 import { BandeauAppelsAide, DemandesATraiter, VueCommandement } from '../components/Commandement'
 import VueDiscipline from '../components/Disciplines'
-import { profilDe } from '@plateforme-crise/shared'
+import { MesProcessus, profilDe } from '@plateforme-crise/shared'
 import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
 import { useIncidentsEnCours, SelecteurIncident } from '../hooks/useIncidentsEnCours'
@@ -130,6 +130,7 @@ function ongletsPour(profil) {
 }
 
 function IncidentActif({ contexteId, roleId, roleLibelle, profil }) {
+  const { utilisateur } = useAuth()
   const { incidents, incident, choisir, chargement } = useIncidentsEnCours(contexteId)
   const { dansZoneRouge } = usePosition()
   const onglets = ongletsPour(profil)
@@ -175,6 +176,9 @@ function IncidentActif({ contexteId, roleId, roleLibelle, profil }) {
       )}
 
       <BoutonAide incidentId={incident.id} contexteId={contexteId} roleLibelle={roleLibelle} />
+
+      {/* Processus d'intervention confiés à cet agent (C6) : la question en cours, une réponse d'un toucher. */}
+      <MesProcessus supabase={supabase} incidentId={incident.id} utilisateurId={utilisateur?.id} />
 
       <Link to="/situation" className="bouton-terrain principal">
         Voir la situation (Comité de Coordination)

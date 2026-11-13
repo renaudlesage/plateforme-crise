@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, LayersControl, Marker, Popup, Circle, useMap, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, WMSTileLayer, LayersControl, Marker, Popup, Circle, useMap, useMapEvents } from 'react-leaflet'
 import { divIcon, latLngBounds } from 'leaflet'
 import { useEffect, useState } from 'react'
 import { svgSymbole } from './symboles.js'
@@ -31,6 +31,20 @@ export const FONDS_DE_PLAN = [
 ]
 
 const CLE_STOCKAGE_FOND = 'crisiware.fond_de_plan'
+
+// Leaflet affiche l'attribution en HTML : celle d'une couche saisie dans l'Admin est échappée.
+function echapper(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+}
+
+/** Couche du catalogue (C6, table couches_carte) en superposition : WMS ou tuiles XYZ. */
+function CoucheSuperposee({ c }) {
+  const commun = { attribution: echapper(c.attribution), opacity: Number(c.opacite) || 0.7, maxZoom: 19, maxNativeZoom: c.zoom_max ?? 19 }
+  if (c.type === 'wms') {
+    return <WMSTileLayer url={c.url} params={{ layers: c.couches, format: c.format ?? 'image/png', transparent: c.transparent !== false }} {...commun} />
+  }
+  return <TileLayer url={c.url} {...commun} />
+}
 
 function fondMemorise() {
   try {
@@ -96,6 +110,7 @@ export default function CarteCrise({
   ajusterSur = null,
   hauteur = '420px',
   messagePleinEcran = 'Touchez la carte pour placer le point',
+  couches = [],
 }) {
   // Plein écran « maison » (CSS fixed) plutôt que l'API Fullscreen : Safari sur iPhone ne la
   // propose pas pour un élément quelconque, et on veut garder la même carte (zoom, position).
@@ -185,6 +200,11 @@ export default function CarteCrise({
             <LayersControl.BaseLayer key={f.cle} name={f.libelle} checked={f.cle === fondInitial}>
               <TileLayer attribution={f.attribution} url={f.url} maxZoom={19} maxNativeZoom={f.maxNativeZoom ?? 19} />
             </LayersControl.BaseLayer>
+          ))}
+          {couches.map((c) => (
+            <LayersControl.Overlay key={c.id} name={echapper(c.nom)} checked={!!c.visible_par_defaut}>
+              <CoucheSuperposee c={c} />
+            </LayersControl.Overlay>
           ))}
         </LayersControl>
         <MemoriserFond />

@@ -3,9 +3,11 @@ import { useAuth } from '../context/AuthContext'
 import BasculeTheme from './BasculeTheme'
 import IndicateurFile from './IndicateurFile'
 import { PositionProvider } from '../context/PositionContext'
+import { BandeauConsignes } from '@plateforme-crise/shared'
+import { supabase } from '../lib/supabase'
 
 export default function MisEnPageTerrain() {
-  const { contexteActuel, deconnexion, selectionnerContexte } = useAuth()
+  const { contexteActuel, contexteId, deconnexion, selectionnerContexte } = useAuth()
   const navigate = useNavigate()
   const { pathname } = useLocation()
 
@@ -42,6 +44,9 @@ export default function MisEnPageTerrain() {
       </header>
 
       <IndicateurFile />
+
+      {/* Consignes de la cellule à lire (C6). */}
+      <BandeauConsignes supabase={supabase} contexteId={contexteId} />
 
       <PositionProvider>
         <main>

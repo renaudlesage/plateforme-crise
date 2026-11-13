@@ -2,6 +2,8 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import BasculeTheme from './BasculeTheme'
 import BandeauReveil from './BandeauReveil'
+import { supabase } from '../lib/supabase'
+import { BandeauConsignes } from '@plateforme-crise/shared'
 import { useCompteursCC } from '../hooks/useCompteursCC'
 import { useReveilsEnAttente } from '../hooks/useReveilsEnAttente'
 
@@ -73,6 +75,9 @@ export default function MisEnPageQG() {
           <Link to="/situation" className={`plaque-nav${actif('/situation') ? ' actif' : ''}`}>
             Situation
           </Link>
+          <Link to="/historique" className={`plaque-nav${actif('/historique') ? ' actif' : ''}`}>
+            Historique
+          </Link>
           {contexteActuel?.niveau_acces !== 'lecture' && (
             <Link to="/evenements" className={`plaque-nav${actif('/evenements') ? ' actif' : ''}`}>
               Événements<Pastille n={compteurs.evenements} />
@@ -100,6 +105,9 @@ export default function MisEnPageQG() {
 
       {/* Réveil automatique : un seuil armé par un avertissement officiel attend son « Vu, je prends ». */}
       {pathname !== '/avertissements' && <BandeauReveil reveils={reveils.reveils} onAcquitter={reveils.acquitter} />}
+
+      {/* Consignes de la cellule à lire (C6) : accusé de lecture horodaté. */}
+      <BandeauConsignes supabase={supabase} contexteId={contexteId} />
 
       <main>
         {/* L'onglet Avertissements acquitte par ce même état : la pastille et le bandeau suivent sans attendre le prochain relevé. */}

@@ -93,6 +93,15 @@ export default function ExerciceDetail() {
         <p className="text-sm text-sourdine border border-dashed border-trait rounded p-4 mb-4">
           Cet exercice est {ex.statut === 'en_cours' ? 'en cours' : 'en préparation'}. Le scénario reste réservé aux animateurs pour ne pas
           fausser le jeu ; le bilan sera consultable ici une fois l’exercice terminé.
+          {ex.statut === 'en_cours' && (
+            <> Vous jouez ? <Link to={`/exercices/${ex.id}/salle`} className="lien font-semibold">Entrer dans la salle de jeu</Link> (messagerie, fil social, décompte).</>
+          )}
+        </p>
+      )}
+      {peutAnimer && ex.statut !== 'preparation' && (
+        <p className="text-xs text-sourdine mb-2">
+          Ce que voient les joueurs : <Link to={`/exercices/${ex.id}/salle`} className="lien">salle de jeu</Link>
+          {ex.statut === 'en_cours' && <> — adresse à leur transmettre : <span className="font-mono">{`${window.location.origin}/exercices/${ex.id}/salle`}</span></>}
         </p>
       )}
 

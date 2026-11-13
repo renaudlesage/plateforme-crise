@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  DISCIPLINES, GRAVITES_PIEGE, PIEGES_COMMUNE, libelleHeureScenario, libellePiege, texteErreur,
+  DISCIPLINES, GRAVITES_PIEGE, LIBELLE_TYPE_STIMULUS, PIEGES_COMMUNE, TYPES_STIMULUS, libelleHeureScenario, libellePiege, texteErreur,
 } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -132,6 +132,7 @@ export default function TramesExercice() {
                   {[...t.stimuli].sort((a, b) => a.heure_scenario_min - b.heure_scenario_min).map((s, i) => (
                     <li key={i}>
                       <span className="font-mono text-xs text-sourdine mr-2">{libelleHeureScenario(s.heure_scenario_min)}</span>
+                      {s.type && s.type !== 'message' && <span className="jeton mr-1">{LIBELLE_TYPE_STIMULUS[s.type]}{s.decompte_minutes ? ` ${s.decompte_minutes} min` : ''}</span>}
                       {s.emetteur && <strong>{s.emetteur} : </strong>}
                       {s.texte}
                       {s.piege && <span className="jeton ml-2 text-veille">{libellePiege(s.piege)}</span>}
@@ -219,7 +220,15 @@ function FormulaireTrame({ trame, risques, peutPlateforme, onValider, onAnnuler 
       actif,
       pieges_couverts: pieges,
       objectifs: objectifs.map(propre),
-      stimuli: stimuli.map((s) => propre({ ...s, heure_scenario_min: Number(s.heure_scenario_min) || 0 })),
+      stimuli: stimuli.map((s) =>
+        propre({
+          ...s,
+          heure_scenario_min: Number(s.heure_scenario_min) || 0,
+          // Type et décompte (C5) : « message » est la valeur par défaut, inutile de l'écrire.
+          type: s.type && s.type !== 'message' ? s.type : null,
+          decompte_minutes: s.type === 'decompte' ? Number(s.decompte_minutes) || null : null,
+        })
+      ),
       ...(trame.id ? {} : { plateforme }),
     })
     setEnCours(false)
@@ -319,6 +328,14 @@ function FormulaireTrame({ trame, risques, peutPlateforme, onValider, onAnnuler 
               ))}
             </select>
             <input value={s.emetteur ?? ''} onChange={(e) => majStimulus(i, 'emetteur', e.target.value)} placeholder="Émetteur" />
+            <select value={s.type ?? 'message'} onChange={(e) => majStimulus(i, 'type', e.target.value)} title="Type de stimulus">
+              {TYPES_STIMULUS.map((t) => (
+                <option key={t.valeur} value={t.valeur}>{t.libelle}</option>
+              ))}
+            </select>
+            {s.type === 'decompte' && (
+              <input type="number" min="1" max="1440" required value={s.decompte_minutes ?? ''} onChange={(e) => majStimulus(i, 'decompte_minutes', e.target.value)} placeholder="Durée (min)" title="Durée du décompte en minutes" />
+            )}
             <select value={s.discipline_cible ?? ''} onChange={(e) => majStimulus(i, 'discipline_cible', e.target.value)}>
               <option value="">cible —</option>
               {CIBLES.map((c) => (

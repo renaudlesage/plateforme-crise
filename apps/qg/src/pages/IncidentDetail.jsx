@@ -15,6 +15,7 @@ import JournalDecisions from '../components/JournalDecisions'
 import Entraide from '../components/Entraide'
 import { BandeauAppelsAide, BandeauDemandes, SectionComptages, SectionTriage, chargerTriage } from '../components/RemonteesTerrain'
 import { SectionPlanNucleaire, SectionVeille, SectionCauseIncendie } from '../components/NucleaireVeilleIncendie'
+import { SectionCapacites, SectionConsignes, SectionPresences, SectionProcessus } from '../components/CoordinationCellule'
 
 export default function IncidentDetail() {
   const { id } = useParams()
@@ -300,6 +301,12 @@ export default function IncidentDetail() {
               onChangement={chargerIncident}
             />
           </div>
+          <div className="mb-6">
+            <SectionConsignes incidentId={id} contexteId={contexteId} />
+          </div>
+          <div className="mb-6">
+            <SectionPresences incidentId={id} contexteId={contexteId} />
+          </div>
           {afficher('escalade') && (
             <div className="mb-6">
               <SectionPhasesEscalade incidentId={id} contexteId={contexteId} niveauActuelId={incident.niveau_actuel_id} onChangement={chargerIncident} />
@@ -359,6 +366,12 @@ export default function IncidentDetail() {
               <SectionRequisitions incidentId={id} contexteId={contexteId} />
             </div>
           )}
+          <div className="mb-6">
+            <SectionProcessus incidentId={id} contexteId={contexteId} />
+          </div>
+          <div className="mb-6">
+            <SectionCapacites incidentId={id} contexteId={contexteId} />
+          </div>
           <div className="mb-6">
             <SectionComptages incidentId={id} />
           </div>
