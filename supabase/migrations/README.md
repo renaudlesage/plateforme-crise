@@ -70,3 +70,7 @@ contrainte (`notifications_motif_check`, `livre_de_bord_source_type_check`) ont 
 fichier : versions `20261102102059` à `20261102102449` (noms `b03a_0_notifications_motif`, `b03a_alertes_garde_fous`,
 `b03c_exercice_trames_pieges`, `b03c_exercice_trames_depart`, `b03b_dossiers_evenements`, `b03d_0_livre_de_bord_source_type`,
 `b03d_exercice_conjoint`). Le contenu appliqué est celui des fichiers (commentaires de tête exceptés).
+
+C5, immersion des exercices (13 novembre 2026) : `20261113100000_c05a_exercice_immersion.sql`, répétée dans une transaction
+annulée avec ses tests (`supabase/tests/c05a_exercice_immersion.sql`), **non appliquée** : en attente de l'accord de Ren.
+Elle planifie la tâche pg_cron `exercices_diffusion` (chaque minute) ; l'annuler : `select cron.unschedule('exercices_diffusion')`.

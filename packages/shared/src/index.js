@@ -71,3 +71,18 @@ export * from './entraide.js'
 export * from './reveil.js'
 export { matriceQr, svgQr } from './qr.js'
 export { PIEGES_COMMUNE, libellePiege, GRAVITES_PIEGE, libelleHeureScenario } from './trames.js'
+export {
+  TYPES_STIMULUS,
+  LIBELLE_TYPE_STIMULUS,
+  ROLES_EXERCICE,
+  COLONNES_CHRONOGRAMME,
+  lireCsv,
+  ecrireCsv,
+  lireHoraire,
+  ecrireHoraire,
+  lireDestinataires,
+  lireChronogramme,
+  exporterChronogramme,
+  modeleChronogramme,
+  delaiTraitement,
+} from './chronogramme.js'

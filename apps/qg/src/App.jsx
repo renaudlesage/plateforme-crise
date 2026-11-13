@@ -12,6 +12,7 @@ import Carte from './pages/Carte'
 import VueAutorite from './pages/VueAutorite'
 import Exercices from './pages/Exercices'
 import ExerciceDetail from './pages/ExerciceDetail'
+import ExerciceSalle from './pages/ExerciceSalle'
 import EvenementsTerritoire from './pages/EvenementsTerritoire'
 import Situation from './pages/Situation'
 import Avertissements from './pages/Avertissements'
@@ -65,6 +66,7 @@ export default function App() {
             <Route path="evenements" element={<ReserveAuxActeurs><EvenementsTerritoire /></ReserveAuxActeurs>} />
             <Route path="exercices" element={<ReserveAuxActeurs><Exercices /></ReserveAuxActeurs>} />
             <Route path="exercices/:id" element={<ReserveAuxActeurs><ExerciceDetail /></ReserveAuxActeurs>} />
+            <Route path="exercices/:id/salle" element={<ReserveAuxActeurs><ExerciceSalle /></ReserveAuxActeurs>} />
           </Route>
         </Routes>
       </AuthProvider>

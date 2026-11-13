@@ -24,6 +24,10 @@ export function useDonneesExercice(exerciceId, complet) {
       )
     }
     const res = await Promise.all(requetes)
+    // « Traité » par les joueurs (C5) : table absente tant que la migration n'est pas appliquée → simplement vide.
+    const tr = complet
+      ? await supabase.from('exercice_stimuli_traitements').select('stimulus_id, role, traite_le').eq('exercice_id', exerciceId)
+      : { data: [] }
     const echec = res.find((r) => r.error)
     if (echec) {
       setErreur(texteErreur(echec.error))
@@ -36,6 +40,7 @@ export function useDonneesExercice(exerciceId, complet) {
       actions: res[2]?.data ?? [],
       observations: res[3]?.data ?? [],
       objectifs: res[4]?.data ?? [],
+      traitements: tr.error ? [] : tr.data ?? [],
     })
     return true
   }, [exerciceId, complet])
