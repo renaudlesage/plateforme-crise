@@ -27,11 +27,11 @@ import { supabase } from '../lib/supabase'
  * signalée comme telle ; la consignation automatique ne tourne que sur des données fraîches et des seuils enregistrés.
  */
 
-const COULEUR = { vert: '#2e7d32', jaune: '#b7950b', orange: '#e67e22', rouge: '#c0392b' }
+export const COULEUR = { vert: '#2e7d32', jaune: '#b7950b', orange: '#e67e22', rouge: '#c0392b' }
 const COULEUR_INCONNU = '#7f8c8d'
 const FRAICHEUR_MAX_MS = 45 * 60 * 1000
 
-function Pastille({ niveau, children }) {
+export function Pastille({ niveau, children }) {
   const couleur = niveau ? COULEUR[niveau] : COULEUR_INCONNU
   return (
     <span
