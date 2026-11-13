@@ -156,6 +156,31 @@ grant execute on function public.accuser_lecture_consigne(uuid) to authenticated
 grant execute on function public.annuler_consigne(uuid) to authenticated;
 grant execute on function public.mes_consignes(uuid, boolean) to authenticated;
 
+-- Membres de la commune, pour savoir qui n'a pas lu une consigne et désigner une équipe d'un processus.
+-- Plus étroit que membres_contexte (réservé aux administrateurs) : ni niveau d'accès ni identifiant d'accès.
+create or replace function public.membres_cellule(p_contexte uuid)
+ returns table (user_id uuid, email text, role_libelle text)
+ language plpgsql
+ stable
+ security definer
+ set search_path to 'public', 'pg_temp'
+as $function$
+begin
+  if auth.uid() is null or p_contexte is null or not a_capacite(p_contexte, 'incidents', 'lire') then
+    raise exception 'Accès refusé';
+  end if;
+  return query
+  select au.user_id, u.email::text, r.libelle
+  from acces_utilisateurs au
+  join auth.users u on u.id = au.user_id
+  left join roles r on r.id = au.role_id
+  where au.contexte_id = p_contexte
+  order by u.email;
+end;
+$function$;
+revoke all on function public.membres_cellule(uuid) from public, anon;
+grant execute on function public.membres_cellule(uuid) to authenticated;
+
 -- 2. Présences en cellule -------------------------------------------------------------------------------
 
 create table if not exists public.presences_cellule (

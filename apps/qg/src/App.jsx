@@ -13,6 +13,7 @@ import VueAutorite from './pages/VueAutorite'
 import Exercices from './pages/Exercices'
 import ExerciceDetail from './pages/ExerciceDetail'
 import ExerciceSalle from './pages/ExerciceSalle'
+import Historique from './pages/Historique'
 import EvenementsTerritoire from './pages/EvenementsTerritoire'
 import Situation from './pages/Situation'
 import Avertissements from './pages/Avertissements'
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="carte" element={<Carte />} />
             <Route path="situation" element={<Situation />} />
             <Route path="avertissements" element={<Avertissements />} />
+            <Route path="historique" element={<Historique />} />
             <Route path="evenements" element={<ReserveAuxActeurs><EvenementsTerritoire /></ReserveAuxActeurs>} />
             <Route path="exercices" element={<ReserveAuxActeurs><Exercices /></ReserveAuxActeurs>} />
             <Route path="exercices/:id" element={<ReserveAuxActeurs><ExerciceDetail /></ReserveAuxActeurs>} />

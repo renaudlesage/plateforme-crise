@@ -14,6 +14,7 @@ import {
   MoyensEngages,
   distanceEtCap,
   ilYA,
+  useCouchesCarte,
 } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -60,6 +61,7 @@ const POSITION_EQUIPE_VALIDE_MS = 2 * 3600000 // au-delà, la position est trop 
  */
 export default function Carte() {
   const { contexteId } = useAuth()
+  const couchesCarte = useCouchesCarte(supabase, contexteId, 'terrain')
   const { position } = usePosition()
   const [couches, setCouches] = useState(() => Object.fromEntries(COUCHES.map((c) => [c.cle, true])))
   const [donnees, setDonnees] = useState({})
@@ -492,6 +494,7 @@ export default function Carte() {
         <p className="vide">Chargement…</p>
       ) : (
         <CarteCrise
+          couches={couchesCarte}
           centre={centre}
           zoom={selection || pointsIncidents.length ? 15 : marqueurs.length ? 13 : 8}
           zoomRecentrage={pointsIncidents.length === 1 ? 15 : null}

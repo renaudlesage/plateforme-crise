@@ -86,3 +86,6 @@ export {
   modeleChronogramme,
   delaiTraitement,
 } from './chronogramme.js'
+export { BandeauConsignes, MesProcessus } from './Coordination.jsx'
+export { useCouchesCarte } from './couchesCarte.js'
+export { statistiquesIncidents, grilleDensite, incidentsCsv, incidentsGeoJson } from './historique.js'

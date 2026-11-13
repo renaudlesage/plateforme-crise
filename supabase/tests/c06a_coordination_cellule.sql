@@ -112,6 +112,11 @@ insert into t_rep (etape, resultat) select 'C6-9 annulation par un membre « éc
   pg_temp.essai('authenticated', membre, format($q$select annuler_consigne(%L)$q$, consigne),
     format($q$select (annulee_le is not null)::text from consignes where id = %L$q$, consigne), false) from t_ids;
 
+insert into t_rep (etape, resultat) select 'C6-9b membres de la cellule : lisibles par un membre',
+  pg_temp.valeur('authenticated', membre, format($q$select count(*) from membres_cellule(%L)$q$, commune)) from t_ids;
+insert into t_rep (etape, resultat) select 'C6-9c membres de la cellule : refusés à un non-membre',
+  pg_temp.valeur('authenticated', etranger, format($q$select count(*) from membres_cellule(%L)$q$, commune)) from t_ids;
+
 -- 2. Présences
 insert into t_rep (etape, resultat) select 'C6-10 arrivée au CC (ligne au livre de bord)',
   pg_temp.essai('authenticated', membre, format($q$insert into presences_cellule (contexte_id, incident_id, user_id, nom, fonction) values (%L, %L, %L, 'Membre test', 'D5')$q$, commune, incident, membre),

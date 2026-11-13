@@ -38,6 +38,7 @@ export default function CentresAccueil() {
 
       {enAjout && (
         <FormulaireCentre
+          avecSeuils={centres.some((x) => 'seuil_tension_pct' in x)}
           contacts={contacts}
           onAnnuler={() => setEnAjout(false)}
           onValider={async (valeurs) => {
@@ -60,6 +61,7 @@ export default function CentresAccueil() {
             ligneEnEdition === c.id ? (
               <li key={c.id} className="bg-fond p-3">
                 <FormulaireCentre
+          avecSeuils={centres.some((x) => 'seuil_tension_pct' in x)}
                   contacts={contacts}
                   valeursInitiales={c}
                   onAnnuler={() => setLigneEnEdition(null)}
@@ -123,7 +125,10 @@ export default function CentresAccueil() {
   )
 }
 
-function FormulaireCentre({ contacts, valeursInitiales = {}, onValider, onAnnuler }) {
+function FormulaireCentre({ contacts, valeursInitiales = {}, onValider, onAnnuler, avecSeuils = false }) {
+  // Seuils de tension (C6) : colonnes présentes une fois la migration appliquée.
+  const [seuilTension, setSeuilTension] = useState(valeursInitiales.seuil_tension_pct ?? 80)
+  const [seuilCritique, setSeuilCritique] = useState(valeursInitiales.seuil_critique_pct ?? 95)
   const [nom, setNom] = useState(valeursInitiales.nom ?? '')
   const [typeLieu, setTypeLieu] = useState(valeursInitiales.type_lieu ?? '')
   const [adresse, setAdresse] = useState(valeursInitiales.adresse ?? '')
@@ -165,6 +170,7 @@ function FormulaireCentre({ contacts, valeursInitiales = {}, onValider, onAnnule
       dons_acceptes: donsAcceptes,
       seuil_ouverture_dons: seuilOuvertureDons.trim() || null,
       seuil_fermeture_dons: seuilFermetureDons.trim() || null,
+      ...(avecSeuils && { seuil_tension_pct: Number(seuilTension), seuil_critique_pct: Number(seuilCritique) }),
     })
     setEnCours(false)
     if (error) setErreur(error.message)
@@ -220,6 +226,20 @@ function FormulaireCentre({ contacts, valeursInitiales = {}, onValider, onAnnule
           <input type="number" value={capaciteHebergement} onChange={(e) => setCapaciteHebergement(e.target.value)} className="w-full" />
         </div>
       </div>
+
+      {avecSeuils && (
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-sourdine mb-1">Seuil « tension » (% des places occupées)</label>
+            <input type="number" min="1" max="99" value={seuilTension} onChange={(e) => setSeuilTension(e.target.value)} className="w-full" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-sourdine mb-1">Seuil « critique » (%)</label>
+            <input type="number" min="2" max="100" value={seuilCritique} onChange={(e) => setSeuilCritique(e.target.value)} className="w-full" />
+          </div>
+          <p className="col-span-2 text-xs text-sourdine">Utilisés pendant un incident (QG › Terrain · PC-Ops › Capacités) : un relevé qui franchit un seuil à la hausse est tracé au livre de bord.</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>

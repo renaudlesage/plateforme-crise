@@ -12,6 +12,7 @@ import {
   PointsAFlaguer,
   MoyensEngages,
   ilYA,
+  useCouchesCarte,
 } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -84,6 +85,7 @@ const LIBELLE_OBSERVATION = {
  */
 export default function Carte() {
   const { contexteId } = useAuth()
+  const couchesCarte = useCouchesCarte(supabase, contexteId, 'qg')
   const [filtresOuverts, setFiltresOuverts] = useState(false)
   const [couches, setCouches] = useState(() => Object.fromEntries(COUCHES.map((c) => [c.cle, true])))
   const [points, setPoints] = useState({})
@@ -489,6 +491,7 @@ export default function Carte() {
             </div>
           )}
           <CarteCrise
+          couches={couchesCarte}
             centre={centre}
             zoom={pointsIncidents.length ? 15 : marqueurs.length ? 13 : 8}
             zoomRecentrage={pointsIncidents.length === 1 ? 15 : null}

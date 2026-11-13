@@ -36,6 +36,7 @@ export const SECTIONS = [
       { to: '/conventions', libelle: 'Conventions' },
       { to: '/sites-qg', libelle: 'Sites du Comité de Coordination' },
       { to: '/centres-accueil', libelle: "Centres d'accueil" },
+      { to: '/couches-carte', libelle: 'Couches cartographiques' },
       { to: '/canaux-radio', libelle: 'Canaux radio' },
       { to: '/plans-reference', libelle: 'Plans de référence' },
       { to: '/centres-crise', libelle: 'Centres de crise' },
@@ -48,6 +49,7 @@ export const SECTIONS = [
     liens: [
       { to: '/instances-coordination', libelle: 'Instances' },
       { to: '/checklists', libelle: 'Checklists' },
+      { to: '/processus-intervention', libelle: "Processus d'intervention" },
       { to: '/exercices', libelle: 'Exercices' },
       { to: '/trames-exercice', libelle: "Trames d'exercice" },
       { to: '/conformite-legale', libelle: 'Conformité légale (AR 2019)' },

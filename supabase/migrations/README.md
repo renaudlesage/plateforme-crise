@@ -74,3 +74,7 @@ fichier : versions `20261102102059` à `20261102102449` (noms `b03a_0_notificati
 C5, immersion des exercices (13 novembre 2026) : `20261113100000_c05a_exercice_immersion.sql`, répétée dans une transaction
 annulée avec ses tests (`supabase/tests/c05a_exercice_immersion.sql`), **non appliquée** : en attente de l'accord de Ren.
 Elle planifie la tâche pg_cron `exercices_diffusion` (chaque minute) ; l'annuler : `select cron.unschedule('exercices_diffusion')`.
+
+C6, coordination de la cellule (13 novembre 2026) : `20261113110000_c06a_coordination_cellule.sql` (après C5), répétée dans
+des transactions annulées avec ses tests (`supabase/tests/c06a_coordination_cellule.sql`), **non appliquée** : en attente de
+l'accord de Ren. Aucune tâche planifiée.
