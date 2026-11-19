@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { usePosition } from '../context/PositionContext'
 import { obtenirPosition } from './OutilsRapport'
 import BandeauZone from './BandeauZone'
+import { BoutonItineraire } from './ItineraireSur'
 
 /* ------------------------------------------------------------------ */
 /* Appel d'aide                                                        */
@@ -219,9 +220,7 @@ export function AutourDeMoi() {
             {e.genre}
             {e.sous ? ` · ${e.sous}` : ''} · {distanceEtCap(position, { lat: Number(e.latitude), lon: Number(e.longitude) })}
           </p>
-          <a href={lienItineraire(e.latitude, e.longitude)} target="_blank" rel="noreferrer" className="lien text-xs">
-            Itinéraire ↗
-          </a>
+          <BoutonItineraire lat={e.latitude} lon={e.longitude} libelle={e.nom} className="mt-1" />
         </li>
       ))}
     </ul>

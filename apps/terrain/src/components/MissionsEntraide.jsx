@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
 import { usePosition } from '../context/PositionContext'
 import { BoutonDiscret, BoutonPrincipal } from './Boutons'
+import { BoutonItineraire } from './ItineraireSur'
 
 const ecrire = (operation) => fileEcritures.ecrireOuEmpiler(operation)
 const heure = (t) => (t ? new Date(t).toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' }) : '—')
@@ -122,6 +123,9 @@ function CarteMissionTerrain({ mission: m, equipes, peut, onEnvoyer }) {
       {m.description && <p className="text-sm" style={{ margin: '4px 0 0' }}>{m.description}</p>}
       {m.equipe_id && <p className="text-xs" style={{ margin: '2px 0 0' }}>Équipe : {equipes.find((q) => q.id === m.equipe_id)?.nom ?? '—'}</p>}
       {m.raison_statut && <p className="text-xs text-chaud" style={{ margin: '2px 0 0' }}>{m.raison_statut}</p>}
+      {m.latitude != null && m.longitude != null && ['ouverte', 'affectee', 'en_cours'].includes(m.statut) && (
+        <BoutonItineraire lat={m.latitude} lon={m.longitude} libelle={`${m.numero} ${m.titre}`} className="mt-1" />
+      )}
       {peut && (
         <div className="flex flex-wrap gap-2 mt-2">
           {['ouverte', 'affectee'].includes(m.statut) && (

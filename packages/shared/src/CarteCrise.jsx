@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, WMSTileLayer, LayersControl, Marker, Popup, Circle, useMap, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, WMSTileLayer, LayersControl, Marker, Popup, Circle, Polyline, useMap, useMapEvents } from 'react-leaflet'
 import { divIcon, latLngBounds } from 'leaflet'
 import { useEffect, useState } from 'react'
 import { svgSymbole } from './symboles.js'
@@ -111,6 +111,7 @@ export default function CarteCrise({
   hauteur = '420px',
   messagePleinEcran = 'Touchez la carte pour placer le point',
   couches = [],
+  traces = [], // [{ id, points: [[lat, lon], …], couleur, libelle }] : itinéraires, tracés
 }) {
   // Plein écran « maison » (CSS fixed) plutôt que l'API Fullscreen : Safari sur iPhone ne la
   // propose pas pour un élément quelconque, et on veut garder la même carte (zoom, position).
@@ -210,6 +211,12 @@ export default function CarteCrise({
         <MemoriserFond />
         <RecentrerSiChangement centre={centre} cle={cleRecentrage} zoom={zoomRecentrage} ajusterSur={ajusterSur} />
         {onClicCarte && <CaptureClic onClicCarte={onClicCarte} />}
+
+        {traces.map((t) => (
+          <Polyline key={t.id} positions={t.points} pathOptions={{ color: t.couleur ?? '#1d4ed8', weight: 5, opacity: 0.85 }}>
+            {t.libelle && <Popup>{t.libelle}</Popup>}
+          </Polyline>
+        ))}
 
         {cercles.map((c) => (
           <Circle

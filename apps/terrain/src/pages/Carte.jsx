@@ -22,6 +22,7 @@ import { fileEcritures } from '../lib/fileEcritures'
 import { useIncidentsEnCours } from '../hooks/useIncidentsEnCours'
 import { usePosition } from '../context/PositionContext'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
+import { PanneauItineraire } from '../components/ItineraireSur'
 
 const CENTRE_BELGIQUE = { lat: 50.5039, lon: 4.4699 }
 
@@ -75,6 +76,7 @@ export default function Carte() {
   // mode : null (lecture) | { type: 'observation' } | { type: 'localiser', element }
   const [mode, setMode] = useState(null)
   const [selection, setSelection] = useState(null)
+  const [trace, setTrace] = useState(null) // itinéraire sûr dessiné sur la carte
   const [info, setInfo] = useState(null)
   const [disciplinesVues, setDisciplinesVues] = useState(null) // null = toutes ; sinon tableau de valeurs (+ 'aucune')
   const [filtresOuverts, setFiltresOuverts] = useState(false)
@@ -387,6 +389,15 @@ export default function Carte() {
         />
       )}
 
+      {mode?.type === 'itineraire' && (
+        <PanneauItineraire
+          selection={selection}
+          onAnnuler={fermer}
+          onTrace={setTrace}
+          cleZones={zones.map((z) => `${z.id}:${z.type_zone}:${z.rayon_metres}:${z.centre_latitude}:${z.centre_longitude}`).join('|')}
+        />
+      )}
+
       {mode?.type === 'localiser' && (
         <FormulaireLocalisation
           ecrire={ecrire}
@@ -410,6 +421,11 @@ export default function Carte() {
           <div className="flex flex-wrap gap-2">
             <BoutonPrincipal onClick={() => { setInfo(null); setMode({ type: 'observation' }) }}>+ Point terrain</BoutonPrincipal>
             <BoutonDiscret onClick={() => { setInfo(null); setMode({ type: 'moyen' }) }}>+ Moyen engagé</BoutonDiscret>
+            {incidentId && (
+              <BoutonDiscret onClick={() => { setInfo(null); setMode({ type: 'itineraire' }) }} title="Itinéraire qui évite les zones rouges et les routes coupées">
+                🛡 Itinéraire sûr
+              </BoutonDiscret>
+            )}
           </div>
         )}
       </div>
@@ -502,6 +518,7 @@ export default function Carte() {
           cleRecentrage={cleRecentrage}
           marqueurs={marqueursAffiches}
           cercles={cercles}
+          traces={trace ? [trace] : []}
           selection={selection}
           onClicCarte={mode ? (p) => setSelection(p) : null}
           hauteur={mode ? '45vh' : '52vh'}

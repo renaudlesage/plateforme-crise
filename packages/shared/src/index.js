@@ -89,3 +89,4 @@ export {
 export { BandeauConsignes, MesProcessus } from './Coordination.jsx'
 export { useCouchesCarte } from './couchesCarte.js'
 export { statistiquesIncidents, grilleDensite, incidentsCsv, incidentsGeoJson } from './historique.js'
+export { lienGoogleMapsVia, libelleDuree, libelleEvites, messageErreurFonction } from './itineraire.js'
