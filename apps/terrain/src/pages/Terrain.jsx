@@ -13,7 +13,7 @@ import { Link } from 'react-router-dom'
 import { BoutonAide, PanneauPosition, AutourDeMoi, Passation } from '../components/OutilsPosition'
 import { RapportCan, PhotoGeo, ComptagePersonnes } from '../components/OutilsRapport'
 import MissionsEntraide from '../components/MissionsEntraide'
-import { usePosition } from '../context/PositionContext'
+import BandeauZone from '../components/BandeauZone'
 
 const STORAGE_KEY_ROLE = 'terrain_role_id_selectionne'
 // Libellé du rôle, lu par le partage de position et les rapports (voir PositionContext)
@@ -132,7 +132,6 @@ function ongletsPour(profil) {
 function IncidentActif({ contexteId, roleId, roleLibelle, profil }) {
   const { utilisateur } = useAuth()
   const { incidents, incident, choisir, chargement } = useIncidentsEnCours(contexteId)
-  const { dansZoneRouge } = usePosition()
   const onglets = ongletsPour(profil)
   // Chaque directeur ouvre sur l'accueil de son profil ; les autres rôles sur leur mission
   const [ongletChoisi, setOnglet] = useState(() => onglets[0].cle)
@@ -169,11 +168,7 @@ function IncidentActif({ contexteId, roleId, roleLibelle, profil }) {
         </div>
       </div>
 
-      {dansZoneRouge && (
-        <div className="message erreur" role="alert">
-          ⚠ Vous êtes dans la zone ROUGE (exclusion). Réservée aux services d'intervention, experts et techniciens.
-        </div>
-      )}
+      <BandeauZone />
 
       <BoutonAide incidentId={incident.id} contexteId={contexteId} roleLibelle={roleLibelle} />
 

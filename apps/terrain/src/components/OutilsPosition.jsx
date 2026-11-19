@@ -5,6 +5,7 @@ import { fileEcritures } from '../lib/fileEcritures'
 import { useAuth } from '../context/AuthContext'
 import { usePosition } from '../context/PositionContext'
 import { obtenirPosition } from './OutilsRapport'
+import BandeauZone from './BandeauZone'
 
 /* ------------------------------------------------------------------ */
 /* Appel d'aide                                                        */
@@ -127,21 +128,23 @@ export function BoutonAide({ incidentId, contexteId, roleLibelle }) {
 /* Position : activation, partage, alerte de zone                      */
 
 export function PanneauPosition() {
-  const { actif, partage, position, erreur, dansZoneRouge, setActif, setPartage } = usePosition()
+  const { actif, partage, position, erreur, zonesRouges, setActif, setPartage } = usePosition()
   return (
     <div className="space-y-2">
-      {dansZoneRouge && (
-        <div className="message erreur" role="alert">
-          ⚠ Vous êtes dans la zone ROUGE (exclusion). Réservée aux services d'intervention, experts et techniciens.
-        </div>
-      )}
+      <BandeauZone />
       <label className="flex items-center gap-3 text-sm text-encre">
         <input type="checkbox" checked={actif} onChange={(e) => setActif(e.target.checked)} />
         Activer ma position (carte, « autour de moi », alerte de zone)
       </label>
+      {actif && zonesRouges.length > 0 && (
+        <p className="text-xs text-sourdine">
+          Géo-barrière : {zonesRouges.length} zone{zonesRouges.length > 1 ? 's' : ''} rouge{zonesRouges.length > 1 ? 's' : ''} surveillée
+          {zonesRouges.length > 1 ? 's' : ''} ; vous serez prévenu à 150 m du bord, puis à l'entrée.
+        </p>
+      )}
       <label className="flex items-center gap-3 text-sm text-encre">
         <input type="checkbox" checked={partage} onChange={(e) => setPartage(e.target.checked)} />
-        Partager ma position avec le CC
+        Partager ma position avec le CC (vos entrées et sorties de zone rouge lui sont alors transmises)
       </label>
       {actif && position && (
         <p className="text-xs text-sourdine">

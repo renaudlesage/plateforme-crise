@@ -517,6 +517,10 @@ button.lien {
 }
 
 .message.erreur { border-left-color: var(--etat-chaud); }
+.message.veille { border-left-color: var(--etat-veille); }
+/* Géo-barrière : bandeau qui doit se voir sur un tableau de bord, en plein soleil */
+.message.zone-dedans { border-left-width: 6px; border-left-color: var(--etat-chaud); font-weight: 600; }
+.message.zone-approche { border-left-width: 6px; border-left-color: var(--etat-veille); font-weight: 600; }
 
 /* ---------------- Onglets internes ---------------- */
 

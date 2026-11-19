@@ -70,3 +70,60 @@ export function positionActuelle(delaiMs = 6000) {
     )
   })
 }
+
+/* ------------------------------------------------------------------ */
+/* Géo-barrière : alerte d'approche et d'entrée dans une zone          */
+
+/** Distance, en mètres, à partir de laquelle on prévient qu'une zone approche (mesurée depuis son bord). */
+export const SEUIL_APPROCHE_ZONE_M = 150
+
+/**
+ * Où se trouve l'appareil par rapport à des zones circulaires (zones d'intervention : centre + rayon).
+ *
+ * Retourne { etat, zone, distanceBord } :
+ *  - 'dedans'   : dans au moins une zone (la plus profondément pénétrée est renvoyée ; distanceBord ≤ 0) ;
+ *  - 'approche' : hors de toute zone, mais à moins de `seuilM` du bord de la plus proche ;
+ *  - 'hors'     : loin de tout (zone = la plus proche s'il y en a une, sinon null).
+ *
+ * Pure : aucune hystérésis ici. C'est l'appelant qui décide quand vibrer ou journaliser, à partir des
+ * transitions d'état. L'imprécision GPS n'est pas corrigée : une précision de 30 m sur une zone de
+ * 100 m donne des bascules au bord, que l'appelant lisse (voir `transitionGeoBarriere`).
+ *
+ * @param {{lat:number, lon:number}|null} position
+ * @param {Array<{centre_latitude:number|string, centre_longitude:number|string, rayon_metres:number|string}>} zones
+ * @param {number} [seuilM]
+ */
+export function etatGeoBarriere(position, zones, seuilM = SEUIL_APPROCHE_ZONE_M) {
+  if (!position || !Array.isArray(zones) || zones.length === 0) return { etat: 'hors', zone: null, distanceBord: null }
+  let meilleure = null
+  for (const z of zones) {
+    if (z.centre_latitude == null || z.centre_longitude == null || z.rayon_metres == null) continue
+    const lat = Number(z.centre_latitude)
+    const lon = Number(z.centre_longitude)
+    const rayon = Number(z.rayon_metres)
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(rayon) || rayon <= 0) continue
+    const distanceBord = distanceM(position, { lat, lon }) - rayon
+    if (!meilleure || distanceBord < meilleure.distanceBord) meilleure = { zone: z, distanceBord }
+  }
+  if (!meilleure) return { etat: 'hors', zone: null, distanceBord: null }
+  const etat = meilleure.distanceBord <= 0 ? 'dedans' : meilleure.distanceBord <= seuilM ? 'approche' : 'hors'
+  return { etat, zone: meilleure.zone, distanceBord: Math.round(meilleure.distanceBord) }
+}
+
+/**
+ * Transition à journaliser entre deux états successifs de `etatGeoBarriere` :
+ *  - 'entree' quand on passe de hors/approche à dedans ;
+ *  - 'sortie' quand on quitte dedans (vers approche ou hors) ;
+ *  - 'approche' quand on passe de hors à approche (alerte locale, non journalisée) ;
+ *  - null sinon.
+ * Les changements de zone en restant dedans (deux zones rouges voisines) ne produisent rien.
+ */
+export function transitionGeoBarriere(avant, apres) {
+  const a = avant?.etat ?? 'hors'
+  const b = apres?.etat ?? 'hors'
+  if (a === b) return null
+  if (b === 'dedans') return 'entree'
+  if (a === 'dedans') return 'sortie'
+  if (a === 'hors' && b === 'approche') return 'approche'
+  return null
+}

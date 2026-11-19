@@ -26,6 +26,7 @@ reproduites ici : la base de production fait foi. Chaque fichier ci-dessous a é
 | `20261020213200_f1_communes_be.sql` | F1 : table `communes_be` ; données dans `supabase/seed/communes_be.sql` (565 communes ; zones de secours et de police des communes wallonnes d'après Eventware), généré par `scripts/seed/communes_be.py` |
 | `20261021090000_c1_alertes_externes_regles_reveil.sql` | C1 : `alertes_externes` (avertissements météo en ajout seul : flux, saisie manuelle, fixture), vue `alertes_externes_en_cours`, `regles_reveil`, `regles_reveil_correspondantes()` |
 | `20261021120000_c1_moteur_reveil.sql` | C1 : moteur de réveil (seuil le plus élevé par fiche, événement en veille, journal, file de notifications), `parametres_reveil`, `reveils`, `notifications` (F2), `alertes_externes_traitements`, `acquitter_reveil()`, tâche `reveil_escalade` chaque minute |
+| `20261119100000_geo_barriere_franchissements.sql` | Géo-barrière, palier 1 : `franchissements_zone` (entrées/sorties de zone rouge détectées par Terrain, ajout seul, envoyées seulement si la position est partagée), déclencheur de cohérence `franchissements_zone_controle()` |
 
 Attention : les fichiers de l'entraide sont l'état final (correctifs appliqués en base sous les noms `entraide_missions_affectation_close`, `entraide_missions_historique_after`, `entraide_equipes_chef_controle`, `entraide_fermeture_horodatee_serveur`, `entraide_code_erreur_pab_ferme`, `entraide_missions_zone_rouge_derogation`, `entraide_missions_reouverture`, y figurent déjà). Le fichier du pont est l'état final (deux correctifs appliqués après coup en base, sous les noms
 `pont_commune_evenements_correctif_rehausse` et `pont_commune_evenements_revoke_triggers`, y figurent déjà).
@@ -86,3 +87,8 @@ C1, ingestion MeteoAlarm et règles par défaut (13 novembre 2026) : `2026111312
 une transaction annulée avec ses tests (`supabase/tests/c1_ingestion_meteoalarm.sql`), approuvée par Ren et appliquée telle quelle le
 13 novembre 2026, après le déploiement de l'Edge Function `ingest-meteoalarm` (sans JWT) ; premier passage réel vérifié. Elle planifie la tâche pg_cron `ingest_meteoalarm`
 (toutes les 10 minutes) ; l'annuler : `select cron.unschedule('ingest_meteoalarm')`.
+
+Géo-barrière, palier 1 (19 novembre 2026) : `20261119100000_geo_barriere_franchissements.sql`, répétée dans une transaction
+annulée avec ses tests (`supabase/tests/geo_barriere_franchissements.sql`, 19 vérifications conformes), puis appliquée telle
+quelle le 19 novembre 2026 (version `geo_barriere_franchissements`). Tests rejoués sur la base réelle : conformes. Aucune tâche
+planifiée. Les conseillers de sécurité Supabase ne signalent rien de nouveau (seul `spatial_ref_sys` reste, hors de notre main).

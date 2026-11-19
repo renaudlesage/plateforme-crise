@@ -46,7 +46,7 @@ export default function SyntheseIncident({ incidentId, contexteId, onAller }) {
 
   const charger = useCallback(async () => {
     const depuisEquipes = new Date(Date.now() - 2 * 3600000).toISOString()
-    const [sitrep, decisions, moyens, points, zones, journal, equipes, requisitions, presences, missions, incidentEntraide] = await Promise.all([
+    const [sitrep, decisions, moyens, points, zones, journal, equipes, requisitions, presences, missions, incidentEntraide, franchissements] = await Promise.all([
       supabase.from('sitreps').select('numero, horodatage, canal_conditions, canal_actions, canal_besoins, canal_anticipation').eq('incident_id', incidentId).order('numero', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('declenchements_seuils_action').select('id, horodatage_declenchement, seuils_action(libelle)').eq('incident_id', incidentId).eq('statut', 'en_attente').order('horodatage_declenchement'),
       supabase.from('moyens_engages').select('id, libelle, statut, effectif, created_at').eq('incident_id', incidentId).neq('statut', 'retire'),
@@ -58,6 +58,7 @@ export default function SyntheseIncident({ incidentId, contexteId, onAller }) {
       supabase.from('presences_benevoles').select('statut').eq('incident_id', incidentId).in('statut', ['valide', 'affecte', 'en_repos']),
       supabase.from('missions_entraide').select('statut, priorite').eq('incident_id', incidentId).in('statut', ['ouverte', 'affectee', 'en_cours']),
       supabase.from('incidents').select('coordinateur_benevoles').eq('id', incidentId).maybeSingle(),
+      supabase.from('franchissements_zone').select('id, nature, libelle, horodatage_appareil, cree_le').eq('incident_id', incidentId).gte('cree_le', depuisEquipes).order('cree_le', { ascending: false }).limit(20),
     ])
     const premiere = [sitrep, decisions, moyens, points, zones, journal].find((r) => r.error)
     setErreur(premiere ? premiere.error.message : null)
@@ -69,6 +70,7 @@ export default function SyntheseIncident({ incidentId, contexteId, onAller }) {
       zones: zones.data ?? [],
       journal: journal.data ?? [],
       equipes: equipes.count ?? 0,
+      franchissements: franchissements.data ?? [],
       requisitions: requisitions.count ?? 0,
       entraide: {
         actif: incidentEntraide.data?.coordinateur_benevoles && incidentEntraide.data.coordinateur_benevoles !== 'aucun',
@@ -194,6 +196,22 @@ export default function SyntheseIncident({ incidentId, contexteId, onAller }) {
             <li>
               <span className="text-xs text-sourdine">Réquisitions actives : </span>
               {d.requisitions}
+            </li>
+            <li>
+              <span className="text-xs text-sourdine">Entrées en zone rouge (2 h) : </span>
+              <span className={d.franchissements.some((f) => f.nature === 'entree') ? 'font-semibold text-chaud' : ''}>
+                {d.franchissements.filter((f) => f.nature === 'entree').length}
+              </span>
+              {d.franchissements.length > 0 && (
+                <ul className="mt-0.5 space-y-0.5 text-xs text-sourdine">
+                  {d.franchissements.slice(0, 3).map((f) => (
+                    <li key={f.id}>
+                      {new Date(f.horodatage_appareil).toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' })} —{' '}
+                      {f.nature === 'entree' ? 'entrée' : 'sortie'} — {f.libelle || 'intervenant'}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </li>
           </ul>
         </Carte>
