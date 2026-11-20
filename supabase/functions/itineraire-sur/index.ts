@@ -31,7 +31,9 @@ import {
   type Position,
 } from '../_shared/itineraire.ts'
 
-const URL_ORS = 'https://api.openrouteservice.org/v2/directions'
+// Depuis novembre 2026, l'API est servie sous api.heigit.org (l'ancien api.openrouteservice.org est arrêté) ;
+// même clé, même format de requête.
+const URL_ORS = 'https://api.heigit.org/openrouteservice/v2/directions'
 const PROFILS = new Set(['driving-car', 'foot-walking'])
 const DISTANCE_MAX_M = 150000 // au-delà, ce n'est plus un déplacement d'intervention communal
 
