@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, WMSTileLayer, LayersControl, Marker, Popup, Circle, Polyline, useMap, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, WMSTileLayer, LayersControl, Marker, Popup, Circle, Polygon, Polyline, CircleMarker, useMap, useMapEvents } from 'react-leaflet'
 import { divIcon, latLngBounds } from 'leaflet'
 import { useEffect, useState } from 'react'
 import { svgSymbole } from './symboles.js'
@@ -112,6 +112,7 @@ export default function CarteCrise({
   messagePleinEcran = 'Touchez la carte pour placer le point',
   couches = [],
   traces = [], // [{ id, points: [[lat, lon], …], couleur, libelle }] : itinéraires, tracés
+  sommets = [], // [[lat, lon], …] : sommets d'un contour en cours de tracé (le premier est cerclé de blanc)
 }) {
   // Plein écran « maison » (CSS fixed) plutôt que l'API Fullscreen : Safari sur iPhone ne la
   // propose pas pour un élément quelconque, et on veut garder la même carte (zoom, position).
@@ -218,7 +219,17 @@ export default function CarteCrise({
           </Polyline>
         ))}
 
-        {cercles.map((c) => (
+        {cercles.map((c) =>
+          c.contour ? (
+            // Zone à contour (polygone tracé sur le terrain) : même rendu que les cercles.
+            <Polygon
+              key={`${c.id}-${onClicCarte ? 'sel' : 'lec'}`}
+              positions={c.contour}
+              pathOptions={{ color: c.couleur ?? '#dc5a3c', fillOpacity: 0.12, weight: 2, interactive: !onClicCarte, dashArray: c.enCours ? '6 6' : undefined }}
+            >
+              {c.libelle && !onClicCarte && <Popup>{c.libelle}</Popup>}
+            </Polygon>
+          ) : (
           <Circle
             key={`${c.id}-${onClicCarte ? 'sel' : 'lec'}`} // remonté au changement de mode : `interactive` n'est lu qu'à la création
             center={[c.lat, c.lon]}
@@ -229,6 +240,12 @@ export default function CarteCrise({
           >
             {c.libelle && !onClicCarte && <Popup>{c.libelle}</Popup>}
           </Circle>
+          )
+        )}
+
+        {sommets.map((p, i) => (
+          // Sommets d'un contour en cours de tracé (non interactifs : on continue à toucher la carte).
+          <CircleMarker key={`sommet-${i}`} center={p} radius={i === 0 ? 7 : 5} pathOptions={{ color: '#1e3a5f', fillColor: i === 0 ? '#ffffff' : '#1e3a5f', fillOpacity: 1, weight: 2, interactive: false }} />
         ))}
 
         {marqueurs.map((m) => (

@@ -59,7 +59,7 @@ export default function Situation() {
         ? supabase.from('sites_qg').select('nom, adresse').eq('id', incident.site_qg_actuel_id).maybeSingle()
         : Promise.resolve({ data: null }),
       supabase.from('sitreps').select('*').eq('incident_id', id).order('numero', { ascending: false }).limit(1).maybeSingle(),
-      supabase.from('zones_intervention').select('id, type_zone, perimetre, acces_autorise, rayon_metres').eq('incident_id', id).is('date_levee', null),
+      supabase.from('zones_intervention').select('id, type_zone, perimetre, acces_autorise, rayon_metres, contour').eq('incident_id', id).is('date_levee', null),
       supabase.from('alertes_publiques').select('id, titre, message, consignes, niveau_alerte, date_publication, date_expiration, actif').eq('incident_id', id).eq('actif', true).order('date_publication', { ascending: false }),
       supabase.from('pc_ops_roles').select('id, role, personne, contact').eq('incident_id', id).eq('actif', true),
       supabase.from('livre_de_bord').select('id, numero_ordre, horodatage, message, decision').eq('incident_id', id).order('numero_ordre', { ascending: false }).limit(8),
@@ -161,7 +161,7 @@ export default function Situation() {
               <li key={z.id} className="carte">
                 <p className="text-sm font-medium text-encre">
                   {z.type_zone}
-                  {z.rayon_metres ? <span className="text-xs text-sourdine ml-2">rayon {Math.round(z.rayon_metres)} m</span> : null}
+                  {z.contour ? <span className="text-xs text-sourdine ml-2">contour tracé</span> : z.rayon_metres ? <span className="text-xs text-sourdine ml-2">rayon {Math.round(z.rayon_metres)} m</span> : null}
                 </p>
                 <p className="text-sm text-sourdine mt-1">{z.perimetre}</p>
                 {z.acces_autorise && <p className="text-xs text-sourdine mt-1">accès : {z.acces_autorise}</p>}

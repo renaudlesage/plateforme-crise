@@ -11,7 +11,19 @@
 // =====================================================================
 
 export type Position = { lat: number; lon: number }
-export type Cercle = { id?: string; lat: number; lon: number; rayonM: number; nature: 'rouge' | 'orange' | 'route_coupee' | 'inondation' }
+/**
+ * Obstacle à éviter. Historiquement un cercle (centre + rayon, marge comprise) ; une zone à contour porte en plus ses
+ * `sommets` et sa `margeM` : elle est alors évitée comme « contour + marge » (le rayon n'est que le rayon englobant).
+ */
+export type Cercle = {
+  id?: string
+  lat: number
+  lon: number
+  rayonM: number
+  nature: 'rouge' | 'orange' | 'route_coupee' | 'inondation'
+  sommets?: Position[]
+  margeM?: number
+}
 
 const R_TERRE = 6371000
 const RAD = Math.PI / 180
@@ -45,15 +57,76 @@ export function anneauCercle(centre: Position, rayonM: number, n = 32): number[]
   return pts
 }
 
-/** Zones d'intervention (lignes de `zones_intervention`) → cercles à éviter, selon le profil demandé. */
+/** Sommets {lat, lon} d'un contour de zone (Polygon GeoJSON, objet ou texte), sans répéter le premier ; null sinon. */
+export function sommetsDuContour(contour: unknown): Position[] | null {
+  let c = contour as { type?: string; coordinates?: unknown } | string | null
+  if (!c) return null
+  if (typeof c === 'string') {
+    try {
+      c = JSON.parse(c)
+    } catch {
+      return null
+    }
+  }
+  const o = c as { type?: string; coordinates?: unknown }
+  const anneau = o?.type === 'Polygon' && Array.isArray(o.coordinates) ? (o.coordinates as unknown[])[0] : null
+  if (!Array.isArray(anneau)) return null
+  const pts: Position[] = []
+  for (const s of anneau) {
+    if (!Array.isArray(s) || s.length < 2) continue
+    const lon = Number(s[0])
+    const lat = Number(s[1])
+    if (Number.isFinite(lat) && Number.isFinite(lon)) pts.push({ lat, lon })
+  }
+  if (pts.length > 1 && pts[0].lat === pts[pts.length - 1].lat && pts[0].lon === pts[pts.length - 1].lon) pts.pop()
+  return pts.length >= 3 ? pts : null
+}
+
+/** Distance signée (m) d'un point au bord d'un contour : négative dedans. Projection plane locale. */
+export function distanceBordContour(p: Position, sommets: Position[]): number {
+  const kx = 111320 * Math.cos(p.lat * RAD)
+  const ky = 111320
+  const xy = sommets.map((s) => [(s.lon - p.lon) * kx, (s.lat - p.lat) * ky])
+  let dedans = false
+  let min = Infinity
+  for (let i = 0, j = xy.length - 1; i < xy.length; j = i++) {
+    const [xi, yi] = xy[i]
+    const [xj, yj] = xy[j]
+    if (yi > 0 !== yj > 0 && 0 < ((xj - xi) * (0 - yi)) / (yj - yi) + xi) dedans = !dedans
+    const dx = xi - xj
+    const dy = yi - yj
+    const l2 = dx * dx + dy * dy
+    const t = l2 === 0 ? 0 : Math.max(0, Math.min(1, -(xj * dx + yj * dy) / l2))
+    const d = Math.hypot(xj + t * dx, yj + t * dy)
+    if (d < min) min = d
+  }
+  return dedans ? -min : min
+}
+
+/** Le point est-il dans l'obstacle (marge comprise) ? */
+export function dansObstacle(p: Position, c: Cercle): boolean {
+  if (c.sommets) return distanceBordContour(p, c.sommets) <= (c.margeM ?? 0)
+  return distanceM(p, { lat: c.lat, lon: c.lon }) <= c.rayonM
+}
+
+/** Zones d'intervention (lignes de `zones_intervention`) → obstacles à éviter (cercles ou contours), selon le profil demandé. */
 export function cerclesDesZones(
-  zones: Array<{ id: string; type_zone: string; centre_latitude: unknown; centre_longitude: unknown; rayon_metres: unknown; date_levee?: unknown }>,
+  zones: Array<{ id: string; type_zone: string; centre_latitude: unknown; centre_longitude: unknown; rayon_metres: unknown; date_levee?: unknown; contour?: unknown }>,
   inclureOrange: boolean
 ): Cercle[] {
   const res: Cercle[] = []
   for (const z of zones) {
     if (z.date_levee) continue
     if (z.type_zone !== 'rouge' && !(inclureOrange && z.type_zone === 'orange')) continue
+    const sommets = sommetsDuContour(z.contour)
+    if (sommets) {
+      // Le contour prime ; centre et rayon (englobant) ne servent qu'à l'affichage.
+      const lat = sommets.reduce((a, s) => a + s.lat, 0) / sommets.length
+      const lon = sommets.reduce((a, s) => a + s.lon, 0) / sommets.length
+      const rayon = Math.max(...sommets.map((s) => distanceM({ lat, lon }, s)))
+      res.push({ id: z.id, lat, lon, rayonM: rayon + MARGE_ZONE_M, nature: z.type_zone as Cercle['nature'], sommets, margeM: MARGE_ZONE_M })
+      continue
+    }
     const lat = Number(z.centre_latitude)
     const lon = Number(z.centre_longitude)
     const r = Number(z.rayon_metres)
@@ -78,21 +151,58 @@ export function cerclesDesPoints(points: Array<{ id: string; type: string; latit
   return res
 }
 
+/**
+ * Polygones couvrant « contour + marge » : le contour lui-même, plus, pour chaque côté, un rectangle de demi-largeur
+ * `margeM` prolongé de `margeM` à chaque bout. Leur union contient tous les points à moins de `margeM` du contour
+ * (y compris autour des coins) : c'est ce que le moteur doit éviter. Anneaux GeoJSON [lon, lat], fermés.
+ */
+export function anneauxContourAvecMarge(sommets: Position[], margeM: number): number[][][] {
+  const lat0 = sommets[0].lat
+  const kx = 111320 * Math.cos(lat0 * RAD)
+  const ky = 111320
+  const versLonLat = (x: number, y: number) => [+(x / kx).toFixed(6), +(y / ky).toFixed(6)]
+  const anneaux: number[][][] = []
+  const contour = sommets.map((s) => [+s.lon.toFixed(6), +s.lat.toFixed(6)])
+  anneaux.push([...contour, contour[0]])
+  if (margeM <= 0) return anneaux
+  for (let i = 0; i < sommets.length; i++) {
+    const a = sommets[i]
+    const b = sommets[(i + 1) % sommets.length]
+    const ax = a.lon * kx, ay = a.lat * ky, bx = b.lon * kx, by = b.lat * ky
+    const l = Math.hypot(bx - ax, by - ay)
+    if (l === 0) continue
+    const ux = (bx - ax) / l, uy = (by - ay) / l // le long du côté
+    const nx = -uy, ny = ux // perpendiculaire
+    const m = margeM
+    const p1 = versLonLat(ax - ux * m + nx * m, ay - uy * m + ny * m)
+    const p2 = versLonLat(bx + ux * m + nx * m, by + uy * m + ny * m)
+    const p3 = versLonLat(bx + ux * m - nx * m, by + uy * m - ny * m)
+    const p4 = versLonLat(ax - ux * m - nx * m, ay - uy * m - ny * m)
+    anneaux.push([p1, p2, p3, p4, p1])
+  }
+  return anneaux
+}
+
 /** MultiPolygon GeoJSON attendu par OpenRouteService dans `options.avoid_polygons` (null si rien à éviter). */
 export function multiPolygoneAEviter(cercles: Cercle[]): { type: 'MultiPolygon'; coordinates: number[][][][] } | null {
   if (cercles.length === 0) return null
-  return { type: 'MultiPolygon', coordinates: cercles.map((c) => [anneauCercle({ lat: c.lat, lon: c.lon }, c.rayonM)]) }
+  const coordinates: number[][][][] = []
+  for (const c of cercles) {
+    if (c.sommets) for (const anneau of anneauxContourAvecMarge(c.sommets, c.margeM ?? 0)) coordinates.push([anneau])
+    else coordinates.push([anneauCercle({ lat: c.lat, lon: c.lon }, c.rayonM)])
+  }
+  return { type: 'MultiPolygon', coordinates }
 }
 
 /** Un point est-il dans un des cercles ? Renvoie le cercle, sinon null. */
 export function cercleContenant(p: Position, cercles: Cercle[]): Cercle | null {
-  for (const c of cercles) if (distanceM(p, { lat: c.lat, lon: c.lon }) <= c.rayonM) return c
+  for (const c of cercles) if (dansObstacle(p, c)) return c
   return null
 }
 
 /** Tous les cercles qui contiennent le point (zones superposées : rouge dans orange, route coupée dans une zone…). */
 export function cerclesContenant(p: Position, cercles: Cercle[]): Cercle[] {
-  return cercles.filter((c) => distanceM(p, { lat: c.lat, lon: c.lon }) <= c.rayonM)
+  return cercles.filter((c) => dansObstacle(p, c))
 }
 
 /**

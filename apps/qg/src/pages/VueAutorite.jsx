@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { CarteCrise, distanceM, ilYA } from '@plateforme-crise/shared'
+import { CarteCrise, formeCarteZone, ilYA, pointDansZone } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { CATEGORIES_COMPTAGE, totauxComptages } from '../components/RemonteesTerrain'
@@ -145,7 +145,7 @@ export default function VueAutorite() {
       q.from('declenchements_seuils_action').select('id, horodatage_declenchement, seuils_action(libelle)').eq('incident_id', incidentId).eq('statut', 'en_attente').order('horodatage_declenchement'),
       q.from('livre_de_bord').select('id, numero_ordre, horodatage, decision, justification_prevoyance').eq('incident_id', incidentId).not('decision', 'is', null).order('numero_ordre', { ascending: false }).limit(8),
       q.from('moyens_engages').select('id, libelle, symbole, statut, effectif, latitude, longitude').eq('incident_id', incidentId).neq('statut', 'retire'),
-      q.from('zones_intervention').select('id, type_zone, centre_latitude, centre_longitude, rayon_metres').eq('incident_id', incidentId).is('date_levee', null),
+      q.from('zones_intervention').select('id, type_zone, centre_latitude, centre_longitude, rayon_metres, contour').eq('incident_id', incidentId).is('date_levee', null),
       q.from('comptages_personnes').select('id, categorie, nombre, auteur_id, created_at').eq('incident_id', incidentId).order('created_at', { ascending: false }),
       q.from('centres_accueil').select('id, nom, latitude, longitude, capacite_hebergement, capacite_debout').eq('contexte_id', contexteId),
       q.from('objets_a_risque').select('id, identification, categorie, latitude, longitude, capacite_occupants').eq('contexte_id', contexteId).not('latitude', 'is', null),
@@ -219,12 +219,10 @@ export default function VueAutorite() {
     if (!d) return null
     const { totaux, retenus } = totauxComptages(d.comptages)
     const capacite = d.centres.reduce((s, c) => s + (c.capacite_hebergement ?? 0), 0)
-    const zonesAvecCentre = d.zones.filter((z) => z.centre_latitude != null && z.centre_longitude != null && z.rayon_metres != null)
     const dansUneZone = (lat, lon) => {
       let pire = null
-      for (const z of zonesAvecCentre) {
-        const dist = distanceM({ lat, lon }, { lat: Number(z.centre_latitude), lon: Number(z.centre_longitude) })
-        if (dist <= Number(z.rayon_metres)) {
+      for (const z of d.zones) {
+        if (pointDansZone({ lat, lon }, z)) { // cercle ou contour
           const ordre = { rouge: 3, orange: 2, jaune: 1 }
           if (!pire || (ordre[z.type_zone] ?? 0) > (ordre[pire] ?? 0)) pire = z.type_zone
         }
@@ -259,8 +257,9 @@ export default function VueAutorite() {
       marqueurs.push({ id: `c-${c.id}`, lat: Number(c.latitude), lon: Number(c.longitude), titre: c.nom, sousTitre: "Centre d'accueil", couleur: '#2563eb', symbole: 'infra_ca' })
     }
     const cercles = d.zones
-      .filter((z) => z.centre_latitude != null && z.centre_longitude != null && z.rayon_metres != null)
-      .map((z) => ({ id: z.id, lat: Number(z.centre_latitude), lon: Number(z.centre_longitude), rayonM: Number(z.rayon_metres), couleur: COULEUR_ZONE[z.type_zone], libelle: `Zone ${LIBELLE_ZONE[z.type_zone] ?? z.type_zone}` }))
+      .filter((z) => z.contour || (z.centre_latitude != null && z.centre_longitude != null && z.rayon_metres != null))
+      .map((z) => formeCarteZone(z, { couleur: COULEUR_ZONE[z.type_zone], libelle: `Zone ${LIBELLE_ZONE[z.type_zone] ?? z.type_zone}` }))
+      .filter(Boolean)
     const points = [
       ...(i?.latitude != null ? [{ lat: Number(i.latitude), lon: Number(i.longitude) }] : []),
       ...cercles.map((c) => ({ lat: c.lat, lon: c.lon })),

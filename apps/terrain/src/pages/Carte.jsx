@@ -15,6 +15,7 @@ import {
   distanceEtCap,
   ilYA,
   useCouchesCarte,
+  formeCarteZone,
 } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -135,7 +136,7 @@ export default function Carte() {
     if (incidents.length > 0) {
       const { data: z } = await supabase
         .from('zones_intervention')
-        .select('id, incident_id, type_zone, centre_latitude, centre_longitude, rayon_metres')
+        .select('id, incident_id, type_zone, centre_latitude, centre_longitude, rayon_metres, contour')
         .in('incident_id', incidents.map((i) => i.id))
         .not('centre_latitude', 'is', null)
         .is('date_levee', null)
@@ -288,13 +289,9 @@ export default function Carte() {
 
   const cercles = useMemo(
     () =>
-      (couches.incidents ? zones.filter((z) => ids.has(z.incident_id)) : []).map((z) => ({
-        id: z.id,
-        lat: Number(z.centre_latitude),
-        lon: Number(z.centre_longitude),
-        rayonM: Number(z.rayon_metres) || 100,
-        libelle: z.type_zone,
-      })),
+      (couches.incidents ? zones.filter((z) => ids.has(z.incident_id)) : [])
+        .map((z) => formeCarteZone(z, { libelle: z.type_zone }))
+        .filter(Boolean),
     [zones, ids, couches.incidents]
   )
 
@@ -394,7 +391,7 @@ export default function Carte() {
           selection={selection}
           onAnnuler={fermer}
           onTrace={setTrace}
-          cleZones={zones.map((z) => `${z.id}:${z.type_zone}:${z.rayon_metres}:${z.centre_latitude}:${z.centre_longitude}`).join('|')}
+          cleZones={zones.map((z) => `${z.id}:${z.type_zone}:${z.rayon_metres}:${z.centre_latitude}:${z.centre_longitude}:${z.contour ? JSON.stringify(z.contour).length : 0}`).join('|')}
         />
       )}
 

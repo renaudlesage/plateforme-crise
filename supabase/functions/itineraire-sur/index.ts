@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     const [zonesRes, pointsRes] = await Promise.all([
       supabase
         .from('zones_intervention')
-        .select('id, type_zone, centre_latitude, centre_longitude, rayon_metres, date_levee')
+        .select('id, type_zone, centre_latitude, centre_longitude, rayon_metres, date_levee, contour')
         .eq('incident_id', incidentId)
         .is('date_levee', null),
       supabase

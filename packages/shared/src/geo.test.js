@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { distanceM, etatGeoBarriere, transitionGeoBarriere, lisserSortieZone, SEUIL_APPROCHE_ZONE_M } from './geo.js'
+import { distanceM, etatGeoBarriere, transitionGeoBarriere, lisserSortieZone, polygoneGeoJson, surfaceContourM2, contourSeCroise, problemeContour, libelleSurface, contourDeZone, distanceAuBordZone, pointDansZone, formeCarteZone, SEUIL_APPROCHE_ZONE_M } from './geo.js'
 
 // Logne (Ferrières) : zone rouge de 100 m, zone rouge voisine de 50 m plus au nord.
 const CENTRE = { lat: 50.3934, lon: 5.5382 }
@@ -101,5 +101,83 @@ describe('lisserSortieZone', () => {
   })
   it('entrée crue tout de suite', () => {
     expect(lisserSortieZone(hors, dedans, null, 0, 8000).apres).toBe(dedans)
+  })
+})
+
+describe('zones à contour (polygone)', () => {
+  // carré d'environ 200 m de côté centré sur C
+  const C = { lat: 50.3934, lon: 5.5382 }
+  const dLat = 100 / 111320
+  const dLon = 100 / (111320 * Math.cos((C.lat * Math.PI) / 180))
+  const carre = [
+    { lat: C.lat - dLat, lon: C.lon - dLon },
+    { lat: C.lat - dLat, lon: C.lon + dLon },
+    { lat: C.lat + dLat, lon: C.lon + dLon },
+    { lat: C.lat + dLat, lon: C.lon - dLon },
+  ]
+  const zone = { id: 'p', centre_latitude: C.lat, centre_longitude: C.lon, rayon_metres: 142, contour: polygoneGeoJson(carre) }
+
+  it('polygoneGeoJson ferme l’anneau en [lon, lat] et contourDeZone le relit (objet ou texte)', () => {
+    const g = polygoneGeoJson(carre)
+    expect(g.type).toBe('Polygon')
+    expect(g.coordinates[0].length).toBe(5)
+    expect(g.coordinates[0][0]).toEqual(g.coordinates[0][4])
+    expect(contourDeZone({ contour: g }).length).toBe(4)
+    expect(contourDeZone({ contour: JSON.stringify(g) }).length).toBe(4)
+    expect(contourDeZone({ contour: null })).toBeNull()
+    expect(contourDeZone({ contour: { type: 'Polygon', coordinates: [[[0, 0], [1, 1], [0, 0]]] } })).toBeNull()
+  })
+  it('distance signée au bord : -100 m au centre, ~+50 m dehors, le contour prime sur le rayon englobant', () => {
+    expect(Math.round(distanceAuBordZone(C, zone))).toBe(-100)
+    const dehors = { lat: C.lat, lon: C.lon + (150 / (111320 * Math.cos((C.lat * Math.PI) / 180))) }
+    expect(Math.round(distanceAuBordZone(dehors, zone))).toBe(50)
+    expect(pointDansZone(dehors, zone)).toBe(false)
+    // le coin du carré est dans le cercle englobant (142 m) mais un point juste au-delà du coin est dehors
+    const auDelaDuCoin = { lat: C.lat + dLat * 1.2, lon: C.lon + dLon * 1.2 }
+    expect(pointDansZone(auDelaDuCoin, zone)).toBe(false)
+  })
+  it('polygone concave (en L) : le creux est dehors', () => {
+    const L = [
+      { lat: 0, lon: 0 }, { lat: 0, lon: 0.002 }, { lat: 0.001, lon: 0.002 },
+      { lat: 0.001, lon: 0.001 }, { lat: 0.002, lon: 0.001 }, { lat: 0.002, lon: 0 },
+    ]
+    const z = { contour: polygoneGeoJson(L) }
+    expect(pointDansZone({ lat: 0.0005, lon: 0.0015 }, z)).toBe(true)
+    expect(pointDansZone({ lat: 0.0015, lon: 0.0015 }, z)).toBe(false)
+  })
+  it('géo-barrière : dedans / approche avec un contour', () => {
+    expect(etatGeoBarriere(C, [zone]).etat).toBe('dedans')
+    const proche = { lat: C.lat, lon: C.lon + (180 / (111320 * Math.cos((C.lat * Math.PI) / 180))) }
+    const r = etatGeoBarriere(proche, [zone])
+    expect(r.etat).toBe('approche')
+    expect(r.distanceBord).toBe(80)
+  })
+  it('formeCarteZone : contour en [[lat, lon]] pour un polygone, cercle sinon', () => {
+    expect(formeCarteZone(zone, { couleur: 'x' }).contour.length).toBe(4)
+    expect(formeCarteZone({ id: 'c', centre_latitude: 1, centre_longitude: 2, rayon_metres: 50 })).toEqual({ id: 'c', lat: 1, lon: 2, rayonM: 50 })
+    expect(formeCarteZone({ id: 'v' })).toBeNull()
+  })
+})
+
+describe('contrôle d’un contour tracé', () => {
+  const k = 1 / 111320
+  const carre = (m) => [{ lat: 0, lon: 0 }, { lat: 0, lon: m * k }, { lat: m * k, lon: m * k }, { lat: m * k, lon: 0 }]
+  it('surface du carré de 100 m ≈ 1 ha', () => {
+    expect(Math.round(surfaceContourM2(carre(100)) / 100) * 100).toBe(10000)
+    expect(libelleSurface(10000)).toBe('1,0 ha')
+    expect(libelleSurface(2.5e6)).toBe('2,5 km²')
+  })
+  it('nœud papillon détecté, carré accepté', () => {
+    const papillon = [{ lat: 0, lon: 0 }, { lat: 0.001, lon: 0.001 }, { lat: 0, lon: 0.001 }, { lat: 0.001, lon: 0 }]
+    expect(contourSeCroise(papillon)).toBe(true)
+    expect(contourSeCroise(carre(100))).toBe(false)
+    expect(problemeContour(papillon)).toMatch(/croise/)
+    expect(problemeContour(carre(100))).toBeNull()
+  })
+  it('trop peu de coins, trop petit, trop de coins', () => {
+    expect(problemeContour(carre(100).slice(0, 2))).toMatch(/3 coins/)
+    expect(problemeContour(carre(5))).toMatch(/petite/)
+    const cercle = Array.from({ length: 51 }, (_, i) => ({ lat: Math.sin((2 * Math.PI * i) / 51) * 0.01, lon: Math.cos((2 * Math.PI * i) / 51) * 0.01 }))
+    expect(problemeContour(cercle)).toMatch(/50 coins/)
   })
 })
