@@ -154,8 +154,8 @@ function FormulaireCreation({ contexteId, onCree }) {
   return (
     <form onSubmit={soumettre} className="border border-trait rounded p-4 bg-fond space-y-3">
       <div>
-        <label className="block text-xs font-medium text-sourdine mb-1">Adresse du domicile</label>
-        <input required value={adresse} onChange={(e) => setAdresse(e.target.value)} className="w-full" />
+        <label htmlFor="planurgence-adresse-du-domicile" className="block text-xs font-medium text-sourdine mb-1">Adresse du domicile</label>
+        <input id="planurgence-adresse-du-domicile" required value={adresse} onChange={(e) => setAdresse(e.target.value)} className="w-full" />
       </div>
       <label className="flex items-start gap-2 text-xs text-sourdine">
         <input type="checkbox" checked={consentement} onChange={(e) => setConsentement(e.target.checked)} className="mt-0.5" />
@@ -261,13 +261,13 @@ function FormulairePlan({ plan, jeton, onEnregistre, onReinitialiser }) {
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-sourdine mb-1">Adresse du domicile</label>
-        <input required value={adresse} onChange={(e) => setAdresse(e.target.value)} className="w-full" />
+        <label htmlFor="planurgence-adresse-du-domicile-2" className="block text-xs font-medium text-sourdine mb-1">Adresse du domicile</label>
+        <input id="planurgence-adresse-du-domicile-2" required value={adresse} onChange={(e) => setAdresse(e.target.value)} className="w-full" />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-sourdine mb-1">Nombre d'occupants</label>
-        <input type="number" min="0" value={nbOccupants} onChange={(e) => setNbOccupants(e.target.value)} className="w-full sm:w-32" />
+        <label htmlFor="planurgence-nombre-d-occupants" className="block text-xs font-medium text-sourdine mb-1">Nombre d'occupants</label>
+        <input id="planurgence-nombre-d-occupants" type="number" min="0" value={nbOccupants} onChange={(e) => setNbOccupants(e.target.value)} className="w-full sm:w-32" />
       </div>
 
       <div>
@@ -308,18 +308,18 @@ function FormulairePlan({ plan, jeton, onEnregistre, onReinitialiser }) {
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-sourdine mb-1">Itinéraire d'évacuation prévu</label>
-        <textarea value={itineraire} onChange={(e) => setItineraire(e.target.value)} rows={2} className="w-full" />
+        <label htmlFor="planurgence-itineraire-d-evacuation-prevu" className="block text-xs font-medium text-sourdine mb-1">Itinéraire d'évacuation prévu</label>
+        <textarea id="planurgence-itineraire-d-evacuation-prevu" value={itineraire} onChange={(e) => setItineraire(e.target.value)} rows={2} className="w-full" />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-sourdine mb-1">Point de rendez-vous extérieur</label>
-        <input value={pointRdv} onChange={(e) => setPointRdv(e.target.value)} className="w-full" />
+        <label htmlFor="planurgence-point-de-rendez-vous-exterieur" className="block text-xs font-medium text-sourdine mb-1">Point de rendez-vous extérieur</label>
+        <input id="planurgence-point-de-rendez-vous-exterieur" value={pointRdv} onChange={(e) => setPointRdv(e.target.value)} className="w-full" />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-sourdine mb-1">Médecin de famille</label>
-        <input value={medecin} onChange={(e) => setMedecin(e.target.value)} className="w-full" />
+        <label htmlFor="planurgence-medecin-de-famille" className="block text-xs font-medium text-sourdine mb-1">Médecin de famille</label>
+        <input id="planurgence-medecin-de-famille" value={medecin} onChange={(e) => setMedecin(e.target.value)} className="w-full" />
       </div>
 
       <div>

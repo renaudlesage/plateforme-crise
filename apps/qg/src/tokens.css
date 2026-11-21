@@ -41,7 +41,7 @@
   --on-teinte: #ffffff;
 
   --etat-ok: #1f6f4f;
-  --etat-veille: #a86a00;
+  --etat-veille: #9e6400; /* 4,9:1 sur blanc (WCAG AA) ; #a86a00 faisait 4,4:1 */
   --etat-chaud: #b3311d;
   --etat-info: #23557f;
   --etat-froid: #5d6874;

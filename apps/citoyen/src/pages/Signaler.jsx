@@ -346,8 +346,8 @@ export default function Signaler() {
       ) : (
   <form onSubmit={soumettre} className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">De quoi s'agit-il ?</label>
-          <select value={type} onChange={(e) => setType(e.target.value)} className="w-full">
+          <label htmlFor="signaler-de-quoi-s-agit-il" className="block text-xs font-medium text-sourdine mb-1">De quoi s'agit-il ?</label>
+          <select id="signaler-de-quoi-s-agit-il" value={type} onChange={(e) => setType(e.target.value)} className="w-full">
             {TYPES.map(([v, l]) => (
               <option key={v} value={v}>{l}</option>
             ))}
@@ -355,8 +355,8 @@ export default function Signaler() {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Ce que vous constatez</label>
-          <input
+          <label htmlFor="signaler-ce-que-vous-constatez" className="block text-xs font-medium text-sourdine mb-1">Ce que vous constatez</label>
+          <input id="signaler-ce-que-vous-constatez"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="ex. Rue des Prés inondée sur 50 mètres"
@@ -365,8 +365,8 @@ export default function Signaler() {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Lieu précis (si le GPS ne suffit pas)</label>
-          <input
+          <label htmlFor="signaler-lieu-precis-si-le-gps-ne-suffit-pas" className="block text-xs font-medium text-sourdine mb-1">Lieu précis (si le GPS ne suffit pas)</label>
+          <input id="signaler-lieu-precis-si-le-gps-ne-suffit-pas"
             value={lieuLibre}
             onChange={(e) => setLieuLibre(e.target.value)}
             placeholder="ex. Pont de la rue Haute"
@@ -375,8 +375,8 @@ export default function Signaler() {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-sourdine mb-1">Votre numéro (facultatif)</label>
-          <input
+          <label htmlFor="signaler-votre-numero-facultatif" className="block text-xs font-medium text-sourdine mb-1">Votre numéro (facultatif)</label>
+          <input id="signaler-votre-numero-facultatif"
             type="tel"
             value={contact}
             onChange={(e) => setContact(e.target.value)}

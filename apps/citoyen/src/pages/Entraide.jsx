@@ -180,13 +180,13 @@ export function AccueilBenevole() {
       )}
       <form onSubmit={soumettre} className="space-y-4" aria-label="Enregistrement bénévole">
         <div className="grid grid-cols-2 gap-3">
-          <div><label className="block text-xs font-medium text-sourdine mb-1">Prénom</label><input required value={v.prenom} onChange={set('prenom')} className="w-full" maxLength={80} autoComplete="given-name" /></div>
-          <div><label className="block text-xs font-medium text-sourdine mb-1">Nom</label><input required value={v.nom} onChange={set('nom')} className="w-full" maxLength={80} autoComplete="family-name" /></div>
+          <div><label htmlFor="entraide-prenom" className="block text-xs font-medium text-sourdine mb-1">Prénom</label><input id="entraide-prenom" required value={v.prenom} onChange={set('prenom')} className="w-full" maxLength={80} autoComplete="given-name" /></div>
+          <div><label htmlFor="entraide-nom" className="block text-xs font-medium text-sourdine mb-1">Nom</label><input id="entraide-nom" required value={v.nom} onChange={set('nom')} className="w-full" maxLength={80} autoComplete="family-name" /></div>
         </div>
-        <div><label className="block text-xs font-medium text-sourdine mb-1">Téléphone</label><input type="tel" value={v.telephone} onChange={set('telephone')} className="w-full" maxLength={30} autoComplete="tel" /></div>
+        <div><label htmlFor="entraide-telephone" className="block text-xs font-medium text-sourdine mb-1">Téléphone</label><input id="entraide-telephone" type="tel" value={v.telephone} onChange={set('telephone')} className="w-full" maxLength={30} autoComplete="tel" /></div>
         <div className="grid grid-cols-2 gap-3">
-          <div><label className="block text-xs font-medium text-sourdine mb-1">Personne à prévenir</label><input value={v.contact_urgence_nom} onChange={set('contact_urgence_nom')} className="w-full" maxLength={120} /></div>
-          <div><label className="block text-xs font-medium text-sourdine mb-1">Son téléphone</label><input type="tel" value={v.contact_urgence_telephone} onChange={set('contact_urgence_telephone')} className="w-full" maxLength={30} /></div>
+          <div><label htmlFor="entraide-personne-a-prevenir" className="block text-xs font-medium text-sourdine mb-1">Personne à prévenir</label><input id="entraide-personne-a-prevenir" value={v.contact_urgence_nom} onChange={set('contact_urgence_nom')} className="w-full" maxLength={120} /></div>
+          <div><label htmlFor="entraide-son-telephone" className="block text-xs font-medium text-sourdine mb-1">Son téléphone</label><input id="entraide-son-telephone" type="tel" value={v.contact_urgence_telephone} onChange={set('contact_urgence_telephone')} className="w-full" maxLength={30} /></div>
         </div>
         <div>
           <label className="block text-xs font-medium text-sourdine mb-2">Ce que je sais faire / ce que j'apporte</label>
@@ -197,7 +197,7 @@ export function AccueilBenevole() {
           </div>
           <input value={v.materiel_apporte} onChange={set('materiel_apporte')} placeholder="Matériel apporté (tracteur, pompe, bottes…)" className="mt-2 w-full" maxLength={300} />
         </div>
-        <div><label className="block text-xs font-medium text-sourdine mb-1">E-mail de pré-inscription (si vous êtes déjà inscrit comme bénévole de la commune)</label><input type="email" value={v.email_preinscrit} onChange={set('email_preinscrit')} className="w-full" /></div>
+        <div><label htmlFor="entraide-e-mail-de-pre-inscription-si-vous-etes-d" className="block text-xs font-medium text-sourdine mb-1">E-mail de pré-inscription (si vous êtes déjà inscrit comme bénévole de la commune)</label><input id="entraide-e-mail-de-pre-inscription-si-vous-etes-d" type="email" value={v.email_preinscrit} onChange={set('email_preinscrit')} className="w-full" /></div>
         {pab.taches_interdites?.length > 0 && (
           <p className="text-xs text-sourdine">Tâches interdites aux bénévoles : {pab.taches_interdites.map((t) => t.replace(/_/g, ' ')).join(', ')}.</p>
         )}
@@ -332,7 +332,7 @@ export function EntraidePublique() {
       <h1 className="text-lg font-semibold text-encre mb-1">Aider ma commune</h1>
       <p className="text-sm text-sourdine mb-4">{(etat.incidents ?? []).map((i) => i.nom).join(', ')} · mis à jour {heure(etat.maj_le)}</p>
       {c?.message && (
-        <div className="bandeau-alerte niv-info mb-4"><div className="niv">Consignes</div><div className="contenu"><p className="consigne">{c.message}</p></div></div>
+        <div className="bandeau-alerte niv-information mb-4"><div className="niv">Consignes</div><div className="contenu"><p className="consigne">{c.message}</p></div></div>
       )}
       {c?.ne_pas_venir && (
         <div className="bandeau-alerte niv-urgence mb-4"><div className="niv">Ne venez pas à</div><div className="contenu"><p className="consigne">{c.ne_pas_venir}</p></div></div>
@@ -444,17 +444,17 @@ export function ProposerMoyen() {
       <h1 className="text-lg font-semibold text-encre mb-1">Proposer un moyen</h1>
       <p className="text-sm text-sourdine mb-4">Tracteur, pelleteuse, pompe, bateau, camion, groupe électrogène, salle, hangar… La commune saura qu'il existe et vous appellera si elle en a besoin. {MENTION_MOYEN_PRIVE}</p>
       <form onSubmit={soumettre} className="space-y-4" aria-label="Proposer un moyen">
-        <div><label className="block text-xs font-medium text-sourdine mb-1">Type de moyen</label><select value={v.categorie} onChange={set('categorie')} className="w-full">{CATEGORIES_MOYEN_DECLARABLE.map((c) => <option key={c.valeur} value={c.valeur}>{c.libelle}</option>)}</select></div>
-        <div><label className="block text-xs font-medium text-sourdine mb-1">Description</label><input required value={v.nom} onChange={set('nom')} className="w-full" maxLength={160} placeholder="ex. Pelleteuse 8 t avec chauffeur" /></div>
+        <div><label htmlFor="entraide-type-de-moyen" className="block text-xs font-medium text-sourdine mb-1">Type de moyen</label><select id="entraide-type-de-moyen" value={v.categorie} onChange={set('categorie')} className="w-full">{CATEGORIES_MOYEN_DECLARABLE.map((c) => <option key={c.valeur} value={c.valeur}>{c.libelle}</option>)}</select></div>
+        <div><label htmlFor="entraide-description" className="block text-xs font-medium text-sourdine mb-1">Description</label><input id="entraide-description" required value={v.nom} onChange={set('nom')} className="w-full" maxLength={160} placeholder="ex. Pelleteuse 8 t avec chauffeur" /></div>
         <div className="grid grid-cols-2 gap-3">
-          <div><label className="block text-xs font-medium text-sourdine mb-1">Capacité</label><input value={v.capacite} onChange={set('capacite')} className="w-full" maxLength={200} placeholder="ex. 8 t, 12 m³, 40 places" /></div>
-          <div><label className="block text-xs font-medium text-sourdine mb-1">Disponible sous</label><input value={v.delai} onChange={set('delai')} className="w-full" maxLength={120} placeholder="ex. 2 h, le week-end" /></div>
+          <div><label htmlFor="entraide-capacite" className="block text-xs font-medium text-sourdine mb-1">Capacité</label><input id="entraide-capacite" value={v.capacite} onChange={set('capacite')} className="w-full" maxLength={200} placeholder="ex. 8 t, 12 m³, 40 places" /></div>
+          <div><label htmlFor="entraide-disponible-sous" className="block text-xs font-medium text-sourdine mb-1">Disponible sous</label><input id="entraide-disponible-sous" value={v.delai} onChange={set('delai')} className="w-full" maxLength={120} placeholder="ex. 2 h, le week-end" /></div>
         </div>
-        <div><label className="block text-xs font-medium text-sourdine mb-1">Conditions</label><input value={v.conditions} onChange={set('conditions')} className="w-full" maxLength={500} placeholder="ex. prêt gratuit avec chauffeur, carburant à charge de la commune" /></div>
-        <div><label className="block text-xs font-medium text-sourdine mb-1">Vous êtes</label><select value={v.proprietaire_type} onChange={set('proprietaire_type')} className="w-full"><option value="particulier">Un particulier</option><option value="entreprise">Une entreprise</option><option value="association">Une association</option></select></div>
+        <div><label htmlFor="entraide-conditions" className="block text-xs font-medium text-sourdine mb-1">Conditions</label><input id="entraide-conditions" value={v.conditions} onChange={set('conditions')} className="w-full" maxLength={500} placeholder="ex. prêt gratuit avec chauffeur, carburant à charge de la commune" /></div>
+        <div><label htmlFor="entraide-vous-etes" className="block text-xs font-medium text-sourdine mb-1">Vous êtes</label><select id="entraide-vous-etes" value={v.proprietaire_type} onChange={set('proprietaire_type')} className="w-full"><option value="particulier">Un particulier</option><option value="entreprise">Une entreprise</option><option value="association">Une association</option></select></div>
         <div className="grid grid-cols-2 gap-3">
-          <div><label className="block text-xs font-medium text-sourdine mb-1">Nom / raison sociale</label><input required value={v.proprietaire_nom} onChange={set('proprietaire_nom')} className="w-full" maxLength={120} /></div>
-          <div><label className="block text-xs font-medium text-sourdine mb-1">Téléphone</label><input required type="tel" value={v.proprietaire_telephone} onChange={set('proprietaire_telephone')} className="w-full" maxLength={30} /></div>
+          <div><label htmlFor="entraide-nom-raison-sociale" className="block text-xs font-medium text-sourdine mb-1">Nom / raison sociale</label><input id="entraide-nom-raison-sociale" required value={v.proprietaire_nom} onChange={set('proprietaire_nom')} className="w-full" maxLength={120} /></div>
+          <div><label htmlFor="entraide-telephone-2" className="block text-xs font-medium text-sourdine mb-1">Téléphone</label><input id="entraide-telephone-2" required type="tel" value={v.proprietaire_telephone} onChange={set('proprietaire_telephone')} className="w-full" maxLength={30} /></div>
         </div>
         <div>
           <button

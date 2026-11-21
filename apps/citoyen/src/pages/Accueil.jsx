@@ -72,7 +72,7 @@ export default function Accueil() {
   return (
     <div className="participant">
       <div className="bandeau">
-        <span className="text-sm font-medium text-encre">{contexteActuel?.nom ?? '…'}</span>
+        <h1 className="text-encre">{contexteActuel?.nom ?? '…'}</h1>
         <div className="flex items-center gap-3">
           <button type="button" className="lien" onClick={changerDeCommune}>
             Changer de commune
