@@ -10,6 +10,9 @@ import {
   multiPolygoneAEviter,
   pointsDePassage,
   preparerCercles,
+  anneauxContourAvecMarge,
+  dansObstacle,
+  sommetsDuContour,
   distanceM,
   MARGE_ZONE_M,
   RAYON_POINT_BLOQUANT_M,
@@ -178,5 +181,48 @@ describe('preparerCercles (départ en zone, zones superposées)', () => {
     )
     expect(r.traverse).toEqual([])
     expect(r.avertissements).toEqual([])
+  })
+})
+
+describe('zones à contour (polygone)', () => {
+  // carré d'environ 200 m de côté centré sur C
+  const dLat = 100 / 111320
+  const dLon = 100 / (111320 * Math.cos((C.lat * Math.PI) / 180))
+  const anneau = [
+    [C.lon - dLon, C.lat - dLat], [C.lon + dLon, C.lat - dLat], [C.lon + dLon, C.lat + dLat], [C.lon - dLon, C.lat + dLat], [C.lon - dLon, C.lat - dLat],
+  ]
+  const zone = { id: 'p', type_zone: 'rouge', centre_latitude: C.lat, centre_longitude: C.lon, rayon_metres: 142, contour: { type: 'Polygon', coordinates: [anneau] } }
+
+  it('sommetsDuContour lit objet et texte, refuse le reste', () => {
+    expect(sommetsDuContour(zone.contour)?.length).toBe(4)
+    expect(sommetsDuContour(JSON.stringify(zone.contour))?.length).toBe(4)
+    expect(sommetsDuContour({ type: 'Point', coordinates: [0, 0] })).toBeNull()
+    expect(sommetsDuContour(null)).toBeNull()
+  })
+  it('cerclesDesZones : le contour prime, marge de 25 m autour du contour (pas du cercle englobant)', () => {
+    const [o] = cerclesDesZones([zone], false)
+    expect(o.sommets?.length).toBe(4)
+    expect(o.margeM).toBe(MARGE_ZONE_M)
+    expect(dansObstacle(aLEst(110), o)).toBe(true) // 10 m hors du bord : dans la marge
+    expect(dansObstacle(aLEst(140), o)).toBe(false) // 40 m hors du bord
+    // 50 m au nord du bord : hors marge
+    expect(dansObstacle(auNord(150, aLEst(0)), o)).toBe(false)
+  })
+  it('anneaux « contour + marge » : le contour et un rectangle par côté, tous fermés', () => {
+    const sommets = sommetsDuContour(zone.contour)!
+    const a = anneauxContourAvecMarge(sommets, 25)
+    expect(a.length).toBe(5)
+    for (const r of a) expect(r[0]).toEqual(r[r.length - 1])
+    const mp = multiPolygoneAEviter(cerclesDesZones([zone], false))!
+    expect(mp.coordinates.length).toBe(5)
+  })
+  it('contrôle de traversée et départ en zone avec un contour', () => {
+    const obstacles = cerclesDesZones([zone], false)
+    const traverse = Array.from({ length: 41 }, (_, i) => aLEst(-1000 + i * 50))
+    expect(cerclesTraverses(traverse, obstacles).length).toBe(1)
+    const r = preparerCercles(C, auNord(2000), obstacles)
+    expect(r.zonesDepart.length).toBe(1)
+    expect(r.cerclesCalcul.length).toBe(0)
+    expect(preparerCercles(auNord(2000), C, obstacles).zoneArrivee?.id).toBe('p')
   })
 })

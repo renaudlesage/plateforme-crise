@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { DISCIPLINES, SelecteurLocalisation, disciplineDe, ilYA, lienItineraire, peutModifierZonage, profilDe } from '@plateforme-crise/shared'
+import { DISCIPLINES, SelecteurContour, SelecteurLocalisation, contourDeZone, disciplineDe, formeCarteZone, ilYA, libelleSurface, lienItineraire, peutModifierZonage, polygoneGeoJson, problemeContour, profilDe, surfaceContourM2 } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
@@ -276,18 +276,28 @@ const TYPES_ZONE = [
   { valeur: 'orange', libelle: 'Orange — isolation', perimetre: 'isolation', couleur: '#e67e22' },
   { valeur: 'jaune', libelle: 'Jaune — dissuasion', perimetre: 'dissuasion', couleur: '#d4ac0d' },
 ]
+/** « · rayon 100 m » ou « · contour, 6 coins, 3,2 ha ». */
+function descriptionForme(z) {
+  const sommets = contourDeZone(z)
+  if (sommets) return ` · contour, ${sommets.length} coins, ${libelleSurface(surfaceContourM2(sommets))}`
+  return z.rayon_metres ? ` · rayon ${Math.round(z.rayon_metres)} m` : ''
+}
+
 const ACCES_PAR_TYPE_ZONE = {
   rouge: "Exclusivement services d'intervention, experts, techniciens. Population évacuée ou consignes spécifiques (fermer portes/fenêtres).",
   orange: "Services d'intervention + résidents/travailleurs sur accord explicite du Dir-PC-Ops. PC-Ops positionné juste à l'intérieur du périmètre.",
   jaune: 'Accès déconseillé aux non-résidents/non-travailleurs sauf décision PC-Ops. Trafic de transit détourné, "touristes de catastrophe" écartés.',
 }
 
-/** Zones actives de l'incident : en créer une (position sur la carte ou position actuelle), la lever. Passe par la file hors ligne. */
+/**
+ * Zones actives de l'incident : en créer une — cercle (centre + rayon) ou contour tracé en touchant les coins — ou la
+ * lever. Une zone ne se modifie pas : on la lève et on en pose une nouvelle. Passe par la file hors ligne.
+ */
 export function ZonesIntervention({ incident, peutModifier = false }) {
   const charger = useCallback(async () => {
     const r = await supabase
       .from('zones_intervention')
-      .select('id, type_zone, perimetre, centre_latitude, centre_longitude, rayon_metres, acces_autorise, date_etablissement')
+      .select('id, type_zone, perimetre, centre_latitude, centre_longitude, rayon_metres, contour, acces_autorise, date_etablissement')
       .eq('incident_id', incident.id)
       .is('date_levee', null)
       .order('date_etablissement', { ascending: true })
@@ -297,6 +307,8 @@ export function ZonesIntervention({ incident, peutModifier = false }) {
   const { donnees, majLe, echec, recharger } = useChargementPeriodique({ cle: `zones.${incident.id}`, charger, intervalle: 30000 })
   const [ouvert, setOuvert] = useState(false)
   const [type, setType] = useState('rouge')
+  const [forme, setForme] = useState('cercle') // 'cercle' | 'contour'
+  const [sommets, setSommets] = useState([])
   const [rayon, setRayon] = useState('')
   const [acces, setAcces] = useState(ACCES_PAR_TYPE_ZONE.rouge)
   const [lat, setLat] = useState(null)
@@ -316,8 +328,17 @@ export function ZonesIntervention({ incident, peutModifier = false }) {
 
   async function creer(e) {
     e.preventDefault()
-    if (lat == null || lon == null) return setInvalide('Placez le centre de la zone sur la carte (ou utilisez votre position).')
-    if (!(Number(rayon) > 0)) return setInvalide('Indiquez un rayon en mètres.')
+    let geometrie
+    if (forme === 'contour') {
+      const probleme = problemeContour(sommets)
+      if (probleme) return setInvalide(probleme)
+      // centre et rayon (englobant) sont calculés en base à partir du contour
+      geometrie = { contour: polygoneGeoJson(sommets) }
+    } else {
+      if (lat == null || lon == null) return setInvalide('Placez le centre de la zone sur la carte (ou utilisez votre position).')
+      if (!(Number(rayon) > 0)) return setInvalide('Indiquez un rayon en mètres.')
+      geometrie = { centre_latitude: Number(lat), centre_longitude: Number(lon), rayon_metres: Number(rayon) }
+    }
     setInvalide(null)
     setEnCours(true)
     const r = await fileEcritures.ecrireOuEmpiler({
@@ -327,12 +348,10 @@ export function ZonesIntervention({ incident, peutModifier = false }) {
         incident_id: incident.id,
         type_zone: type,
         perimetre: TYPES_ZONE.find((t) => t.valeur === type).perimetre,
-        centre_latitude: Number(lat),
-        centre_longitude: Number(lon),
-        rayon_metres: Number(rayon),
+        ...geometrie,
         acces_autorise: acces.trim() || null,
       },
-      libelle: `Zone ${type}`,
+      libelle: `Zone ${type}${forme === 'contour' ? ' (contour)' : ''}`,
     })
     setEnCours(false)
     setRes(r)
@@ -341,6 +360,7 @@ export function ZonesIntervention({ incident, peutModifier = false }) {
       setRayon('')
       setLat(null)
       setLon(null)
+      setSommets([])
       recharger()
     }
   }
@@ -362,8 +382,8 @@ export function ZonesIntervention({ incident, peutModifier = false }) {
   }
 
   const cercles = zones
-    .filter((z) => z.centre_latitude != null && z.rayon_metres)
-    .map((z) => ({ id: z.id, lat: Number(z.centre_latitude), lon: Number(z.centre_longitude), rayonM: Number(z.rayon_metres), couleur: TYPES_ZONE.find((t) => t.valeur === z.type_zone)?.couleur, libelle: z.type_zone }))
+    .map((z) => formeCarteZone(z, { couleur: TYPES_ZONE.find((t) => t.valeur === z.type_zone)?.couleur, libelle: z.type_zone }))
+    .filter(Boolean)
 
   return (
     <div className="space-y-2">
@@ -378,7 +398,7 @@ export function ZonesIntervention({ incident, peutModifier = false }) {
               <p className="text-sm font-medium text-encre">
                 <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 999, background: TYPES_ZONE.find((t) => t.valeur === z.type_zone)?.couleur, marginRight: 6 }} />
                 {TYPES_ZONE.find((t) => t.valeur === z.type_zone)?.libelle ?? z.type_zone}
-                {z.rayon_metres ? ` · rayon ${Math.round(z.rayon_metres)} m` : ''}
+                {descriptionForme(z)}
               </p>
               {z.acces_autorise && <p className="text-xs text-sourdine mt-1">{z.acces_autorise}</p>}
               {peutModifier && (
@@ -405,27 +425,54 @@ export function ZonesIntervention({ incident, peutModifier = false }) {
               ))}
             </select>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-sourdine mb-1">Centre — touchez la carte ou utilisez votre position</label>
-            <SelecteurLocalisation
-              lat={lat}
-              lon={lon}
-              onChange={(la, lo) => { setLat(la); setLon(lo) }}
-              centreDefaut={centreIncident}
-              zoomDefaut={centreIncident ? 15 : 8}
-              cercles={[
-                ...cercles,
-                ...(lat != null && Number(rayon) > 0
-                  ? [{ id: 'apercu', lat: Number(lat), lon: Number(lon), rayonM: Number(rayon), couleur: TYPES_ZONE.find((t) => t.valeur === type).couleur, libelle: 'Cette zone' }]
-                  : []),
-              ]}
-              hauteur="260px"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-sourdine mb-1">Rayon (m)</label>
-            <input type="number" min="0" inputMode="numeric" value={rayon} onChange={(e) => setRayon(e.target.value)} className="w-full" />
-          </div>
+          <fieldset>
+            <legend className="block text-xs font-medium text-sourdine mb-1">Forme</legend>
+            <div className="flex flex-wrap gap-4 text-sm">
+              <label className="flex items-center gap-1">
+                <input type="radio" name="forme-zone" checked={forme === 'cercle'} onChange={() => setForme('cercle')} /> Cercle (centre + rayon)
+              </label>
+              <label className="flex items-center gap-1">
+                <input type="radio" name="forme-zone" checked={forme === 'contour'} onChange={() => setForme('contour')} /> Contour (toucher les coins)
+              </label>
+            </div>
+          </fieldset>
+          {forme === 'contour' ? (
+            <div>
+              <p className="block text-xs font-medium text-sourdine mb-1">Contour — touchez les coins de la zone dans l&apos;ordre du tour</p>
+              <SelecteurContour
+                sommets={sommets}
+                onChange={setSommets}
+                couleur={TYPES_ZONE.find((t) => t.valeur === type).couleur}
+                centreDefaut={centreIncident}
+                cercles={cercles}
+                hauteur="300px"
+              />
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="block text-xs font-medium text-sourdine mb-1">Centre — touchez la carte ou utilisez votre position</label>
+                <SelecteurLocalisation
+                  lat={lat}
+                  lon={lon}
+                  onChange={(la, lo) => { setLat(la); setLon(lo) }}
+                  centreDefaut={centreIncident}
+                  zoomDefaut={centreIncident ? 15 : 8}
+                  cercles={[
+                    ...cercles,
+                    ...(lat != null && Number(rayon) > 0
+                      ? [{ id: 'apercu', lat: Number(lat), lon: Number(lon), rayonM: Number(rayon), couleur: TYPES_ZONE.find((t) => t.valeur === type).couleur, libelle: 'Cette zone' }]
+                      : []),
+                  ]}
+                  hauteur="260px"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-sourdine mb-1">Rayon (m)</label>
+                <input type="number" min="0" inputMode="numeric" value={rayon} onChange={(e) => setRayon(e.target.value)} className="w-full" />
+              </div>
+            </>
+          )}
           <div>
             <label className="block text-xs font-medium text-sourdine mb-1">Règles d&apos;accès</label>
             <textarea value={acces} onChange={(e) => setAcces(e.target.value)} rows={3} className="w-full" />

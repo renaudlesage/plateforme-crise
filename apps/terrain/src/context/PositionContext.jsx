@@ -170,7 +170,7 @@ export function PositionProvider({ children }) {
     const charger = async () => {
       const { data, error } = await supabase
         .from('zones_intervention')
-        .select('id, centre_latitude, centre_longitude, rayon_metres')
+        .select('id, centre_latitude, centre_longitude, rayon_metres, contour')
         .eq('incident_id', incident.id)
         .eq('type_zone', 'rouge')
         .is('date_levee', null)

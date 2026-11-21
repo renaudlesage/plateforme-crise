@@ -2,6 +2,7 @@ export { createSupabaseClient } from './supabaseClient.js'
 export { default as CarteCrise, FONDS_DE_PLAN } from './CarteCrise.jsx'
 export { default as FiltreIncidentsCarte } from './FiltreIncidentsCarte.jsx'
 export { default as SelecteurLocalisation } from './SelecteurLocalisation.jsx'
+export { default as SelecteurContour } from './SelecteurContour.jsx'
 export { creerFileEcritures } from './fileEcritures.js'
 export { surRetourReseau, nouvelleCle } from './reessai.js'
 export { texteErreur, estReseau } from './erreurs.js'
@@ -20,7 +21,7 @@ export {
   PointsAFlaguer,
   MoyensEngages,
 } from './EditionCarte.jsx'
-export { distanceM, capDegres, capLibelle, libelleDistance, distanceEtCap, lienItineraire, ilYA, heuresDepuis, positionActuelle, etatGeoBarriere, transitionGeoBarriere, lisserSortieZone, SEUIL_APPROCHE_ZONE_M } from './geo.js'
+export { distanceM, capDegres, capLibelle, libelleDistance, distanceEtCap, lienItineraire, ilYA, heuresDepuis, positionActuelle, etatGeoBarriere, transitionGeoBarriere, lisserSortieZone, SEUIL_APPROCHE_ZONE_M, SOMMETS_MAX_CONTOUR, contourDeZone, polygoneGeoJson, distanceBordContour, distanceAuBordZone, pointDansZone, formeCarteZone, surfaceContourM2, contourSeCroise, problemeContour, libelleSurface } from './geo.js'
 export { reduirePhoto } from './photo.js'
 export {
   NIVEAUX,

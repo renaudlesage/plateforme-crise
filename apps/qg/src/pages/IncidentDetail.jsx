@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useSearchParams, Link } from 'react-router-dom'
-import { SelecteurLocalisation, DISCIPLINES, libelleOrgane, lienItineraire, ilYA } from '@plateforme-crise/shared'
+import { SelecteurLocalisation, SelecteurContour, DISCIPLINES, libelleOrgane, lienItineraire, ilYA, contourDeZone, formeCarteZone, libelleSurface, polygoneGeoJson, problemeContour, surfaceContourM2 } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { useTableContexte } from '../hooks/useTableContexte'
 import { BoutonDiscret, BoutonPrincipal } from '../components/Boutons'
@@ -1872,19 +1872,18 @@ function FormulaireEtapeRetablissement({ contacts, valeursInitiales = {}, onVali
 
 const COULEUR_ZONE = { rouge: '#c0392b', orange: '#e67e22', jaune: '#d4ac0d' }
 
-/** Cercles d'affichage d'une liste de zones (celles qui ont un centre et un rayon). */
+/** Formes d'affichage d'une liste de zones actives : cercle (centre + rayon) ou contour tracé. */
 function cerclesDesZones(zones, idMisEnAvant = null) {
   return zones
-    .filter((z) => z.centre_latitude != null && z.centre_longitude != null && z.rayon_metres != null && !z.date_levee)
-    .map((z) => ({
-      id: z.id,
-      lat: Number(z.centre_latitude),
-      lon: Number(z.centre_longitude),
-      rayonM: Number(z.rayon_metres),
-      couleur: COULEUR_ZONE[z.type_zone],
-      libelle: TYPES_ZONE.find((t) => t.valeur === z.type_zone)?.libelle ?? z.type_zone,
-      misEnAvant: idMisEnAvant === z.id,
-    }))
+    .filter((z) => !z.date_levee && (z.contour || (z.centre_latitude != null && z.centre_longitude != null && z.rayon_metres != null)))
+    .map((z) =>
+      formeCarteZone(z, {
+        couleur: COULEUR_ZONE[z.type_zone],
+        libelle: TYPES_ZONE.find((t) => t.valeur === z.type_zone)?.libelle ?? z.type_zone,
+        misEnAvant: idMisEnAvant === z.id,
+      })
+    )
+    .filter(Boolean)
 }
 
 function SectionZonesIntervention({ incidentId, centreIncident = null }) {
@@ -1938,7 +1937,8 @@ function SectionZonesIntervention({ incidentId, centreIncident = null }) {
       <p className="text-xs text-sourdine mb-3">
         Zonage opérationnel du terrain (doctrine NCCN) : rouge (exclusion), orange (isolation, PC-Ops
         juste à l'intérieur), jaune (dissuasion — PPD et parking ambulances obligatoires).
-        Représenté en cercle (centre + rayon), pas en polygone précis.
+        Cercle (centre + rayon) ou contour tracé en touchant les coins sur la carte. Le contour d'une zone
+        ne se modifie pas : levez-la et posez-en une nouvelle.
       </p>
 
       {erreur && <p className="text-sm text-chaud mb-2">{erreur}</p>}
@@ -1946,6 +1946,8 @@ function SectionZonesIntervention({ incidentId, centreIncident = null }) {
       {enAjout && (
         <div className="border border-trait rounded p-3 mb-3 bg-fond">
           <FormulaireZone
+            centreDefaut={centreIncident}
+            autresZones={zones}
             onAnnuler={() => setEnAjout(false)}
             onValider={async (valeurs) => {
               const { error } = await creer(valeurs)
@@ -1990,7 +1992,11 @@ function SectionZonesIntervention({ incidentId, centreIncident = null }) {
                       )}
                     </p>
                     {z.acces_autorise && <p className="text-xs text-sourdine mt-0.5">{z.acces_autorise}</p>}
-                    {(z.centre_latitude != null && z.centre_longitude != null) && (
+                    {contourDeZone(z) ? (
+                      <p className="text-xs text-sourdine mt-0.5">
+                        contour, {contourDeZone(z).length} coins, {libelleSurface(surfaceContourM2(contourDeZone(z)))}
+                      </p>
+                    ) : (z.centre_latitude != null && z.centre_longitude != null) && (
                       <p className="text-xs text-sourdine mt-0.5">
                         centre {z.centre_latitude}, {z.centre_longitude}
                         {z.rayon_metres != null && <> · rayon {z.rayon_metres} m</>}
@@ -2028,6 +2034,10 @@ function FormulaireZone({ valeursInitiales = {}, centreDefaut = null, autresZone
   const [centreLatitude, setCentreLatitude] = useState(valeursInitiales.centre_latitude ?? null)
   const [centreLongitude, setCentreLongitude] = useState(valeursInitiales.centre_longitude ?? null)
   const [rayonMetres, setRayonMetres] = useState(valeursInitiales.rayon_metres ?? '')
+  // Zone existante à contour : sa forme ne se modifie pas (lever et remplacer). Nouvelle zone : cercle ou contour.
+  const contourExistant = valeursInitiales.id ? contourDeZone(valeursInitiales) : null
+  const [forme, setForme] = useState('cercle')
+  const [sommets, setSommets] = useState([])
   const [accesAutorise, setAccesAutorise] = useState(valeursInitiales.acces_autorise ?? ACCES_PAR_TYPE_ZONE.rouge)
   const [dateRevision, setDateRevision] = useState(valeursInitiales.date_derniere_revision ?? '')
   const [scenarioClimatique, setScenarioClimatique] = useState(valeursInitiales.scenario_climatique_reference ?? '')
@@ -2041,13 +2051,24 @@ function FormulaireZone({ valeursInitiales = {}, centreDefaut = null, autresZone
 
   async function soumettre(e) {
     e.preventDefault()
+    let geometrie
+    if (contourExistant) geometrie = {} // centre et rayon recalculés en base depuis le contour
+    else if (forme === 'contour') {
+      const probleme = problemeContour(sommets)
+      if (probleme) return setErreur(probleme)
+      geometrie = { contour: polygoneGeoJson(sommets) }
+    } else {
+      geometrie = {
+        centre_latitude: centreLatitude == null ? null : Number(centreLatitude),
+        centre_longitude: centreLongitude == null ? null : Number(centreLongitude),
+        rayon_metres: rayonMetres === '' ? null : Number(rayonMetres),
+      }
+    }
     setEnCours(true)
     const { error } = await onValider({
       type_zone: typeZone,
       perimetre: TYPES_ZONE.find((t) => t.valeur === typeZone)?.perimetre,
-      centre_latitude: centreLatitude == null ? null : Number(centreLatitude),
-      centre_longitude: centreLongitude == null ? null : Number(centreLongitude),
-      rayon_metres: rayonMetres === '' ? null : Number(rayonMetres),
+      ...geometrie,
       acces_autorise: accesAutorise.trim() || null,
       date_derniere_revision: dateRevision || null,
       scenario_climatique_reference: scenarioClimatique.trim() || null,
@@ -2067,28 +2088,66 @@ function FormulaireZone({ valeursInitiales = {}, centreDefaut = null, autresZone
         </select>
       </div>
 
-      <div>
-        <label className="block text-xs font-medium text-sourdine mb-1">Centre de la zone</label>
-        <p className="text-xs text-sourdine mb-1">Touchez la carte pour placer le centre ; le cercle suit le rayon saisi.</p>
-        <SelecteurLocalisation
-          lat={centreLatitude}
-          lon={centreLongitude}
-          onChange={(lat, lon) => { setCentreLatitude(lat); setCentreLongitude(lon) }}
-          centreDefaut={centreDefaut ?? undefined}
-          zoomDefaut={centreDefaut ? 14 : 8}
-          cercles={[
-            ...cerclesDesZones(autresZones),
-            ...(centreLatitude != null && centreLongitude != null && rayonMetres !== '' && Number(rayonMetres) > 0
-              ? [{ id: 'apercu', lat: Number(centreLatitude), lon: Number(centreLongitude), rayonM: Number(rayonMetres), couleur: COULEUR_ZONE[typeZone], libelle: 'Cette zone' }]
-              : []),
-          ]}
-          hauteur="300px"
-        />
-      </div>
-      <div className="max-w-xs">
-        <label className="block text-xs font-medium text-sourdine mb-1">Rayon (m)</label>
-        <input type="number" min="0" value={rayonMetres} onChange={(e) => setRayonMetres(e.target.value)} className="w-full" />
-      </div>
+      {contourExistant ? (
+        <p className="text-xs text-sourdine">
+          Contour tracé ({contourExistant.length} coins, {libelleSurface(surfaceContourM2(contourExistant))}) : la forme ne se modifie pas.
+          Pour la changer, levez cette zone et posez-en une nouvelle.
+        </p>
+      ) : (
+        <>
+          {!valeursInitiales.id && (
+            <fieldset>
+              <legend className="block text-xs font-medium text-sourdine mb-1">Forme</legend>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <label className="flex items-center gap-1">
+                  <input type="radio" name="forme-zone-cc" checked={forme === 'cercle'} onChange={() => setForme('cercle')} /> Cercle (centre + rayon)
+                </label>
+                <label className="flex items-center gap-1">
+                  <input type="radio" name="forme-zone-cc" checked={forme === 'contour'} onChange={() => setForme('contour')} /> Contour (toucher les coins)
+                </label>
+              </div>
+            </fieldset>
+          )}
+          {forme === 'contour' ? (
+            <div>
+              <p className="block text-xs font-medium text-sourdine mb-1">Contour — touchez les coins de la zone dans l'ordre du tour</p>
+              <SelecteurContour
+                sommets={sommets}
+                onChange={setSommets}
+                couleur={COULEUR_ZONE[typeZone]}
+                centreDefaut={centreDefaut ?? undefined}
+                cercles={cerclesDesZones(autresZones)}
+                hauteur="320px"
+              />
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="block text-xs font-medium text-sourdine mb-1">Centre de la zone</label>
+                <p className="text-xs text-sourdine mb-1">Touchez la carte pour placer le centre ; le cercle suit le rayon saisi.</p>
+                <SelecteurLocalisation
+                  lat={centreLatitude}
+                  lon={centreLongitude}
+                  onChange={(lat, lon) => { setCentreLatitude(lat); setCentreLongitude(lon) }}
+                  centreDefaut={centreDefaut ?? undefined}
+                  zoomDefaut={centreDefaut ? 14 : 8}
+                  cercles={[
+                    ...cerclesDesZones(autresZones),
+                    ...(centreLatitude != null && centreLongitude != null && rayonMetres !== '' && Number(rayonMetres) > 0
+                      ? [{ id: 'apercu', lat: Number(centreLatitude), lon: Number(centreLongitude), rayonM: Number(rayonMetres), couleur: COULEUR_ZONE[typeZone], libelle: 'Cette zone' }]
+                      : []),
+                  ]}
+                  hauteur="300px"
+                />
+              </div>
+              <div className="max-w-xs">
+                <label className="block text-xs font-medium text-sourdine mb-1">Rayon (m)</label>
+                <input type="number" min="0" value={rayonMetres} onChange={(e) => setRayonMetres(e.target.value)} className="w-full" />
+              </div>
+            </>
+          )}
+        </>
+      )}
 
       <div>
         <label className="block text-xs font-medium text-sourdine mb-1">Règles d'accès</label>

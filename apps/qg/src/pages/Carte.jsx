@@ -13,6 +13,7 @@ import {
   MoyensEngages,
   ilYA,
   useCouchesCarte,
+  formeCarteZone,
 } from '@plateforme-crise/shared'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -139,7 +140,7 @@ export default function Carte() {
     if (liste.length > 0) {
       const { data: zones } = await supabase
         .from('zones_intervention')
-        .select('id, incident_id, type_zone, centre_latitude, centre_longitude, rayon_metres')
+        .select('id, incident_id, type_zone, centre_latitude, centre_longitude, rayon_metres, contour')
         .in('incident_id', liste.map((i) => i.id))
         .not('centre_latitude', 'is', null)
         .is('date_levee', null)
@@ -310,13 +311,8 @@ export default function Carte() {
       couches.incidents
         ? zonesIntervention
             .filter((z) => ids.has(z.incident_id))
-            .map((z) => ({
-              id: z.id,
-              lat: Number(z.centre_latitude),
-              lon: Number(z.centre_longitude),
-              rayonM: Number(z.rayon_metres) || 100,
-              libelle: z.type_zone,
-            }))
+            .map((z) => formeCarteZone(z, { libelle: z.type_zone }))
+            .filter(Boolean)
         : [],
     [zonesIntervention, ids, couches.incidents]
   )
