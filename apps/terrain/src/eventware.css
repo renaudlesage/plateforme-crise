@@ -342,8 +342,11 @@ button.sortie { padding: 5px 11px; font-size: 12px; white-space: nowrap; }
 
 @media (min-width: 940px) {
   .corps { display: grid; grid-template-columns: 176px 1fr; gap: 26px; align-items: start; }
-  .plaques { flex-direction: column; position: sticky; top: 16px; }
-  .plaque-nav { text-align: left; }
+  /* Colonne collante : seulement pour une navigation en barre latérale (.corps). Dans l'en-tête (CC,
+     Terrain), les onglets restent en ligne : en colonne, l'en-tête collant couvrait plus de la moitié
+     d'un écran de portable. */
+  .corps .plaques { flex-direction: column; position: sticky; top: 16px; }
+  .corps .plaque-nav { text-align: left; }
 }
 
 .travail { min-width: 0; }
@@ -528,7 +531,7 @@ button.lien {
 
 button.module {
   background: transparent;
-  color: var(--sourdine);
+  color: var(--encre); /* pas --sourdine : en gris pâle, l'onglet non choisi semblait désactivé */
   border: 1px solid var(--trait);
   font-size: 13px;
   padding: 6px 12px;

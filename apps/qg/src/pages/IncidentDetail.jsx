@@ -125,8 +125,8 @@ export default function IncidentDetail() {
           <h1 className="text-lg font-semibold text-encre">{incident.nom}</h1>
           <p className="text-sm text-sourdine">
             {incident.type_evenement && <>{incident.type_evenement} · </>}
-            {incident.niveaux_escalade?.libelle} · statut : {incident.statut}
-            {' · '}phase : {PHASES_CYCLE_VIE.find((p) => p.valeur === incident.phase_cycle_vie)?.libelle ?? incident.phase_cycle_vie}
+            {incident.niveaux_escalade?.libelle && <>{incident.niveaux_escalade.libelle} · </>}statut : {LIBELLES_STATUT_INCIDENT[incident.statut] ?? incident.statut}
+            {incident.phase_cycle_vie && <>{' · '}phase : {PHASES_CYCLE_VIE.find((p) => p.valeur === incident.phase_cycle_vie)?.libelle ?? incident.phase_cycle_vie}</>}
           </p>
           <div className="flex items-center flex-wrap gap-2 mt-1.5">
             <span className="jeton">{incident.degre_criticite ? `criticité ${incident.degre_criticite}` : 'criticité non fixée'}</span>
@@ -551,6 +551,8 @@ const ETAPES_RETABLISSEMENT = [
   { valeur: 'reconstruction', libelle: 'Reconstruction (biens détruits remplacés)' },
   { valeur: 'developpement_resilience', libelle: 'Développement / résilience (Build Back Better)' },
 ]
+
+const LIBELLES_STATUT_INCIDENT = { pre_alerte: 'Pré-alerte', en_cours: 'En cours', cloture: 'Clôturé' }
 
 const STATUTS_RETABLISSEMENT = [
   { valeur: 'en_cours', libelle: 'En cours' },

@@ -342,8 +342,11 @@ button.sortie { padding: 5px 11px; font-size: 12px; white-space: nowrap; }
 
 @media (min-width: 940px) {
   .corps { display: grid; grid-template-columns: 176px 1fr; gap: 26px; align-items: start; }
-  .plaques { flex-direction: column; position: sticky; top: 16px; }
-  .plaque-nav { text-align: left; }
+  /* Colonne collante : seulement pour une navigation en barre latérale (.corps). Dans l'en-tête (CC,
+     Terrain), les onglets restent en ligne : en colonne, l'en-tête collant couvrait plus de la moitié
+     d'un écran de portable. */
+  .corps .plaques { flex-direction: column; position: sticky; top: 16px; }
+  .corps .plaque-nav { text-align: left; }
 }
 
 .travail { min-width: 0; }
@@ -391,7 +394,7 @@ button.sortie { padding: 5px 11px; font-size: 12px; white-space: nowrap; }
   border-bottom: 1px solid var(--trait);
 }
 .menu-groupe-titre:hover { color: var(--encre); }
-.menu-groupe-nb { font-size: 10px; opacity: 0.7; letter-spacing: 0; }
+.menu-groupe-nb { font-size: 11px; letter-spacing: 0; } /* sans opacité réduite : contraste AA */
 
 .menu-groupe-liens {
   display: flex;
@@ -588,7 +591,7 @@ button.lien {
 
 button.module {
   background: transparent;
-  color: var(--sourdine);
+  color: var(--encre); /* pas --sourdine : en gris pâle, l'onglet non choisi semblait désactivé */
   border: 1px solid var(--trait);
   font-size: 13px;
   padding: 6px 12px;
@@ -663,7 +666,7 @@ button.module:disabled { opacity: 0.5; }
 
 .liste-pave { list-style: none; margin: 0; padding: 0; font-size: 13px; line-height: 1.65; }
 ol.liste-pave { list-style: decimal; padding-left: 18px; }
-.liste-pave a { color: var(--etat-info); text-decoration: none; }
+.liste-pave a { color: var(--etat-info); text-decoration: none; display: inline-block; padding: 3px 0; } /* cible ≥ 24 px */
 .liste-pave a:hover { text-decoration: underline; }
 .liste-pave .mono { font-size: 11px; color: var(--sourdine); }
 

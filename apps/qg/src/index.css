@@ -2,6 +2,13 @@
 @import './eventware.css';
 
 @tailwind base;
+
+/* Le reset de Tailwind (@tailwind base, chargé après eventware.css) efface le rembourrage et la taille de
+   police que eventware.css donne à tous les boutons : on les rend aux boutons d'action. Placé avant
+   @tailwind components / utilities, une classe utilitaire (px-2, text-xs…) garde la main. */
+button.principal:not(.sortie), button.discret:not(.sortie) { padding: 9px 16px; font-size: 14px; line-height: 1.25; }
+/* Liens-boutons : cible d'au moins 24 px de haut (WCAG 2.2, 2.5.8). */
+button.lien { padding-top: 4px; padding-bottom: 4px; }
 @tailwind components;
 @tailwind utilities;
 
