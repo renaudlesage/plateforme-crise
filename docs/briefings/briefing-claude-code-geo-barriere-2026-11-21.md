@@ -43,8 +43,8 @@ Contrôle de non-traversée sur les cercles du calcul (plus de faux « ne le sui
 5. **Valeurs de départ** à ajuster au REX : 150 m d'approche, 8 s de confirmation de sortie, 25 m de marge zone, 40 m autour d'une route coupée, `radiuses: [-1, -1]` (accrochage au réseau sans limite).
 6. **Points à vérifier au premier essai réel** : code d'erreur ORS quand la destination est hors réseau ; rendu des points de passage dans Google Maps (ce sont des arrêts, Google peut recalculer entre deux) ; taille du corps `avoid_polygons` avec une zone orange de 1 200 m (ORS limite la surface évitée, de l'ordre de 200 km² : largement au-dessus).
 
-### 1.4 Zones à contour libre (21/11, branche + migration en attente)
-Une zone peut être un contour tracé en touchant les coins (Terrain › Commandement, CC › incident) : colonne `contour` (Polygon GeoJSON), centre et rayon englobant calculés en base, contour non modifiable (lever et remplacer). Géo-barrière, itinéraire sûr, cartes, vue Autorité et entraide en tiennent compte. Voir `docs/roadmap/ETAT.md` (ordre de mise en production : migration, puis `itineraire-sur` v4, puis fusion).
+### 1.4 Zones à contour libre (21/11, en production : migration `20261121191221`, `itineraire-sur` version 5)
+Une zone peut être un contour tracé en touchant les coins (Terrain › Commandement, CC › incident) : colonne `contour` (Polygon GeoJSON), centre et rayon englobant calculés en base, contour non modifiable (lever et remplacer). Géo-barrière, itinéraire sûr, cartes, vue Autorité et entraide en tiennent compte. Voir `docs/roadmap/ETAT.md`.
 
 ## 3. Si Claude Code reprend la main — étapes proposées
 1. ~~Redéployer `itineraire-sur` (v3)~~ : fait le 21/11, version notée dans `supabase/functions/README.md`.
