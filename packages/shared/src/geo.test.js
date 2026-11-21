@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { distanceM, etatGeoBarriere, transitionGeoBarriere, SEUIL_APPROCHE_ZONE_M } from './geo.js'
+import { distanceM, etatGeoBarriere, transitionGeoBarriere, lisserSortieZone, SEUIL_APPROCHE_ZONE_M } from './geo.js'
 
 // Logne (Ferrières) : zone rouge de 100 m, zone rouge voisine de 50 m plus au nord.
 const CENTRE = { lat: 50.3934, lon: 5.5382 }
@@ -82,5 +82,24 @@ describe('transitionGeoBarriere', () => {
     expect(transitionGeoBarriere(E('dedans'), E('dedans'))).toBeNull()
     expect(transitionGeoBarriere(E('hors'), E('hors'))).toBeNull()
     expect(transitionGeoBarriere(null, null)).toBeNull()
+  })
+})
+
+describe('lisserSortieZone', () => {
+  const dedans = { etat: 'dedans', zone: { id: 'z' } }
+  const hors = { etat: 'hors', zone: null }
+  it('sortie non confirmée : on reste dedans et on donne l’échéance de réévaluation', () => {
+    const r = lisserSortieZone(dedans, hors, null, 1000, 8000)
+    expect(r).toEqual({ apres: dedans, attente: 1000, echeance: 9000 })
+  })
+  it('sortie confirmée à l’échéance, même sans nouvelle position (même état brut)', () => {
+    const r = lisserSortieZone(dedans, hors, 1000, 9000, 8000)
+    expect(r).toEqual({ apres: hors, attente: null, echeance: null })
+  })
+  it('retour dedans pendant l’attente : attente annulée', () => {
+    expect(lisserSortieZone(dedans, dedans, 1000, 5000, 8000)).toEqual({ apres: dedans, attente: null, echeance: null })
+  })
+  it('entrée crue tout de suite', () => {
+    expect(lisserSortieZone(hors, dedans, null, 0, 8000).apres).toBe(dedans)
   })
 })

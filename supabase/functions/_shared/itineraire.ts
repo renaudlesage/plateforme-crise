@@ -90,6 +90,25 @@ export function cercleContenant(p: Position, cercles: Cercle[]): Cercle | null {
   return null
 }
 
+/** Tous les cercles qui contiennent le point (zones superposées : rouge dans orange, route coupée dans une zone…). */
+export function cerclesContenant(p: Position, cercles: Cercle[]): Cercle[] {
+  return cercles.filter((c) => distanceM(p, { lat: c.lat, lon: c.lon }) <= c.rayonM)
+}
+
+/**
+ * Prépare le calcul :
+ *  - `zoneArrivee` : la zone rouge ou orange qui contient la destination (le calcul est alors refusé), sinon null ;
+ *  - `zonesDepart` : TOUS les cercles qui contiennent le départ (il faut bien en sortir) ;
+ *  - `cerclesCalcul` : les cercles à éviter, sans ceux du départ. C'est sur eux que porte aussi le contrôle
+ *    de non-traversée : le tracé commence forcément dans la zone de départ, il ne faut pas le lui reprocher.
+ */
+export function preparerCercles(depart: Position, arrivee: Position, cercles: Cercle[]) {
+  const zoneArrivee = cerclesContenant(arrivee, cercles).find((c) => c.nature === 'rouge' || c.nature === 'orange') ?? null
+  const zonesDepart = cerclesContenant(depart, cercles)
+  const cerclesCalcul = cercles.filter((c) => !zonesDepart.includes(c))
+  return { zoneArrivee, zonesDepart, cerclesCalcul }
+}
+
 /**
  * Le tracé (positions successives) traverse-t-il un cercle ? On teste chaque sommet et des points
  * intermédiaires tous les `pasM` mètres, car deux sommets d'un segment droit peuvent encadrer un cercle.

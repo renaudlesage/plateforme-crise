@@ -25,9 +25,9 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import {
   cerclesDesPoints,
   cerclesDesZones,
-  cercleContenant,
   interpreterReponseOrs,
   multiPolygoneAEviter,
+  preparerCercles,
   type Position,
 } from '../_shared/itineraire.ts'
 
@@ -36,6 +36,7 @@ import {
 const URL_ORS = 'https://api.heigit.org/openrouteservice/v2/directions'
 const PROFILS = new Set(['driving-car', 'foot-walking'])
 const DISTANCE_MAX_M = 150000 // au-delà, ce n'est plus un déplacement d'intervention communal
+const DELAI_ORS_MS = 15000 // au-delà, on rend la main à l'intervenant plutôt que de le laisser sur « Calcul… »
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -117,8 +118,8 @@ Deno.serve(async (req) => {
     }
 
     // Destination ou départ dans une zone à éviter : le moteur refuserait ; on le dit clairement.
-    const zoneArrivee = cercleContenant(arrivee, cercles)
-    if (zoneArrivee && (zoneArrivee.nature === 'rouge' || zoneArrivee.nature === 'orange')) {
+    const { zoneArrivee, zonesDepart, cerclesCalcul } = preparerCercles(depart, arrivee, cercles)
+    if (zoneArrivee) {
       return reponseJson(
         {
           error: `La destination est dans une zone ${zoneArrivee.nature} : aucun itinéraire ne peut l'éviter. Approchez-vous au bord de la zone, puis suivez les ordres du PC-Ops.`,
@@ -128,9 +129,7 @@ Deno.serve(async (req) => {
         { status: 422 }
       )
     }
-    // Départ en zone : on retire ce cercle du calcul (il faut bien en sortir), on le signale.
-    const zoneDepart = cercleContenant(depart, cercles)
-    const cerclesCalcul = zoneDepart ? cercles.filter((c) => c !== zoneDepart) : cercles
+    // Départ en zone : tous les cercles qui le contiennent sont retirés du calcul (il faut bien en sortir).
 
     const corpsOrs: Record<string, unknown> = {
       coordinates: [
@@ -144,12 +143,29 @@ Deno.serve(async (req) => {
     const mp = multiPolygoneAEviter(cerclesCalcul)
     if (mp) corpsOrs.options = { avoid_polygons: mp }
 
-    const reponseOrs = await fetch(`${URL_ORS}/${profil}/geojson`, {
-      method: 'POST',
-      headers: { Authorization: cle, 'Content-Type': 'application/json', Accept: 'application/geo+json' },
-      body: JSON.stringify(corpsOrs),
-    })
-    const texte = await reponseOrs.text()
+    const controleur = new AbortController()
+    const minuterie = setTimeout(() => controleur.abort(), DELAI_ORS_MS)
+    let reponseOrs: Response
+    let texte: string
+    try {
+      reponseOrs = await fetch(`${URL_ORS}/${profil}/geojson`, {
+        method: 'POST',
+        headers: { Authorization: cle, 'Content-Type': 'application/json', Accept: 'application/geo+json' },
+        body: JSON.stringify(corpsOrs),
+        signal: controleur.signal,
+      })
+      texte = await reponseOrs.text()
+    } catch (e) {
+      if (controleur.signal.aborted) {
+        return reponseJson(
+          { error: `Le moteur de routage n'a pas répondu en ${DELAI_ORS_MS / 1000} s. Réessayez, ou utilisez le lien Google Maps direct en gardant l'œil sur les zones.`, code: 'delai', evites },
+          { status: 504 }
+        )
+      }
+      throw e
+    } finally {
+      clearTimeout(minuterie)
+    }
     if (!reponseOrs.ok) {
       let message = `Moteur de routage indisponible (HTTP ${reponseOrs.status})`
       let code = 'moteur'
@@ -168,12 +184,20 @@ Deno.serve(async (req) => {
       return reponseJson({ error: message, code, evites }, { status: reponseOrs.status === 429 ? 429 : 502 })
     }
 
-    const resultat = interpreterReponseOrs(JSON.parse(texte), cercles)
+    // Contrôle de non-traversée sur les cercles du calcul : le tracé part forcément de la zone de départ.
+    const resultat = interpreterReponseOrs(JSON.parse(texte), cerclesCalcul)
     if (resultat.distance_m > DISTANCE_MAX_M) {
       resultat.avertissements.push('Itinéraire très long : vérifiez que la destination est la bonne.')
     }
-    if (zoneDepart) {
-      resultat.avertissements.unshift(`Vous partez de l'intérieur d'une zone ${zoneDepart.nature} : commencez par en sortir.`)
+    if (pointsRes.error) {
+      // Sans les points terrain, l'itinéraire n'évite que les zones : l'intervenant doit le savoir.
+      resultat.avertissements.unshift(
+        "Routes coupées et inondations NON prises en compte (points terrain illisibles pour le moment) : seules les zones sont évitées."
+      )
+    }
+    if (zonesDepart.length) {
+      const natures = [...new Set(zonesDepart.map((c) => c.nature))].join(', ')
+      resultat.avertissements.unshift(`Vous partez de l'intérieur d'une zone à éviter (${natures}) : commencez par en sortir.`)
     }
 
     return reponseJson({
