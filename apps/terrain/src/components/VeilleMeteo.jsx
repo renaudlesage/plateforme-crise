@@ -28,7 +28,7 @@ import { supabase } from '../lib/supabase'
  */
 
 const COULEUR = { vert: '#2e7d32', jaune: '#b7950b', orange: '#e67e22', rouge: '#c0392b' }
-const COULEUR_INCONNU = '#7f8c8d'
+const COULEUR_INCONNU = '#5f6b6d' // gris foncé : texte blanc lisible (5,5:1)
 const FRAICHEUR_MAX_MS = 45 * 60 * 1000
 
 function Pastille({ niveau, children }) {

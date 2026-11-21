@@ -2,6 +2,13 @@
 @import './eventware.css';
 
 @tailwind base;
+
+/* Le reset de Tailwind (@tailwind base, chargé après eventware.css) efface le rembourrage et la taille de
+   police que eventware.css donne à tous les boutons : on les rend aux boutons d'action. Placé avant
+   @tailwind components / utilities, une classe utilitaire (px-2, text-xs…) garde la main. */
+button.principal:not(.sortie), button.discret:not(.sortie) { padding: 9px 16px; font-size: 14px; line-height: 1.25; }
+/* Liens-boutons : cible d'au moins 24 px de haut (WCAG 2.2, 2.5.8). */
+button.lien { padding-top: 4px; padding-bottom: 4px; }
 @tailwind components;
 @tailwind utilities;
 
@@ -10,6 +17,7 @@
 /* Gants, main tremblante : cibles tactiles d'au moins 44 px pour les onglets, retour et lien-bouton. */
 button.module { min-height: 44px; padding-left: 14px; padding-right: 14px; }
 button.sortie, button.discret { min-height: 40px; }
+@media (pointer: coarse) { button.lien { padding: 10px 4px; } }
 a.bouton-terrain {
   display: block; box-sizing: border-box; width: 100%; margin-top: 6px; text-align: center; text-decoration: none;
   border: 1px solid var(--trait-fort); border-radius: var(--rayon);
