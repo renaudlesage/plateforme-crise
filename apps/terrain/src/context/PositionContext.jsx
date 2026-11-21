@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { etatGeoBarriere, transitionGeoBarriere } from '@plateforme-crise/shared'
+import { etatGeoBarriere, lisserSortieZone, transitionGeoBarriere } from '@plateforme-crise/shared'
 import { useAuth } from './AuthContext'
 import { supabase } from '../lib/supabase'
 import { fileEcritures } from '../lib/fileEcritures'
@@ -94,13 +94,17 @@ export function PositionProvider({ children }) {
   const [position, setPosition] = useState(null) // { lat, lon, precision_m, ts }
   const [erreur, setErreur] = useState(null)
   const [zonesRouges, setZonesRouges] = useState([])
+  // Incident auquel appartiennent les zones chargées : évite d'évaluer les zones d'un incident avec un autre
+  const [zonesIncidentId, setZonesIncidentId] = useState(null)
   const [zonesDepuis, setZonesDepuis] = useState(null) // horodatage du dernier chargement réussi (ou du cache)
   const [zonesHorsLigne, setZonesHorsLigne] = useState(false)
   const [geoBarriere, setGeoBarriere] = useState({ etat: 'hors', zone: null, distanceBord: null })
   const [journalisation, setJournalisation] = useState(null) // { statut: 'ok'|'enfile'|'refus', nature, ts }
   const dernierEnvoi = useRef(0)
   const etatPrecedent = useRef({ etat: 'hors', zone: null, distanceBord: null })
-  const sortieEnAttente = useRef(null) // { depuis, etat } : sortie de zone pas encore confirmée
+  const sortieEnAttente = useRef(null) // début (ms) d'une sortie de zone pas encore confirmée
+  const minuterieSortie = useRef(null)
+  const [reevaluation, setReevaluation] = useState(0) // relance l'évaluation à l'échéance d'une sortie en attente
 
   const setActif = useCallback((v) => {
     setActifEtat(v)
@@ -146,6 +150,7 @@ export function PositionProvider({ children }) {
   useEffect(() => {
     if (!actif || !incident) {
       setZonesRouges([])
+      setZonesIncidentId(null)
       setZonesDepuis(null)
       setZonesHorsLigne(false)
       return undefined
@@ -157,7 +162,11 @@ export function PositionProvider({ children }) {
       setZonesRouges(enCache.zones)
       setZonesDepuis(enCache.depuis)
       setZonesHorsLigne(true)
+    } else {
+      setZonesRouges([])
+      setZonesDepuis(null)
     }
+    setZonesIncidentId(incident.id)
     const charger = async () => {
       const { data, error } = await supabase
         .from('zones_intervention')
@@ -175,6 +184,7 @@ export function PositionProvider({ children }) {
       }
       const depuis = Date.now()
       setZonesRouges(data ?? [])
+      setZonesIncidentId(incident.id)
       setZonesDepuis(depuis)
       setZonesHorsLigne(false)
       ecrireCache(cleCache, { zones: data ?? [], depuis })
@@ -189,19 +199,29 @@ export function PositionProvider({ children }) {
 
   // Géo-barrière : état courant, alertes locales, journalisation des franchissements
   useEffect(() => {
-    const brut = etatGeoBarriere(position, zonesRouges)
+    const incidentId = incident?.id ?? null
+    // Zones d'un autre incident (changement d'incident, rechargement en cours) : on ne les évalue pas.
+    const zones = zonesIncidentId && zonesIncidentId === incidentId ? zonesRouges : []
+    const brut = etatGeoBarriere(position, zones)
+
+    // Changement d'incident : l'état retenu portait sur les zones de l'ancien incident. On repart d'un état
+    // neutre, sans journaliser de « sortie » : l'intervenant n'est pas sorti, on a changé d'incident suivi
+    // (même règle qu'à l'arrêt de la position). Une entrée dans une zone du nouvel incident sera journalisée.
+    if (etatPrecedent.current.incidentId !== incidentId) {
+      etatPrecedent.current = { etat: 'hors', zone: null, distanceBord: null, incidentId }
+      sortieEnAttente.current = null
+    }
     const avant = etatPrecedent.current
 
-    // Lissage : quitter une zone (dedans → approche/hors) n'est cru qu'après DELAI_CONFIRMATION_MS,
-    // pour qu'un point GPS imprécis au bord ne produise pas une sortie puis une entrée fantômes.
-    // L'entrée, elle, est crue tout de suite : mieux vaut une alerte de trop qu'une de moins.
-    let apres = brut
-    if (avant.etat === 'dedans' && brut.etat !== 'dedans') {
-      if (!sortieEnAttente.current) sortieEnAttente.current = { depuis: Date.now() }
-      if (Date.now() - sortieEnAttente.current.depuis < DELAI_CONFIRMATION_MS) apres = avant
-      else sortieEnAttente.current = null
-    } else {
-      sortieEnAttente.current = null
+    // Lissage de la sortie (voir lisserSortieZone). À l'échéance, on réévalue même sans nouvelle position :
+    // sinon un appareil immobile ou écran éteint resterait « dedans » et la sortie ne serait jamais transmise.
+    const lisse = lisserSortieZone(avant, brut, sortieEnAttente.current, Date.now(), DELAI_CONFIRMATION_MS)
+    const apres = { ...lisse.apres, incidentId }
+    sortieEnAttente.current = lisse.attente
+    clearTimeout(minuterieSortie.current)
+    minuterieSortie.current = null
+    if (lisse.echeance) {
+      minuterieSortie.current = setTimeout(() => setReevaluation((n) => n + 1), Math.max(0, lisse.echeance - Date.now()) + 50)
     }
 
     const transition = transitionGeoBarriere(avant, apres)
@@ -247,13 +267,17 @@ export function PositionProvider({ children }) {
         .then((r) => setJournalisation({ statut: r.statut, nature: transition, ts: Date.now(), message: r.message }))
         .catch(() => setJournalisation({ statut: 'refus', nature: transition, ts: Date.now() }))
     }
-  }, [position, zonesRouges, partage, incident?.id, utilisateur?.id, contexteId])
+  }, [position, zonesRouges, zonesIncidentId, reevaluation, partage, incident?.id, utilisateur?.id, contexteId])
+
+  useEffect(() => () => clearTimeout(minuterieSortie.current), [])
 
   // Si la position s'arrête, on repart d'un état neutre (pas de « sortie » fantôme à la réactivation)
   useEffect(() => {
     if (!actif) {
-      etatPrecedent.current = { etat: 'hors', zone: null, distanceBord: null }
+      etatPrecedent.current = { etat: 'hors', zone: null, distanceBord: null, incidentId: null }
       sortieEnAttente.current = null
+      clearTimeout(minuterieSortie.current)
+      minuterieSortie.current = null
       setGeoBarriere({ etat: 'hors', zone: null, distanceBord: null })
     }
   }, [actif])

@@ -20,7 +20,7 @@ export {
   PointsAFlaguer,
   MoyensEngages,
 } from './EditionCarte.jsx'
-export { distanceM, capDegres, capLibelle, libelleDistance, distanceEtCap, lienItineraire, ilYA, heuresDepuis, positionActuelle, etatGeoBarriere, transitionGeoBarriere, SEUIL_APPROCHE_ZONE_M } from './geo.js'
+export { distanceM, capDegres, capLibelle, libelleDistance, distanceEtCap, lienItineraire, ilYA, heuresDepuis, positionActuelle, etatGeoBarriere, transitionGeoBarriere, lisserSortieZone, SEUIL_APPROCHE_ZONE_M } from './geo.js'
 export { reduirePhoto } from './photo.js'
 export {
   NIVEAUX,

@@ -127,3 +127,27 @@ export function transitionGeoBarriere(avant, apres) {
   if (a === 'hors' && b === 'approche') return 'approche'
   return null
 }
+
+/**
+ * Lissage de la sortie de zone : quitter une zone (dedans → approche/hors) n'est cru qu'après `delaiMs`
+ * passés dehors, pour qu'un point GPS imprécis au bord ne produise pas une sortie puis une entrée fantômes.
+ * L'entrée, elle, est crue tout de suite : mieux vaut une alerte de trop qu'une de moins.
+ *
+ * Pure. Rend l'état à retenir (`apres`), le début de l'attente en cours (`attente`, null s'il n'y en a pas)
+ * et l'heure à laquelle il faudra réévaluer (`echeance`) : l'appelant doit alors réévaluer MÊME sans nouvelle
+ * position, sinon un appareil immobile ou écran éteint resterait « dedans » indéfiniment.
+ *
+ * @param {{etat:string}} avant état retenu précédemment
+ * @param {{etat:string}} brut état calculé sur la position courante
+ * @param {number|null} attente début de l'attente de sortie en cours (ms), ou null
+ * @param {number} maintenant (ms)
+ * @param {number} delaiMs
+ */
+export function lisserSortieZone(avant, brut, attente, maintenant, delaiMs) {
+  if (avant?.etat === 'dedans' && brut?.etat !== 'dedans') {
+    const debut = attente ?? maintenant
+    if (maintenant - debut < delaiMs) return { apres: avant, attente: debut, echeance: debut + delaiMs }
+    return { apres: brut, attente: null, echeance: null }
+  }
+  return { apres: brut, attente: null, echeance: null }
+}

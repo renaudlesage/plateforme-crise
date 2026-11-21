@@ -9,6 +9,7 @@ import {
   longueurTrace,
   multiPolygoneAEviter,
   pointsDePassage,
+  preparerCercles,
   distanceM,
   MARGE_ZONE_M,
   RAYON_POINT_BLOQUANT_M,
@@ -145,5 +146,37 @@ describe('interpreterReponseOrs', () => {
     const pts = [C, auNord(1000)]
     const r = interpreterReponseOrs({ features: [{ geometry: { coordinates: pts.map((p) => [p.lon, p.lat]) }, properties: {} }] }, [])
     expect(Math.abs(r.distance_m - Math.round(longueurTrace(pts))) <= 1).toBe(true)
+  })
+})
+
+describe('preparerCercles (départ en zone, zones superposées)', () => {
+  const orange = { id: 'o', lat: C.lat, lon: C.lon, rayonM: 600, nature: 'orange' as const }
+  const rouge = { id: 'r', lat: C.lat, lon: C.lon, rayonM: 200, nature: 'rouge' as const }
+  const coupee = { id: 'p', ...aLEst(100), rayonM: RAYON_POINT_BLOQUANT_M, nature: 'route_coupee' as const }
+  const loin = { id: 'l', ...auNord(3000), rayonM: 150, nature: 'rouge' as const }
+
+  it('départ dans plusieurs cercles superposés : tous retirés du calcul, les autres gardés', () => {
+    const r = preparerCercles(aLEst(100), auNord(5000), [orange, rouge, coupee, loin])
+    expect(r.zonesDepart.map((c) => c.id).sort()).toEqual(['o', 'p', 'r'])
+    expect(r.cerclesCalcul.map((c) => c.id)).toEqual(['l'])
+    expect(r.zoneArrivee).toBeNull()
+  })
+  it('destination dans une route coupée seule : pas un refus (seules rouge/orange bloquent)', () => {
+    const r = preparerCercles(auNord(5000), aLEst(100), [coupee])
+    expect(r.zoneArrivee).toBeNull()
+  })
+  it('destination dans une route coupée située dans une zone rouge : refus sur la zone rouge', () => {
+    const r = preparerCercles(auNord(5000), aLEst(100), [coupee, rouge])
+    expect(r.zoneArrivee?.id).toBe('r')
+  })
+  it('départ dans la zone : le tracé qui en sort n’est pas signalé comme traversant', () => {
+    const pts = Array.from({ length: 41 }, (_, i) => auNord(i * 50)) // du centre vers le nord, 2 km
+    const { cerclesCalcul } = preparerCercles(pts[0], pts[40], [rouge])
+    const r = interpreterReponseOrs(
+      { features: [{ geometry: { coordinates: pts.map((p) => [p.lon, p.lat]) }, properties: { summary: { distance: 2000, duration: 200 } } }] },
+      cerclesCalcul
+    )
+    expect(r.traverse).toEqual([])
+    expect(r.avertissements).toEqual([])
   })
 })
