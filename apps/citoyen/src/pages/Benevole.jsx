@@ -132,28 +132,28 @@ export default function Benevole() {
       <form onSubmit={soumettre} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-sourdine mb-1">Prénom</label>
-              <input required value={prenom} onChange={(e) => setPrenom(e.target.value)} className="w-full" />
+              <label htmlFor="benevole-prenom" className="block text-xs font-medium text-sourdine mb-1">Prénom</label>
+              <input id="benevole-prenom" required value={prenom} onChange={(e) => setPrenom(e.target.value)} className="w-full" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-sourdine mb-1">Nom</label>
-              <input required value={nom} onChange={(e) => setNom(e.target.value)} className="w-full" />
+              <label htmlFor="benevole-nom" className="block text-xs font-medium text-sourdine mb-1">Nom</label>
+              <input id="benevole-nom" required value={nom} onChange={(e) => setNom(e.target.value)} className="w-full" />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-sourdine mb-1">Email</label>
-            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full" />
+            <label htmlFor="benevole-email" className="block text-xs font-medium text-sourdine mb-1">Email</label>
+            <input id="benevole-email" required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full" />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-sourdine mb-1">Téléphone</label>
-            <input value={telephone} onChange={(e) => setTelephone(e.target.value)} className="w-full" />
+            <label htmlFor="benevole-telephone" className="block text-xs font-medium text-sourdine mb-1">Téléphone</label>
+            <input id="benevole-telephone" value={telephone} onChange={(e) => setTelephone(e.target.value)} className="w-full" />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-sourdine mb-1">Adresse (optionnel)</label>
-            <input value={adresse} onChange={(e) => setAdresse(e.target.value)} className="w-full" />
+            <label htmlFor="benevole-adresse-optionnel" className="block text-xs font-medium text-sourdine mb-1">Adresse (optionnel)</label>
+            <input id="benevole-adresse-optionnel" value={adresse} onChange={(e) => setAdresse(e.target.value)} className="w-full" />
           </div>
 
           <div>
@@ -187,8 +187,8 @@ export default function Benevole() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-sourdine mb-1">Disponibilité</label>
-            <input
+            <label htmlFor="benevole-disponibilite" className="block text-xs font-medium text-sourdine mb-1">Disponibilité</label>
+            <input id="benevole-disponibilite"
               value={disponibilite}
               onChange={(e) => setDisponibilite(e.target.value)}
               placeholder="ex. week-ends, soirées, sur demande…"

@@ -41,7 +41,7 @@ export default function Connexion() {
         <div className="marque">
           <span className="marque-nom">Crisiware 2</span>
         </div>
-        <p className="acces-role">Espace Terrain</p>
+        <h1 className="acces-role">Espace Terrain</h1>
 
         <form onSubmit={gererSoumission}>
           <div>
